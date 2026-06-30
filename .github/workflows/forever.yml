@@ -1,6 +1,6 @@
 name: Sovereign OS Event Bus
 
-# 1. THE OMNI-TRIGGER: Listen to everything, not just new issues.
+# 1. THE OMNI-TRIGGER: Listen to everything.
 on:
   issues:
     types: [opened, edited]
@@ -17,33 +17,32 @@ permissions:
 # 2. CONCURRENCY LOCK: Prevent AI clones from overwriting each other.
 concurrency:
   group: os-thread-${{ github.event.issue.number || github.event.pull_request.number }}
-  cancel-in-progress: false # Never interrupt the AI mid-thought; let it finish the AST patch.
+  cancel-in-progress: false
 
 jobs:
   run-os:
     runs-on: ubuntu-latest
-    # 3. INFINITE LOOP PREVENTION: If the bot itself comments, do NOT wake up.
+    # 3. INFINITE LOOP PREVENTION: Do not trigger on bot comments.
     if: ${{ !github.event.sender.bot }}
     
     steps:
       - name: 📥 Checkout Codebase
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Pull full git history so the AI can switch branches safely
+          fetch-depth: 0
 
-      # 4. THE SPEED MULTIPLIER: Use Bun instead of Node/NPM. Native TS execution.
       - name: ⚡ Ultra-Fast Runtime (Bun)
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
 
-      - name: 📦 Install Utilities (Cached)
-        run: bun install -g repomix typescript
+      # 4. THE PHYSICS MULTIPLIER: vitest added to the global utility install
+      - name: 📦 Install System Utilities (Cached)
+        run: bun install -g repomix typescript vitest
 
       - name: 🗺️ Map Global State
         run: repomix --output repomix-output.txt
 
-      # 5. DYNAMIC CONTEXT ROUTER: Figure out if the human opened an issue or wrote a comment.
       - name: 🔀 Route Event Context
         id: context
         run: |
@@ -63,10 +62,8 @@ jobs:
           GH_MODELS_TOKEN: ${{ secrets.GH_MODELS_TOKEN }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        # Bun runs TypeScript natively. No compilation step required.
         run: bun run agent.ts
 
-      # 6. RECURSIVE GIT SYNC: Safely hot-reload existing branches without crashing.
       - name: 🔄 Smart Git Sync & PR Handoff
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -76,16 +73,13 @@ jobs:
           
           BRANCH_NAME="vibe/issue-${{ env.ISSUE_NUMBER }}"
           
-          # If the branch exists, switch to it. If not, create it.
           git checkout $BRANCH_NAME || git checkout -b $BRANCH_NAME
           
           git add .
           git commit -m "feat(ai): continuous compilation for #${{ env.ISSUE_NUMBER }}" || echo "No changes to commit"
           
-          # Push changes safely, setting upstream if it's a new branch
           git push origin $BRANCH_NAME || git push --set-upstream origin $BRANCH_NAME
           
-          # Attempt to create a PR. If it already exists (because this was a comment reply), ignore the error.
           gh pr create \
             --title "🚀 Vibe Compilation: ${{ env.ISSUE_TITLE }}" \
             --body "Autonomous xmachines compilation complete. Closes #${{ env.ISSUE_NUMBER }}" \
