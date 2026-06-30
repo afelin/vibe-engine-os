@@ -96,8 +96,8 @@ async function runOS() {
         let generatedFiles;
         try {
             generatedFiles = JSON.parse(rawCode).files || [];
-        } catch (e) {
-            console.error("JSON Parsing failed this iteration.");
+        } catch (error: any) {
+            console.error("JSON Parsing failed this iteration:", error.message);
             continue;
         }
         if (generatedFiles.length === 0) continue;
