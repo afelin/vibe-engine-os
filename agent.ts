@@ -44,13 +44,19 @@ async function runOS() {
     let repoContext = "Repository is currently empty.";
     if (fs.existsSync('repomix-output.txt')) repoContext = fs.readFileSync('repomix-output.txt', 'utf8');
 
+    // Load Evolutionary Memory historical logs if they exist
+    let evoMemContext = "";
+    if (fs.existsSync('EVOMEM.md')) {
+        evoMemContext = `\n\n⚠️ HISTORICAL RUNTIME ERRORS TO AVOID:\n${fs.readFileSync('EVOMEM.md', 'utf8')}`;
+    }
+
     const vibe = `TITLE: ${ISSUE_TITLE}\nDESCRIPTION: ${ISSUE_BODY}`;
 
     // --- PHASE 1: SYSTEM 2 PLANNER (gpt-4o) ---
     console.log("\n🧠 Phase 1: Planning Architecture (Reading global context)...");
     const plan = await callOpenAIFormat(
         "https://models.inference.ai.azure.com", GH_MODELS_TOKEN, "gpt-4o",
-        `You are a Software 3.0 Architect. Follow this constitution strictly:\n${constitution}\n\nGlobal Codebase Map:\n${repoContext}`,
+        `You are a Software 3.0 Architect. Follow this constitution strictly:\n${constitution}\n\nGlobal Codebase Map:\n${repoContext}${evoMemContext}`,
         `Create a strict execution blueprint for this request:\n${vibe}`
     );
     
@@ -59,18 +65,18 @@ async function runOS() {
     fs.writeFileSync(path.join(planDir, `ISSUE_${ISSUE_NUMBER}_PLAN.md`), plan);
     console.log("✔️ Blueprint saved to immutable ledger.");
 
-    // --- PHASE 2: INFERENCE-TIME COMPUTE RATCHET ---
+    // --- PHASE 2: INFERENCE-TIME COMPUTE RATCHET LOOP ---
     console.log("\n⚡ Phase 2: Entering Inference-Time Compute Ratchet...");
     let attempts = 0;
     const MAX_ATTEMPTS = 3;
     let finalVerifiedFiles: any[] = [];
     let feedback = ""; 
+    let recordedErrors: string[] = [];
 
     while (attempts < MAX_ATTEMPTS) {
         attempts++;
         console.log(`\n🔄 Inference Loop ${attempts}/${MAX_ATTEMPTS}...`);
         
-        // FORCED EVALUATION METRIC: We demand the test file alongside the logic.
         let codePrompt = `Execute this plan strictly:\n${plan}\n\nOutput ONLY valid JSON matching this schema: 
         {
           "files": [
@@ -87,10 +93,16 @@ async function runOS() {
             "You are an expert xmachines coder. Output strictly in JSON.", codePrompt, true
         );
         
-        const generatedFiles = JSON.parse(rawCode).files || [];
+        let generatedFiles;
+        try {
+            generatedFiles = JSON.parse(rawCode).files || [];
+        } catch (e) {
+            console.error("JSON Parsing failed this iteration.");
+            continue;
+        }
         if (generatedFiles.length === 0) continue;
 
-        // 2. Snapshot current disk state (for rollback)
+        // 2. Snapshot current disk state (for rollback safety)
         console.log("💾 Writing temporary files for verification...");
         const backups = new Map<string, string | null>();
         for (const file of generatedFiles) {
@@ -113,26 +125,28 @@ async function runOS() {
             console.log("✔️ Compiler Check Passed.");
         } catch (error: any) {
             console.error("❌ Compiler Check Failed.");
-            feedback += `TypeScript Compiler Error:\n${error.stdout.toString()}\n`;
+            const errMsg = error.stdout?.toString() || "Unknown compile error";
+            feedback += `TypeScript Compiler Error:\n${errMsg}\n`;
+            recordedErrors.push(errMsg);
             loopPassed = false;
         }
 
-        // 3.5 DETERMINISTIC EVALUATION (Vitest Execution Physics)
+        // 4. DETERMINISTIC EVALUATION (Vitest Execution Physics)
         if (loopPassed) {
             try {
                 console.log("🧪 Running Execution Evals (Vitest)...");
-                // Run tests in standard run mode. This exposes the AI's logic to reality.
                 execSync('npx vitest run', { stdio: 'pipe' });
                 console.log("✔️ Evaluation Tests Passed.");
             } catch (error: any) {
                 console.error("❌ Evaluation Tests Failed.");
-                // Feed the red text directly back into the Ratchet
-                feedback += `Test Execution Failed. Fix the logic to pass these tests:\n${error.stdout.toString()}\n`;
+                const errMsg = error.stdout?.toString() || "Test suit failed execution";
+                feedback += `Test Execution Failed:\n${errMsg}\n`;
+                recordedErrors.push(errMsg);
                 loopPassed = false;
             }
         }
 
-        // 4. PEARL'S CAUSAL CRITIC (Gemini-1.5-Flash)
+        // 5. PEARL'S CAUSAL CRITIC (Gemini-1.5-Flash)
         if (loopPassed) {
             console.log("🛡️ Running Causal Do-Calculus Verification...");
             for (const file of generatedFiles) {
@@ -143,22 +157,33 @@ async function runOS() {
                 if (!verdict.toUpperCase().includes("PASS")) {
                     console.error(`❌ Critic Rejected ${file.path}`);
                     feedback += `File ${file.path} Failed: ${verdict}\n`;
+                    recordedErrors.push(verdict);
                     loopPassed = false;
                     break; 
                 }
             }
         }
 
-        // 5. RATCHET DECISION: Keep or Rollback?
+        // 6. RATCHET DECISION: Keep or Rollback?
         if (loopPassed) {
             finalVerifiedFiles = generatedFiles;
             console.log("\n✅ Mathematical, Execution, and Causal verification complete. Ratchet locked.");
+            
+            // If we recovered from failures on previous loops, log the lessons to EvoMem
+            if (attempts > 1 && recordedErrors.length > 0) {
+                console.log("📝 Writing self-healing lessons to EvoMem Ledger...");
+                const lessons = `\n- [Issue #${ISSUE_NUMBER}] Resolved runtime failures during iteration:\n  ${recordedErrors.join('\n  ')}\n`;
+                fs.appendFileSync('EVOMEM.md', lessons, 'utf8');
+            }
             break; 
         } else {
             console.log("⚠️ Ratchet slipped. Rolling back files and feeding errors to Groq...");
             for (const [filepath, oldContent] of backups.entries()) {
-                if (oldContent === null) fs.unlinkSync(filepath);
-                else fs.writeFileSync(filepath, oldContent);
+                if (oldContent === null) {
+                    if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
+                } else {
+                    fs.writeFileSync(filepath, oldContent);
+                }
             }
         }
     }
@@ -168,6 +193,17 @@ async function runOS() {
         console.error("\n🛑 Circuit Breaker Tripped: AI could not self-heal after 3 attempts.");
         fs.writeFileSync('CRITIC_FAILED.md', `🚨 **System Halted.**\nFailed to pass Eval/Critic after ${MAX_ATTEMPTS} attempts.\n\nFinal Feedback:\n${feedback}`);
         process.exit(1);
+    }
+
+    // Extract Skills automatically for passing xmachines actors
+    for (const file of finalVerifiedFiles) {
+        if (file.path.includes('src/') && !file.path.includes('.test.ts')) {
+            const skillDir = '.skills/actors';
+            if (!fs.existsSync(skillDir)) fs.mkdirSync(skillDir, { recursive: true });
+            const skillName = path.basename(file.path);
+            fs.writeFileSync(path.join(skillDir, skillName), file.content);
+            console.log(`⚡ Skill Extracted: ${skillName}`);
+        }
     }
     
     console.log("🎯 Handoff Complete. Engine spinning down.");
