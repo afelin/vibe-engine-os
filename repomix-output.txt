@@ -1,0 +1,449 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.github/
+  workflows/
+    forever.yml
+agent.md
+agent.ts
+README.md
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="README.md">
+# vibe-engine-os
+Sovereign AI Dev Cluster
+</file>
+
+<file path="agent.md">
+# AI Agent Constitution (Software 3.0 OS)
+You are a sovereign, causal-reasoning developer cluster. You compile natural language "vibes" into mathematically verifiable software using the xmachines architecture.
+
+## CRITICAL DIRECTIVES
+
+**1. Epistemology (Auto-Research First):**
+Never hallucinate API usage. Before writing a plan, perform automated research to ingest the latest documentation. Ground your logic in reality.
+
+**2. The System 2 DAG (Planning Ratchet):**
+Generate 3 divergent architectural approaches in `.planning/`. Critique them against system invariants, discard the two weakest, and commit only the surviving blueprint mapped out as a Directed Acyclic Graph (DAG) of dependencies.
+
+**3. The xmachines Paradigm (Formal Verification):**
+- **INV-01 (Actor Authority):** ALL logic is modeled as XState v5 machines.
+- **INV-02 (Strict Separation):** You MUST define UI contracts using `@xmachines/play-catalog` (Zod schemas). The UI layer has zero business logic.
+- **INV-04 (Passive Infrastructure):** Routers and UI reflect state; they never decide it.
+- **INV-05 (Signal-Only Reactivity):** You are FORBIDDEN from using `useState` or `useEffect` for business logic. All state propagation must use `@xmachines/play-signals` (TC39).
+
+**4. Evaluation Physics (Test-Driven Ratchet):**
+Code without an execution test is a hallucination. You MUST write a strict Vitest evaluation file (`.test.ts`) alongside every logic file. The system will physically execute your test to verify your logic before merging.
+
+**5. Skill Extraction (The Voyager Protocol):**
+Whenever you successfully compile a reusable xmachines actor that passes the Vitest and Causal Critic ratchet, you MUST extract the generic template of that machine and save it to `.skills/actors/`. Always check the `.skills/` directory to reuse existing components before generating new ones from scratch.
+
+**6. Evolutionary Memory (EvoMem):**
+If you fail a Vitest evaluation or Causal check but successfully self-heal during the ratchet loop, you MUST append the lesson to `EVOMEM.md` (e.g., "Failed because X. Solution: Always use Y"). Read `EVOMEM.md` before every execution to ensure you never repeat historical errors.
+
+**7. Automated Compliance Integration (Reward-Model Engineering):**
+Treat compliance validation utilities (e.g., the `cyberready` static compiler engine or AST scanners) as absolute physics gates. LLMs do not debate compliance logs; you iteratively refactor code until all external verification binaries yield a zero-error exit code.
+
+**8. Edge-Native Typescript (ESM Only):**
+Code must be ESM-only (`"type": "module"`). You MUST use `.js` extensions in all local imports, even within `.ts` files. CommonJS is banned. 
+
+**9. Surgical AST Patching:**
+Never rewrite entire files. Use precise `SEARCH/REPLACE` blocks. Let the `oxfmt` and `oxlint` CLI tools handle formatting; focus your compute strictly on logical diffs.
+
+**10. Pearl's Causal Analysis:**
+Before merging, evaluate: "If I inject this node, does it causally break downstream systems?" You have a maximum of 3 attempts to self-heal against the test runner before quarantining the code.
+
+**11. Aesthetics & Vibe:**
+Default to high-contrast Apple/Stripe-ish minimalist design tokens, paired with accessible, human-centric copywriting in the UI. Use vanilla CSS variables.
+</file>
+
+<file path="agent.ts">
+import * as fs from 'fs';
+import * as path from 'path';
+import { execSync } from 'child_process';
+
+// --- 1. SETUP & SECRETS ---
+const GH_MODELS_TOKEN = process.env.GH_MODELS_TOKEN!;
+const GROQ_KEY = process.env.GROQ_API_KEY!;
+const GEMINI_KEY = process.env.GEMINI_API_KEY!;
+const ISSUE_NUMBER = process.env.ISSUE_NUMBER || "000";
+const ISSUE_TITLE = process.env.ISSUE_TITLE || "Vibe Request";
+const ISSUE_BODY = process.env.ISSUE_BODY || "No details provided.";
+
+// --- 2. UNIVERSAL API ROUTER ---
+async function callOpenAIFormat(baseUrl: string, apiKey: string, model: string, system: string, user: string, jsonMode = false) {
+    const payload: any = { model, messages: [{ role: "system", content: system }, { role: "user", content: user }] };
+    if (jsonMode) payload.response_format = { type: "json_object" };
+    
+    const res = await fetch(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    
+    if (!res.ok) throw new Error(`API Error from ${baseUrl}: ${res.statusText}`);
+    const data = await res.json();
+    return data.choices[0].message.content;
+}
+
+async function callGemini(apiKey: string, system: string, user: string) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const payload = { system_instruction: { parts: { text: system } }, contents: [{ parts: [{ text: user }] }] };
+    
+    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const data = await res.json();
+    return data.candidates[0].content.parts[0].text;
+}
+
+// --- 3. THE AUTONOMOUS OS ENGINE ---
+async function runOS() {
+    console.log(`\n🚀 Booting Vibe Engine OS for Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}`);
+    
+    // 1. Load System Memory
+    const constitution = fs.readFileSync('AGENTS.md', 'utf8');
+    let repoContext = "Repository is currently empty.";
+    if (fs.existsSync('repomix-output.txt')) repoContext = fs.readFileSync('repomix-output.txt', 'utf8');
+
+    // Load Evolutionary Memory historical logs if they exist
+    let evoMemContext = "";
+    if (fs.existsSync('EVOMEM.md')) {
+        evoMemContext = `\n\n⚠️ HISTORICAL RUNTIME ERRORS TO AVOID:\n${fs.readFileSync('EVOMEM.md', 'utf8')}`;
+    }
+
+    const vibe = `TITLE: ${ISSUE_TITLE}\nDESCRIPTION: ${ISSUE_BODY}`;
+
+    // --- PHASE 1: SYSTEM 2 PLANNER (gpt-4o) ---
+    console.log("\n🧠 Phase 1: Planning Architecture (Reading global context)...");
+    const plan = await callOpenAIFormat(
+        "https://models.inference.ai.azure.com", GH_MODELS_TOKEN, "gpt-4o",
+        `You are a Software 3.0 Architect. Follow this constitution strictly:\n${constitution}\n\nGlobal Codebase Map:\n${repoContext}${evoMemContext}`,
+        `Create a strict execution blueprint for this request:\n${vibe}`
+    );
+    
+    const planDir = '.planning/milestones';
+    if (!fs.existsSync(planDir)) fs.mkdirSync(planDir, { recursive: true });
+    fs.writeFileSync(path.join(planDir, `ISSUE_${ISSUE_NUMBER}_PLAN.md`), plan);
+    console.log("✔️ Blueprint saved to immutable ledger.");
+
+    // --- PHASE 2: INFERENCE-TIME COMPUTE RATCHET LOOP ---
+    console.log("\n⚡ Phase 2: Entering Inference-Time Compute Ratchet...");
+    let attempts = 0;
+    const MAX_ATTEMPTS = 3;
+    let finalVerifiedFiles: any[] = [];
+    let feedback = ""; 
+    let recordedErrors: string[] = [];
+
+    while (attempts < MAX_ATTEMPTS) {
+        attempts++;
+        console.log(`\n🔄 Inference Loop ${attempts}/${MAX_ATTEMPTS}...`);
+        
+        let codePrompt = `Execute this plan strictly:\n${plan}\n\nOutput ONLY valid JSON matching this schema: 
+        {
+          "files": [
+            {"path": "src/machine.ts", "content": "source code"},
+            {"path": "src/machine.test.ts", "content": "Vitest evaluation code"}
+          ]
+        }`;
+        
+        if (feedback !== "") codePrompt += `\n\n🚨 PREVIOUS ATTEMPT FAILED. Fix these exact errors:\n${feedback}`;
+
+        // 1. Code Generation (Groq / llama-3.3-70b)
+        const rawCode = await callOpenAIFormat(
+            "https://api.groq.com/openai/v1", GROQ_KEY, "llama-3.3-70b-versatile",
+            "You are an expert xmachines coder. Output strictly in JSON.", codePrompt, true
+        );
+        
+        let generatedFiles;
+        try {
+            generatedFiles = JSON.parse(rawCode).files || [];
+        } catch (error: any) {
+            console.error("JSON Parsing failed this iteration:", error.message);
+            continue;
+        }
+        if (generatedFiles.length === 0) continue;
+
+        // 2. Snapshot current disk state (for rollback safety)
+        console.log("💾 Writing temporary files for verification...");
+        const backups = new Map<string, string | null>();
+        for (const file of generatedFiles) {
+            const dir = path.dirname(file.path);
+            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+            
+            if (fs.existsSync(file.path)) backups.set(file.path, fs.readFileSync(file.path, 'utf8'));
+            else backups.set(file.path, null);
+            
+            fs.writeFileSync(file.path, file.content);
+        }
+
+        let loopPassed = true;
+        feedback = "";
+
+        // 3. DETERMINISTIC COMPILER CRITIC (TypeScript)
+        try {
+            console.log("⚙️ Running Deterministic Compiler Check (tsc --noEmit)...");
+            if (fs.existsSync('tsconfig.json')) execSync('npx tsc --noEmit', { stdio: 'pipe' });
+            console.log("✔️ Compiler Check Passed.");
+        } catch (error: any) {
+            console.error("❌ Compiler Check Failed.");
+            const errMsg = error.stdout?.toString() || "Unknown compile error";
+            feedback += `TypeScript Compiler Error:\n${errMsg}\n`;
+            recordedErrors.push(errMsg);
+            loopPassed = false;
+        }
+
+        // 4. DETERMINISTIC EVALUATION (Vitest Execution Physics)
+        if (loopPassed) {
+            try {
+                console.log("🧪 Running Execution Evals (Vitest)...");
+                execSync('npx vitest run', { stdio: 'pipe' });
+                console.log("✔️ Evaluation Tests Passed.");
+            } catch (error: any) {
+                console.error("❌ Evaluation Tests Failed.");
+                const errMsg = error.stdout?.toString() || "Test suit failed execution";
+                feedback += `Test Execution Failed:\n${errMsg}\n`;
+                recordedErrors.push(errMsg);
+                loopPassed = false;
+            }
+        }
+
+        // 5. PEARL'S CAUSAL CRITIC (Gemini-1.5-Flash)
+        if (loopPassed) {
+            console.log("🛡️ Running Causal Do-Calculus Verification...");
+            for (const file of generatedFiles) {
+                const criticSystem = `You are a Judea Pearl Causal Critic. Codebase context:\n${repoContext}\n\nDoes this code violate xmachines invariants or break downstream logic? If safe, reply EXACTLY 'PASS'. If it fails, explain why.`;
+                const criticUser = `Review this new code for ${file.path}:\n\n${file.content}`;
+                const verdict = await callGemini(GEMINI_KEY, criticSystem, criticUser);
+                
+                if (!verdict.toUpperCase().includes("PASS")) {
+                    console.error(`❌ Critic Rejected ${file.path}`);
+                    feedback += `File ${file.path} Failed: ${verdict}\n`;
+                    recordedErrors.push(verdict);
+                    loopPassed = false;
+                    break; 
+                }
+            }
+        }
+
+        // 6. RATCHET DECISION: Keep or Rollback?
+        if (loopPassed) {
+            finalVerifiedFiles = generatedFiles;
+            console.log("\n✅ Mathematical, Execution, and Causal verification complete. Ratchet locked.");
+            
+            // If we recovered from failures on previous loops, log the lessons to EvoMem
+            if (attempts > 1 && recordedErrors.length > 0) {
+                console.log("📝 Writing self-healing lessons to EvoMem Ledger...");
+                const lessons = `\n- [Issue #${ISSUE_NUMBER}] Resolved runtime failures during iteration:\n  ${recordedErrors.join('\n  ')}\n`;
+                fs.appendFileSync('EVOMEM.md', lessons, 'utf8');
+            }
+            break; 
+        } else {
+            console.log("⚠️ Ratchet slipped. Rolling back files and feeding errors to Groq...");
+            for (const [filepath, oldContent] of backups.entries()) {
+                if (oldContent === null) {
+                    if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
+                } else {
+                    fs.writeFileSync(filepath, oldContent);
+                }
+            }
+        }
+    }
+
+    // --- PHASE 3: CIRCUIT BREAKER & EXIT ---
+    if (finalVerifiedFiles.length === 0) {
+        console.error("\n🛑 Circuit Breaker Tripped: AI could not self-heal after 3 attempts.");
+        fs.writeFileSync('CRITIC_FAILED.md', `🚨 **System Halted.**\nFailed to pass Eval/Critic after ${MAX_ATTEMPTS} attempts.\n\nFinal Feedback:\n${feedback}`);
+        process.exit(1);
+    }
+
+    // Extract Skills automatically for passing xmachines actors
+    for (const file of finalVerifiedFiles) {
+        if (file.path.includes('src/') && !file.path.includes('.test.ts')) {
+            const skillDir = '.skills/actors';
+            if (!fs.existsSync(skillDir)) fs.mkdirSync(skillDir, { recursive: true });
+            const skillName = path.basename(file.path);
+            fs.writeFileSync(path.join(skillDir, skillName), file.content);
+            console.log(`⚡ Skill Extracted: ${skillName}`);
+        }
+    }
+    
+    console.log("🎯 Handoff Complete. Engine spinning down.");
+}
+
+runOS().catch(console.error);
+</file>
+
+<file path=".github/workflows/forever.yml">
+name: Sovereign OS Event Bus
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created]
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: os-thread-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  run-os:
+    runs-on: ubuntu-latest
+    if: ${{ !github.event.sender.bot }}
+    
+    steps:
+      - name: 📥 Checkout Codebase
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ⚡ Ultra-Fast Runtime (Bun)
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: 📦 Install System Utilities (Cached)
+        run: bun install -g repomix typescript vitest wrangler
+
+      - name: 🗺️ Map Global State
+        run: repomix --output repomix-output.txt
+
+      - name: 🔀 Route Event Context (Multi-line Safe)
+        id: context
+        env:
+          BODY_ISSUE: ${{ github.event.issue.body }}
+          BODY_COMMENT: ${{ github.event.comment.body }}
+          BODY_REVIEW: ${{ github.event.review.body }}
+        run: |
+          if [ "${{ github.event_name }}" == "issue_comment" ]; then
+            echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
+            echo "ISSUE_TITLE=${{ github.event.issue.title }} (Revision)" >> $GITHUB_ENV
+            echo "ISSUE_BODY<<EOF" >> $GITHUB_ENV
+            echo "$BODY_COMMENT" >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          elif [ "${{ github.event_name }}" == "pull_request_review" ]; then
+            echo "ISSUE_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+            echo "ISSUE_TITLE=${{ github.event.pull_request.title }} (PR Feedback)" >> $GITHUB_ENV
+            echo "ISSUE_BODY<<EOF" >> $GITHUB_ENV
+            echo "$BODY_REVIEW" >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          else
+            echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
+            echo "ISSUE_TITLE=${{ github.event.issue.title }}" >> $GITHUB_ENV
+            echo "ISSUE_BODY<<EOF" >> $GITHUB_ENV
+            echo "$BODY_ISSUE" >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          fi
+
+      - name: 🧠 Fire AI Inference Ratchet (agent.ts)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_MODELS_TOKEN: ${{ secrets.GH_MODELS_TOKEN }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: bun run agent.ts
+
+      - name: 🧹 Hardware-Accelerated Formatting (oxlint & oxfmt)
+        continue-on-error: true
+        run: |
+          bunx oxlint@latest --fix
+          bunx oxfmt@latest -w .
+
+      - name: 🚀 Deploy Vibe Blueprint to Cloudflare Edge
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # Safe Edge deployment execution block via Wrangler CLI
+          if [ ! -z "$CLOUDFLARE_API_TOKEN" ]; then
+            # We add '|| true' so a Cloudflare failure doesn't crash the PR handoff
+            OUTPUT=$(bunx wrangler pages deploy . --project-name="vibe-engine-os" --branch="vibe/issue-${{ env.ISSUE_NUMBER }}" 2>&1) || true
+            
+            # Extract the preview URL safely
+            PREVIEW_URL=$(echo "$OUTPUT" | grep -oE "https://[a-zA-Z0-9.-]+\.pages\.dev" | head -1)
+            
+            if [ -z "$PREVIEW_URL" ]; then
+              echo "PREVIEW_URL=https://cloudflare-deployment-failed.local" >> $GITHUB_ENV
+              echo "⚠️ Cloudflare deploy failed. Ensure the project 'vibe-engine-os' is created in your CF Dashboard."
+            else
+              echo "PREVIEW_URL=$PREVIEW_URL" >> $GITHUB_ENV
+            fi
+          else
+            echo "PREVIEW_URL=https://cloudflare-preview-not-configured.local" >> $GITHUB_ENV
+          fi
+
+      - name: 🔄 Smart Git Sync & PR Handoff
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.name "Vibe Engine OS"
+          git config --global user.email "ai@vibe-engine.local"
+          
+          BRANCH_NAME="vibe/issue-${{ env.ISSUE_NUMBER }}"
+          git checkout $BRANCH_NAME || git checkout -b $BRANCH_NAME
+          
+          git add .
+          git commit -m "feat(ai): causal compilation & edge deployment for #${{ env.ISSUE_NUMBER }}" || echo "No changes to commit"
+          git push origin $BRANCH_NAME || git push --set-upstream origin $BRANCH_NAME
+          
+          gh pr create \
+            --title "🚀 Vibe Compilation: ${{ env.ISSUE_TITLE }}" \
+            --body "Autonomous xmachines compilation complete. Evaluated via Vitest. Formatted via Oxlint.
+            
+            🌐 **Live Edge Preview URL:** ${{ env.PREVIEW_URL }}
+            
+            Closes #${{ env.ISSUE_NUMBER }}" \
+            --base main \
+            --head $BRANCH_NAME || echo "PR already exists, updated in place."
+</file>
+
+</files>
