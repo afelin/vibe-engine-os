@@ -59,7 +59,7 @@ async function runOS() {
     fs.writeFileSync(path.join(planDir, `ISSUE_${ISSUE_NUMBER}_PLAN.md`), plan);
     console.log("✔️ Blueprint saved to immutable ledger.");
 
-    // --- PHASE 2: ILYA "STRAWBERRY" RATCHET LOOP ---
+    // --- PHASE 2: INFERENCE-TIME COMPUTE RATCHET ---
     console.log("\n⚡ Phase 2: Entering Inference-Time Compute Ratchet...");
     let attempts = 0;
     const MAX_ATTEMPTS = 3;
@@ -70,7 +70,15 @@ async function runOS() {
         attempts++;
         console.log(`\n🔄 Inference Loop ${attempts}/${MAX_ATTEMPTS}...`);
         
-        let codePrompt = `Execute this plan strictly:\n${plan}\n\nOutput ONLY valid JSON matching this schema: {"files": [{"path": "src/app.ts", "content": "full code"}]}`;
+        // FORCED EVALUATION METRIC: We demand the test file alongside the logic.
+        let codePrompt = `Execute this plan strictly:\n${plan}\n\nOutput ONLY valid JSON matching this schema: 
+        {
+          "files": [
+            {"path": "src/machine.ts", "content": "source code"},
+            {"path": "src/machine.test.ts", "content": "Vitest evaluation code"}
+          ]
+        }`;
+        
         if (feedback !== "") codePrompt += `\n\n🚨 PREVIOUS ATTEMPT FAILED. Fix these exact errors:\n${feedback}`;
 
         // 1. Code Generation (Groq / llama-3.3-70b)
@@ -101,13 +109,27 @@ async function runOS() {
         // 3. DETERMINISTIC COMPILER CRITIC (TypeScript)
         try {
             console.log("⚙️ Running Deterministic Compiler Check (tsc --noEmit)...");
-            // NOTE: This assumes you have a tsconfig.json. If not, this check silently passes.
             if (fs.existsSync('tsconfig.json')) execSync('npx tsc --noEmit', { stdio: 'pipe' });
             console.log("✔️ Compiler Check Passed.");
         } catch (error: any) {
             console.error("❌ Compiler Check Failed.");
             feedback += `TypeScript Compiler Error:\n${error.stdout.toString()}\n`;
             loopPassed = false;
+        }
+
+        // 3.5 DETERMINISTIC EVALUATION (Vitest Execution Physics)
+        if (loopPassed) {
+            try {
+                console.log("🧪 Running Execution Evals (Vitest)...");
+                // Run tests in standard run mode. This exposes the AI's logic to reality.
+                execSync('npx vitest run', { stdio: 'pipe' });
+                console.log("✔️ Evaluation Tests Passed.");
+            } catch (error: any) {
+                console.error("❌ Evaluation Tests Failed.");
+                // Feed the red text directly back into the Ratchet
+                feedback += `Test Execution Failed. Fix the logic to pass these tests:\n${error.stdout.toString()}\n`;
+                loopPassed = false;
+            }
         }
 
         // 4. PEARL'S CAUSAL CRITIC (Gemini-1.5-Flash)
@@ -130,7 +152,7 @@ async function runOS() {
         // 5. RATCHET DECISION: Keep or Rollback?
         if (loopPassed) {
             finalVerifiedFiles = generatedFiles;
-            console.log("\n✅ Mathematical and Causal verification complete. Ratchet locked.");
+            console.log("\n✅ Mathematical, Execution, and Causal verification complete. Ratchet locked.");
             break; 
         } else {
             console.log("⚠️ Ratchet slipped. Rolling back files and feeding errors to Groq...");
@@ -144,7 +166,7 @@ async function runOS() {
     // --- PHASE 3: CIRCUIT BREAKER & EXIT ---
     if (finalVerifiedFiles.length === 0) {
         console.error("\n🛑 Circuit Breaker Tripped: AI could not self-heal after 3 attempts.");
-        fs.writeFileSync('CRITIC_FAILED.md', `🚨 **System Halted.**\nFailed to pass Critic after ${MAX_ATTEMPTS} attempts.\n\nFinal Feedback:\n${feedback}`);
+        fs.writeFileSync('CRITIC_FAILED.md', `🚨 **System Halted.**\nFailed to pass Eval/Critic after ${MAX_ATTEMPTS} attempts.\n\nFinal Feedback:\n${feedback}`);
         process.exit(1);
     }
     
