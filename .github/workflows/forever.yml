@@ -44,21 +44,31 @@ jobs:
       - name: 🗺️ Map Global State
         run: repomix --output repomix-output.txt
 
-      - name: 🔀 Route Event Context
+      - name: 🔀 Route Event Context (Multi-line Safe)
         id: context
+        env:
+          BODY_ISSUE: ${{ github.event.issue.body }}
+          BODY_COMMENT: ${{ github.event.comment.body }}
+          BODY_REVIEW: ${{ github.event.review.body }}
         run: |
           if [ "${{ github.event_name }}" == "issue_comment" ]; then
-            echo "ISSUE_BODY=${{ github.event.comment.body }}" >> $GITHUB_ENV
             echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
             echo "ISSUE_TITLE=${{ github.event.issue.title }} (Revision)" >> $GITHUB_ENV
+            echo "ISSUE_BODY<<EOF" >> $GITHUB_ENV
+            echo "$BODY_COMMENT" >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
           elif [ "${{ github.event_name }}" == "pull_request_review" ]; then
-            echo "ISSUE_BODY=${{ github.event.review.body }}" >> $GITHUB_ENV
             echo "ISSUE_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
             echo "ISSUE_TITLE=${{ github.event.pull_request.title }} (PR Feedback)" >> $GITHUB_ENV
+            echo "ISSUE_BODY<<EOF" >> $GITHUB_ENV
+            echo "$BODY_REVIEW" >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
           else
-            echo "ISSUE_BODY=${{ github.event.issue.body }}" >> $GITHUB_ENV
             echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
             echo "ISSUE_TITLE=${{ github.event.issue.title }}" >> $GITHUB_ENV
+            echo "ISSUE_BODY<<EOF" >> $GITHUB_ENV
+            echo "$BODY_ISSUE" >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
           fi
 
       - name: 🧠 Fire AI Inference Ratchet (agent.ts)
@@ -85,7 +95,7 @@ jobs:
           git repack --write-midx=incremental
           
           # Edge deployment execution block via Wrangler CLI
-          if [ ! -z "$CLRE_API_TOKEN" ]; then
+          if [ ! -z "$CLOUDFLARE_API_TOKEN" ]; then
             PREVIEW_URL=$(bunx wrangler pages deploy . --project-name="vibe-engine-os" --branch="vibe/issue-${{ env.ISSUE_NUMBER }}" | grep "Take a peek" | awk '{print $4}')
             echo "PREVIEW_URL=$PREVIEW_URL" >> $GITHUB_ENV
           else
