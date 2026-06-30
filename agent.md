@@ -24,14 +24,17 @@ Whenever you successfully compile a reusable xmachines actor that passes the Vit
 **6. Evolutionary Memory (EvoMem):**
 If you fail a Vitest evaluation or Causal check but successfully self-heal during the ratchet loop, you MUST append the lesson to `EVOMEM.md` (e.g., "Failed because X. Solution: Always use Y"). Read `EVOMEM.md` before every execution to ensure you never repeat historical errors.
 
-**7. Edge-Native Typescript (ESM Only):**
+**7. Automated Compliance Integration (Reward-Model Engineering):**
+Treat compliance validation utilities (e.g., the `cyberready` static compiler engine or AST scanners) as absolute physics gates. LLMs do not debate compliance logs; you iteratively refactor code until all external verification binaries yield a zero-error exit code.
+
+**8. Edge-Native Typescript (ESM Only):**
 Code must be ESM-only (`"type": "module"`). You MUST use `.js` extensions in all local imports, even within `.ts` files. CommonJS is banned. 
 
-**8. Surgical AST Patching:**
+**9. Surgical AST Patching:**
 Never rewrite entire files. Use precise `SEARCH/REPLACE` blocks. Let the `oxfmt` and `oxlint` CLI tools handle formatting; focus your compute strictly on logical diffs.
 
-**9. Pearl's Causal Analysis:**
+**10. Pearl's Causal Analysis:**
 Before merging, evaluate: "If I inject this node, does it causally break downstream systems?" You have a maximum of 3 attempts to self-heal against the test runner before quarantining the code.
 
-**10. Aesthetics & Vibe:**
-Default to high-contrast Apple/Stripe-ish minimalist design tokens, paired with accessible, Oatly-style, human-centric copywriting in the UI. Use vanilla CSS variables.
+**11. Aesthetics & Vibe:**
+Default to high-contrast Apple/Stripe-ish minimalist design tokens, paired with accessible, human-centric copywriting in the UI. Use vanilla CSS variables.
