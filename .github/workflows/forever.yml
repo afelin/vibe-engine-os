@@ -36,11 +36,6 @@ jobs:
       - name: 📦 Install System Utilities (Cached)
         run: bun install -g repomix typescript vitest wrangler
 
-      - name: ⚙️ Optimize Git for Autonomous Scale (Git 2.55+)
-        run: |
-          git config --global core.fsmonitor true
-          git config --global repack.writeBitmaps true
-
       - name: 🗺️ Map Global State
         run: repomix --output repomix-output.txt
 
@@ -91,13 +86,20 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          # Compress repository pack metrics using Git 2.55 incremental chaining
-          git repack --write-midx=incremental
-          
-          # Edge deployment execution block via Wrangler CLI
+          # Safe Edge deployment execution block via Wrangler CLI
           if [ ! -z "$CLOUDFLARE_API_TOKEN" ]; then
-            PREVIEW_URL=$(bunx wrangler pages deploy . --project-name="vibe-engine-os" --branch="vibe/issue-${{ env.ISSUE_NUMBER }}" | grep "Take a peek" | awk '{print $4}')
-            echo "PREVIEW_URL=$PREVIEW_URL" >> $GITHUB_ENV
+            # We add '|| true' so a Cloudflare failure doesn't crash the PR handoff
+            OUTPUT=$(bunx wrangler pages deploy . --project-name="vibe-engine-os" --branch="vibe/issue-${{ env.ISSUE_NUMBER }}" 2>&1) || true
+            
+            # Extract the preview URL safely
+            PREVIEW_URL=$(echo "$OUTPUT" | grep -oE "https://[a-zA-Z0-9.-]+\.pages\.dev" | head -1)
+            
+            if [ -z "$PREVIEW_URL" ]; then
+              echo "PREVIEW_URL=https://cloudflare-deployment-failed.local" >> $GITHUB_ENV
+              echo "⚠️ Cloudflare deploy failed. Ensure the project 'vibe-engine-os' is created in your CF Dashboard."
+            else
+              echo "PREVIEW_URL=$PREVIEW_URL" >> $GITHUB_ENV
+            fi
           else
             echo "PREVIEW_URL=https://cloudflare-preview-not-configured.local" >> $GITHUB_ENV
           fi
