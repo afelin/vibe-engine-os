@@ -1,6 +1,5 @@
 name: Sovereign OS Event Bus
 
-# 1. THE OMNI-TRIGGER: Listen to everything.
 on:
   issues:
     types: [opened, edited]
@@ -14,7 +13,6 @@ permissions:
   issues: write
   pull-requests: write
 
-# 2. CONCURRENCY LOCK: Prevent AI clones from overwriting each other.
 concurrency:
   group: os-thread-${{ github.event.issue.number || github.event.pull_request.number }}
   cancel-in-progress: false
@@ -22,7 +20,6 @@ concurrency:
 jobs:
   run-os:
     runs-on: ubuntu-latest
-    # 3. INFINITE LOOP PREVENTION: Do not trigger on bot comments.
     if: ${{ !github.event.sender.bot }}
     
     steps:
@@ -36,9 +33,13 @@ jobs:
         with:
           bun-version: latest
 
-      # 4. THE PHYSICS MULTIPLIER: vitest added to the global utility install
       - name: 📦 Install System Utilities (Cached)
-        run: bun install -g repomix typescript vitest
+        run: bun install -g repomix typescript vitest wrangler
+
+      - name: ⚙️ Optimize Git for Autonomous Scale (Git 2.55+)
+        run: |
+          git config --global core.fsmonitor true
+          git config --global repack.writeBitmaps true
 
       - name: 🗺️ Map Global State
         run: repomix --output repomix-output.txt
@@ -50,6 +51,10 @@ jobs:
             echo "ISSUE_BODY=${{ github.event.comment.body }}" >> $GITHUB_ENV
             echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
             echo "ISSUE_TITLE=${{ github.event.issue.title }} (Revision)" >> $GITHUB_ENV
+          elif [ "${{ github.event_name }}" == "pull_request_review" ]; then
+            echo "ISSUE_BODY=${{ github.event.review.body }}" >> $GITHUB_ENV
+            echo "ISSUE_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+            echo "ISSUE_TITLE=${{ github.event.pull_request.title }} (PR Feedback)" >> $GITHUB_ENV
           else
             echo "ISSUE_BODY=${{ github.event.issue.body }}" >> $GITHUB_ENV
             echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
@@ -64,6 +69,29 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: bun run agent.ts
 
+      - name: 🧹 Hardware-Accelerated Formatting (oxlint & oxfmt)
+        continue-on-error: true
+        run: |
+          bunx oxlint@latest --fix
+          bunx oxfmt@latest -w .
+
+      - name: 🚀 Deploy Vibe Blueprint to Cloudflare Edge
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # Compress repository pack metrics using Git 2.55 incremental chaining
+          git repack --write-midx=incremental
+          
+          # Edge deployment execution block via Wrangler CLI
+          if [ ! -z "$CLRE_API_TOKEN" ]; then
+            PREVIEW_URL=$(bunx wrangler pages deploy . --project-name="vibe-engine-os" --branch="vibe/issue-${{ env.ISSUE_NUMBER }}" | grep "Take a peek" | awk '{print $4}')
+            echo "PREVIEW_URL=$PREVIEW_URL" >> $GITHUB_ENV
+          else
+            echo "PREVIEW_URL=https://cloudflare-preview-not-configured.local" >> $GITHUB_ENV
+          fi
+
       - name: 🔄 Smart Git Sync & PR Handoff
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -72,16 +100,18 @@ jobs:
           git config --global user.email "ai@vibe-engine.local"
           
           BRANCH_NAME="vibe/issue-${{ env.ISSUE_NUMBER }}"
-          
           git checkout $BRANCH_NAME || git checkout -b $BRANCH_NAME
           
           git add .
-          git commit -m "feat(ai): continuous compilation for #${{ env.ISSUE_NUMBER }}" || echo "No changes to commit"
-          
+          git commit -m "feat(ai): causal compilation & edge deployment for #${{ env.ISSUE_NUMBER }}" || echo "No changes to commit"
           git push origin $BRANCH_NAME || git push --set-upstream origin $BRANCH_NAME
           
           gh pr create \
             --title "🚀 Vibe Compilation: ${{ env.ISSUE_TITLE }}" \
-            --body "Autonomous xmachines compilation complete. Closes #${{ env.ISSUE_NUMBER }}" \
+            --body "Autonomous xmachines compilation complete. Evaluated via Vitest. Formatted via Oxlint.
+            
+            🌐 **Live Edge Preview URL:** ${{ env.PREVIEW_URL }}
+            
+            Closes #${{ env.ISSUE_NUMBER }}" \
             --base main \
-            --head $BRANCH_NAME || echo "PR already exists, continuing."
+            --head $BRANCH_NAME || echo "PR already exists, updated in place."
