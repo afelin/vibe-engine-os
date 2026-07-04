@@ -1,5 +1,8 @@
 {
   "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "test": "vitest run",
     "check": "tsc --noEmit && vitest run",
@@ -15,6 +18,7 @@
     "xstate": "latest"
   },
   "devDependencies": {
-    "@types/node": "^26.1.0"
+    "@types/node": "^26.1.0",
+    "tsx": "^4.23.0"
   }
 }
