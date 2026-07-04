@@ -1,0 +1,19 @@
+{
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "check": "tsc --noEmit && vitest run",
+    "smoke": "bash runs/smoke.sh",
+    "local-issue": "bash runs/local-issue.sh"
+  },
+  "dependencies": {
+    "@xmachines/play-catalog": "latest",
+    "@xmachines/play-signals": "latest",
+    "typescript": "latest",
+    "vitest": "latest",
+    "xstate": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.0"
+  }
+}

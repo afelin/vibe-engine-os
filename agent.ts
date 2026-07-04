@@ -1,6 +1,13 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
+import { renderRollbackInstructions, writeRunManifest } from './src/run/manifest.js';
+
+process.on("uncaughtException", (error: Error) => {
+    console.error("Fatal uncaught exception:", error.message);
+    if (error.stack) console.error(error.stack);
+    process.exit(1);
+});
 
 // --- 1. SETUP & SECRETS ---
 const GH_MODELS_TOKEN = process.env.GH_MODELS_TOKEN!;
@@ -40,7 +47,8 @@ async function runOS() {
     console.log(`\n🚀 Booting Vibe Engine OS for Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}`);
     
     // 1. Load System Memory
-    const constitution = fs.readFileSync('AGENTS.md', 'utf8');
+    const constitutionPath = fs.existsSync("AGENTS.md") ? "AGENTS.md" : "agent.md";
+    const constitution = fs.readFileSync(constitutionPath, 'utf8');
     let repoContext = "Repository is currently empty.";
     if (fs.existsSync('repomix-output.txt')) repoContext = fs.readFileSync('repomix-output.txt', 'utf8');
 
@@ -195,6 +203,25 @@ async function runOS() {
         process.exit(1);
     }
 
+    const runId = `issue-${ISSUE_NUMBER}-${new Date().toISOString().replace(/[:.]/g, "-")}`;
+    const branchName = getGitValue("git branch --show-current", "unknown-branch");
+    const baseSha = getGitValue("git rev-parse HEAD", "unknown-sha");
+    const manifest = {
+        runId,
+        issueNumber: ISSUE_NUMBER,
+        issueTitle: ISSUE_TITLE,
+        branchName,
+        baseSha,
+        generatedFiles: finalVerifiedFiles.map((file) => file.path),
+        createdAt: new Date().toISOString(),
+    };
+    writeRunManifest(".", manifest);
+    fs.writeFileSync(
+        path.join(".runs", runId, "ROLLBACK.md"),
+        renderRollbackInstructions(manifest),
+    );
+    console.log(`🧭 Run manifest recorded: .runs/${runId}/manifest.json`);
+
     // Extract Skills automatically for passing xmachines actors
     for (const file of finalVerifiedFiles) {
         if (file.path.includes('src/') && !file.path.includes('.test.ts')) {
@@ -209,4 +236,16 @@ async function runOS() {
     console.log("🎯 Handoff Complete. Engine spinning down.");
 }
 
-runOS().catch(console.error);
+function getGitValue(command: string, fallback: string) {
+    try {
+        return execSync(command, { stdio: "pipe" }).toString().trim() || fallback;
+    } catch {
+        return fallback;
+    }
+}
+
+runOS().catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Fatal OS run failure:", message);
+    process.exit(1);
+});
