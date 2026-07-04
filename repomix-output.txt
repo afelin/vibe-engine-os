@@ -1,0 +1,4818 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.github/
+  workflows/
+    forever.yml
+docs/
+  superpowers/
+    plans/
+      2026-07-04-karpathy-recursive-vibe-engine-os.md
+      2026-07-04-v0-v3-production-roadmap.md
+runs/
+  local-issue.sh
+  operator-smoke.sh
+  smoke.sh
+src/
+  operator/
+    cockpit.test.ts
+    cockpit.ts
+    commands.test.ts
+    commands.ts
+    events.test.ts
+    events.ts
+    github-comment-router.test.ts
+    github-comment-router.ts
+  os/
+    event-ledger.test.ts
+    event-ledger.ts
+    events.ts
+    machine.test.ts
+    machine.ts
+  planning/
+    dag.test.ts
+    dag.ts
+  publishing/
+    github-comments.test.ts
+    github-comments.ts
+  run/
+    manifest.test.ts
+    manifest.ts
+    rollback.test.ts
+    rollback.ts
+  verification/
+    pipeline.test.ts
+    pipeline.ts
+    validators.test.ts
+    validators.ts
+  agent-entrypoint.test.ts
+  index.test.ts
+  index.ts
+.gitignore
+.nvmrc
+agent.md
+agent.ts
+package.json
+README.md
+tsconfig.json
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="docs/superpowers/plans/2026-07-04-karpathy-recursive-vibe-engine-os.md">
+# Karpathy Recursive Vibe Engine OS Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Turn `vibe-engine-os` from a single autonomous script into a production-grade, low-maintenance, no-code-friendly recursive software delivery runtime.
+
+**Architecture:** xmachines/XState owns authority, LLMs propose bounded artifacts, deterministic validators decide promotion, Pearl-style causal measurement determines which interventions improve the system, and Cloudflare/GitHub/Oracle provide the operator and execution planes. The system should feel like the nanochat of autonomous software delivery: tiny core, complete loop, one complexity dial, ruthless metrics, repeatable scripts, and a living wiki generated from reality.
+
+**Tech Stack:** TypeScript ESM, Vitest, XState, `@xmachines/play-*`, GitHub Actions, Cloudflare Workers/D1/Queues/Pages, Oracle Free Tier runner, append-only JSONL stores, generated Markdown docs.
+
+---
+
+## Summary
+
+The production goal is not a bigger agent. It is a learning runtime around agents.
+
+Use this mental model:
+
+```text
+No-code user = intent author
+LLM = proposal generator
+xmachines = execution law
+validators = compiler/evals
+LCM-style memory = durable context substrate
+Pearl = causal measurement
+Agent Lightning-style traces = optimization data
+nanochat = taste profile for simplicity, one dial, loops, and scoreboards
+Cloudflare/GitHub = operator interface
+Oracle = execution substrate
+```
+
+The covenant is: recursive intelligence inside a constitutional cage. The system may improve prompts, retrieval policy, validator ordering, model routing, approval thresholds, generated templates, and reusable actor patterns. It may not self-modify deployment credentials, workflow permissions, protected-file policy, security validators, approval gates, or rollback logic.
+
+## Architecture DAG
+
+```mermaid
+flowchart TD
+  A["GitHub issue/comment/review"] --> B["Cloudflare event intake"]
+  B --> C["Event normalization + idempotency key"]
+  C --> D["D1 status projection"]
+  C --> E["Queue job"]
+  E --> F["Oracle runner pulls job"]
+  F --> G["xmachines OS actor"]
+  G --> H["LCM-style preflight retrieval"]
+  H --> I["Planner actor"]
+  I --> J["Typed execution DAG"]
+  J --> K["Risk classifier"]
+  K --> L{"Requires human approval?"}
+  L -- yes --> M["GitHub cockpit comment/label"]
+  M --> G
+  L -- no --> N["Patch generator"]
+  N --> O["Sandbox writer"]
+  O --> P["Deterministic validators"]
+  P --> Q{"Green?"}
+  Q -- no --> R["Failure classifier"]
+  R --> S["Structured EvoMem + causal trace"]
+  S --> H
+  Q -- yes --> T["Promotion pipeline"]
+  T --> U["PR/deploy/comment publisher"]
+  U --> V["Scorecard update"]
+  V --> D
+  V --> W["Generated wiki"]
+```
+
+## Key Design Decisions
+
+- **Karpathy/nanochat principle:** expose one no-code complexity dial and derive the rest. Use `vibe depth`:
+  - `0`: explain only
+  - `1`: plan only
+  - `2`: safe generated files only
+  - `3`: tests plus implementation
+  - `4`: deploy preview
+  - `5`: protected-file changes with explicit approval
+- **Ilya principle:** do not rely on scaling, huge prompts, or retries as the main improvement path. Make every run a research event and improve generalization from small, high-quality local traces.
+- **Pearl principle:** every architecture change is an intervention with measurable causal effect. Track whether each intervention improves first-pass success, retry count, rollback rate, cost, and time-to-green.
+- **LCM principle:** memory is not vibes. Store raw events immutably, summarize into a DAG, and preserve lossless pointers back to original tool outputs, prompts, plans, patches, and validator results.
+- **Agent Lightning principle:** trace prompts, tool calls, rewards, validators, and resources as spans so prompt templates, model routing, and policies can be optimized later.
+- **Helios principle:** support long-running loops, remote execution, sleep/wake triggers, metric tracking, experiment comparison, and resumable sessions.
+- **HyperAgents principle:** use meta-agent self-improvement only offline. Candidate prompt/policy changes must win deterministic benchmarks before promotion.
+
+## Implementation Plan
+
+### Task 1: Split The Monolith Into Stable Runtime Boundaries
+
+**Files:**
+- Modify: `agent.ts`
+- Create: `src/os/events.ts`
+- Create: `src/os/context.ts`
+- Create: `src/os/run.ts`
+- Create: `src/llm/router.ts`
+- Create: `src/publishing/github.ts`
+- Test: `src/os/run.test.ts`
+
+- [ ] **Step 1: Create event and context types**
+
+```ts
+export type RiskLevel = "low" | "medium" | "high";
+
+export type OSEvent =
+  | { type: "os.received"; source: "github" | "cloudflare"; payload: unknown }
+  | { type: "os.preflight.completed"; findings: PreflightFinding[] }
+  | { type: "plan.created"; dag: ExecutionDag }
+  | { type: "approval.required"; reason: string; risk: RiskLevel }
+  | { type: "approval.granted"; actor: string }
+  | { type: "patch.generated"; files: GeneratedFile[] }
+  | { type: "verification.passed"; results: VerificationResult[] }
+  | { type: "verification.failed"; failure: ClassifiedFailure }
+  | { type: "publish.completed"; prUrl?: string; previewUrl?: string }
+  | { type: "learning.recorded"; lessonIds: string[] };
+
+export type PreflightFinding = {
+  kind: "memory" | "repo" | "dependency" | "policy";
+  summary: string;
+  confidence: number;
+};
+
+export type GeneratedFile = {
+  path: string;
+  content: string;
+};
+
+export type VerificationResult = {
+  name: string;
+  passed: boolean;
+  output: string;
+};
+
+export type FailureClass =
+  | "compile"
+  | "test"
+  | "dependency"
+  | "api_drift"
+  | "permission"
+  | "cloud_deploy"
+  | "model_output"
+  | "invariant"
+  | "operator_intent";
+
+export type ClassifiedFailure = {
+  failureClass: FailureClass;
+  symptom: string;
+  output: string;
+};
+
+export type OSContext = {
+  issueNumber: string;
+  issueTitle: string;
+  issueBody: string;
+  attempts: number;
+  maxAttempts: number;
+  vibeDepth: 0 | 1 | 2 | 3 | 4 | 5;
+  findings: PreflightFinding[];
+  dag?: ExecutionDag;
+  generatedFiles: GeneratedFile[];
+  verificationResults: VerificationResult[];
+  failures: ClassifiedFailure[];
+};
+
+export type DagNodeKind =
+  | "research"
+  | "edit"
+  | "test"
+  | "verify"
+  | "publish"
+  | "learn";
+
+export type ExecutionDagNode = {
+  id: string;
+  title: string;
+  kind: DagNodeKind;
+  dependsOn: string[];
+  risk: RiskLevel;
+  files: string[];
+  acceptance: string[];
+};
+
+export type ExecutionDag = {
+  issueNumber: string;
+  title: string;
+  nodes: ExecutionDagNode[];
+};
+```
+
+- [ ] **Step 2: Move provider calls into `src/llm/router.ts`**
+
+```ts
+export async function callOpenAIFormat(
+  baseUrl: string,
+  apiKey: string,
+  model: string,
+  system: string,
+  user: string,
+  jsonMode = false,
+) {
+  const payload: Record<string, unknown> = {
+    model,
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ],
+  };
+
+  if (jsonMode) payload.response_format = { type: "json_object" };
+
+  const res = await fetch(`${baseUrl}/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new Error(`API Error from ${baseUrl}: ${res.statusText}`);
+  }
+
+  const data = (await res.json()) as {
+    choices: Array<{ message: { content: string } }>;
+  };
+
+  return data.choices[0]?.message.content ?? "";
+}
+
+export async function callGemini(
+  apiKey: string,
+  system: string,
+  user: string,
+) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  const payload = {
+    system_instruction: { parts: { text: system } },
+    contents: [{ parts: [{ text: user }] }],
+  };
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Gemini API Error: ${res.statusText}`);
+  }
+
+  const data = (await res.json()) as {
+    candidates?: Array<{ content: { parts: Array<{ text: string }> } }>;
+  };
+
+  return data.candidates?.[0]?.content.parts[0]?.text ?? "";
+}
+```
+
+- [ ] **Step 3: Keep `agent.ts` as thin entrypoint**
+
+```ts
+import { runOS } from "./src/os/run.js";
+
+process.on("uncaughtException", (error: Error) => {
+  console.error("Fatal uncaught exception:", error.message);
+  if (error.stack) console.error(error.stack);
+  process.exit(1);
+});
+
+runOS().catch((error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error);
+  console.error("Fatal OS run failure:", message);
+  process.exit(1);
+});
+```
+
+- [ ] **Step 4: Add baseline run test**
+
+```ts
+import { describe, expect, it } from "vitest";
+
+describe("OS runtime boundary", () => {
+  it("keeps agent.ts thin by exporting runOS from src/os/run.js", async () => {
+    const runtime = await import("./run.js");
+    expect(typeof runtime.runOS).toBe("function");
+  });
+});
+```
+
+- [ ] **Step 5: Verify**
+
+Run:
+
+```bash
+npm test
+npx tsc --noEmit
+```
+
+Expected: all tests pass and TypeScript exits with code 0.
+
+### Task 2: Add xmachines/XState Authority
+
+**Files:**
+- Modify: `package.json`
+- Create: `src/os/machine.ts`
+- Test: `src/os/machine.test.ts`
+
+- [ ] **Step 1: Add dependency**
+
+Add `@xmachines/play-xstate` to dependencies.
+
+```json
+"@xmachines/play-xstate": "latest"
+```
+
+- [ ] **Step 2: Define the OS machine**
+
+```ts
+import { assign, setup } from "xstate";
+import type { OSContext, OSEvent } from "./events.js";
+
+export const createInitialOSContext = (): OSContext => ({
+  issueNumber: process.env.ISSUE_NUMBER || "000",
+  issueTitle: process.env.ISSUE_TITLE || "Vibe Request",
+  issueBody: process.env.ISSUE_BODY || "No details provided.",
+  attempts: 0,
+  maxAttempts: 3,
+  vibeDepth: 1,
+  findings: [],
+  generatedFiles: [],
+  verificationResults: [],
+  failures: [],
+});
+
+export const osMachine = setup({
+  types: {
+    context: {} as OSContext,
+    events: {} as OSEvent,
+  },
+}).createMachine({
+  id: "vibe-engine-os",
+  initial: "received",
+  context: createInitialOSContext(),
+  states: {
+    received: { on: { "os.preflight.completed": "preflight" } },
+    preflight: {
+      on: {
+        "plan.created": {
+          target: "planning",
+          actions: assign({ dag: ({ event }) => event.dag }),
+        },
+      },
+    },
+    planning: {
+      on: {
+        "approval.required": "awaiting_approval",
+        "patch.generated": {
+          target: "generating_patch",
+          actions: assign({ generatedFiles: ({ event }) => event.files }),
+        },
+      },
+    },
+    awaiting_approval: {
+      on: {
+        "approval.granted": "generating_patch",
+      },
+    },
+    generating_patch: {
+      on: {
+        "verification.passed": {
+          target: "publishing",
+          actions: assign({
+            verificationResults: ({ event }) => event.results,
+          }),
+        },
+        "verification.failed": {
+          target: "learning",
+          actions: assign({
+            failures: ({ context, event }) => [
+              ...context.failures,
+              event.failure,
+            ],
+          }),
+        },
+      },
+    },
+    learning: {
+      on: {
+        "learning.recorded": "preflight",
+      },
+    },
+    publishing: {
+      on: {
+        "publish.completed": "completed",
+      },
+    },
+    failed: { type: "final" },
+    completed: { type: "final" },
+  },
+});
+```
+
+- [ ] **Step 3: Add transition tests**
+
+```ts
+import { createActor } from "xstate";
+import { describe, expect, it } from "vitest";
+import { osMachine } from "./machine.js";
+
+describe("vibe-engine-os machine", () => {
+  it("pauses for human approval when a high-risk plan requires it", () => {
+    const actor = createActor(osMachine).start();
+
+    actor.send({
+      type: "os.preflight.completed",
+      findings: [],
+    });
+
+    actor.send({
+      type: "plan.created",
+      dag: {
+        issueNumber: "1",
+        title: "Workflow edit",
+        nodes: [
+          {
+            id: "edit-workflow",
+            title: "Edit workflow",
+            kind: "edit",
+            dependsOn: [],
+            risk: "high",
+            files: [".github/workflows/forever.yml"],
+            acceptance: ["workflow parses"],
+          },
+        ],
+      },
+    });
+
+    actor.send({
+      type: "approval.required",
+      reason: "Protected workflow edit",
+      risk: "high",
+    });
+
+    expect(actor.getSnapshot().value).toBe("awaiting_approval");
+  });
+
+  it("records failed verification and moves to learning", () => {
+    const actor = createActor(osMachine).start();
+
+    actor.send({ type: "os.preflight.completed", findings: [] });
+    actor.send({
+      type: "plan.created",
+      dag: { issueNumber: "1", title: "Test", nodes: [] },
+    });
+    actor.send({ type: "patch.generated", files: [] });
+    actor.send({
+      type: "verification.failed",
+      failure: {
+        failureClass: "compile",
+        symptom: "Missing .js import extension",
+        output: "TS2835",
+      },
+    });
+
+    expect(actor.getSnapshot().value).toBe("learning");
+    expect(actor.getSnapshot().context.failures).toHaveLength(1);
+  });
+});
+```
+
+- [ ] **Step 4: Verify**
+
+Run:
+
+```bash
+npm test
+npx tsc --noEmit
+```
+
+Expected: all tests pass and TypeScript exits with code 0.
+
+### Task 3: Add DAG-First Planning
+
+**Files:**
+- Create: `src/planning/dag.ts`
+- Test: `src/planning/dag.test.ts`
+
+- [ ] **Step 1: Implement DAG validators**
+
+```ts
+import type { ExecutionDag, ExecutionDagNode } from "../os/events.js";
+
+export function validateDag(dag: ExecutionDag): string[] {
+  const errors: string[] = [];
+  const ids = new Set(dag.nodes.map((node) => node.id));
+
+  for (const node of dag.nodes) {
+    for (const dependency of node.dependsOn) {
+      if (!ids.has(dependency)) {
+        errors.push(`Node ${node.id} depends on missing node ${dependency}`);
+      }
+    }
+  }
+
+  if (hasCycle(dag.nodes)) {
+    errors.push("DAG contains a dependency cycle");
+  }
+
+  return errors;
+}
+
+export function topologicalSort(nodes: ExecutionDagNode[]) {
+  const remaining = new Map(nodes.map((node) => [node.id, node]));
+  const completed = new Set<string>();
+  const sorted: ExecutionDagNode[] = [];
+
+  while (remaining.size > 0) {
+    const ready = [...remaining.values()].filter((node) =>
+      node.dependsOn.every((dependency) => completed.has(dependency)),
+    );
+
+    if (ready.length === 0) {
+      throw new Error("Cannot sort cyclic DAG");
+    }
+
+    for (const node of ready) {
+      sorted.push(node);
+      completed.add(node.id);
+      remaining.delete(node.id);
+    }
+  }
+
+  return sorted;
+}
+
+export function riskForFiles(files: string[]) {
+  if (files.some((file) => file.startsWith(".github/"))) return "high";
+  if (files.some((file) => file === "package.json" || file.endsWith(".lock"))) {
+    return "medium";
+  }
+  return "low";
+}
+
+function hasCycle(nodes: ExecutionDagNode[]) {
+  try {
+    topologicalSort(nodes);
+    return false;
+  } catch {
+    return true;
+  }
+}
+```
+
+- [ ] **Step 2: Test DAG behavior**
+
+```ts
+import { describe, expect, it } from "vitest";
+import { riskForFiles, topologicalSort, validateDag } from "./dag.js";
+
+describe("execution DAG", () => {
+  it("rejects missing dependencies", () => {
+    const errors = validateDag({
+      issueNumber: "1",
+      title: "Bad DAG",
+      nodes: [
+        {
+          id: "test",
+          title: "Run tests",
+          kind: "test",
+          dependsOn: ["missing"],
+          risk: "low",
+          files: [],
+          acceptance: ["tests pass"],
+        },
+      ],
+    });
+
+    expect(errors).toContain("Node test depends on missing node missing");
+  });
+
+  it("sorts nodes topologically", () => {
+    const sorted = topologicalSort([
+      {
+        id: "test",
+        title: "Run tests",
+        kind: "test",
+        dependsOn: ["edit"],
+        risk: "low",
+        files: [],
+        acceptance: ["tests pass"],
+      },
+      {
+        id: "edit",
+        title: "Edit code",
+        kind: "edit",
+        dependsOn: [],
+        risk: "low",
+        files: ["src/index.ts"],
+        acceptance: ["file changed"],
+      },
+    ]);
+
+    expect(sorted.map((node) => node.id)).toEqual(["edit", "test"]);
+  });
+
+  it("marks workflow edits high risk", () => {
+    expect(riskForFiles([".github/workflows/forever.yml"])).toBe("high");
+  });
+});
+```
+
+- [ ] **Step 3: Verify**
+
+Run:
+
+```bash
+npm test
+npx tsc --noEmit
+```
+
+Expected: all tests pass and TypeScript exits with code 0.
+
+### Task 4: Add LCM-Style Memory And Structured EvoMem
+
+**Files:**
+- Create: `src/memory/evomem.ts`
+- Create: `src/memory/lcm-store.ts`
+- Create: `src/memory/retrieval.ts`
+- Test: `src/memory/evomem.test.ts`
+- Generated runtime dirs: `.memory/raw/`, `.memory/summaries/`, `.memory/dag/`, `.evomem/events/`, `.evomem/lessons/`, `.evomem/scorecards/`
+
+- [ ] **Step 1: Define structured lesson type and writer**
+
+```ts
+import * as fs from "fs";
+import * as path from "path";
+import type { FailureClass } from "../os/events.js";
+
+export type EvoLesson = {
+  id: string;
+  failureClass: FailureClass;
+  symptom: string;
+  rootCause: string;
+  fix: string;
+  detector: string;
+  confidence: number;
+  reuseWhen: string[];
+  createdAt: string;
+};
+
+export function appendLesson(rootDir: string, lesson: EvoLesson) {
+  const lessonsDir = path.join(rootDir, ".evomem", "lessons");
+  const eventsDir = path.join(rootDir, ".evomem", "events");
+  fs.mkdirSync(lessonsDir, { recursive: true });
+  fs.mkdirSync(eventsDir, { recursive: true });
+
+  fs.writeFileSync(
+    path.join(lessonsDir, `${lesson.id}.json`),
+    `${JSON.stringify(lesson, null, 2)}\n`,
+  );
+
+  fs.appendFileSync(
+    path.join(eventsDir, `${lesson.createdAt.slice(0, 10)}.jsonl`),
+    `${JSON.stringify({ type: "lesson.recorded", lesson })}\n`,
+  );
+}
+
+export function renderEvoMemMarkdown(lessons: EvoLesson[]) {
+  const lines = ["# EvoMem", ""];
+
+  for (const lesson of lessons) {
+    lines.push(`- **${lesson.failureClass}**: ${lesson.symptom}`);
+    lines.push(`  - Fix: ${lesson.fix}`);
+    lines.push(`  - Detector: ${lesson.detector}`);
+    lines.push(`  - Confidence: ${lesson.confidence}`);
+  }
+
+  return `${lines.join("\n")}\n`;
+}
+```
+
+- [ ] **Step 2: Add LCM raw event append-only store**
+
+```ts
+import * as fs from "fs";
+import * as path from "path";
+
+export type RawMemoryEvent = {
+  id: string;
+  runId: string;
+  kind: "prompt" | "tool" | "validator" | "operator" | "patch" | "publish";
+  content: unknown;
+  createdAt: string;
+};
+
+export function appendRawMemory(rootDir: string, event: RawMemoryEvent) {
+  const rawDir = path.join(rootDir, ".memory", "raw");
+  fs.mkdirSync(rawDir, { recursive: true });
+  fs.appendFileSync(
+    path.join(rawDir, `${event.createdAt.slice(0, 10)}.jsonl`),
+    `${JSON.stringify(event)}\n`,
+  );
+}
+
+export type SummaryNode = {
+  id: string;
+  sourceIds: string[];
+  summary: string;
+  createdAt: string;
+};
+
+export function writeSummaryNode(rootDir: string, node: SummaryNode) {
+  const summaryDir = path.join(rootDir, ".memory", "summaries");
+  fs.mkdirSync(summaryDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(summaryDir, `${node.id}.json`),
+    `${JSON.stringify(node, null, 2)}\n`,
+  );
+}
+```
+
+- [ ] **Step 3: Test structured memory**
+
+```ts
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
+import { describe, expect, it } from "vitest";
+import { appendLesson, renderEvoMemMarkdown } from "./evomem.js";
+
+describe("structured EvoMem", () => {
+  it("writes lessons as json and jsonl events", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "evomem-"));
+
+    appendLesson(root, {
+      id: "lesson_001",
+      failureClass: "compile",
+      symptom: "Missing .js import extension",
+      rootCause: "NodeNext ESM local import used .ts path",
+      fix: "Use .js extension in TypeScript local imports",
+      detector: "esm_import_extension_validator",
+      confidence: 0.95,
+      reuseWhen: ["module=NodeNext"],
+      createdAt: "2026-07-04T00:00:00.000Z",
+    });
+
+    expect(
+      fs.existsSync(path.join(root, ".evomem", "lessons", "lesson_001.json")),
+    ).toBe(true);
+    expect(
+      fs.readFileSync(
+        path.join(root, ".evomem", "events", "2026-07-04.jsonl"),
+        "utf8",
+      ),
+    ).toContain("lesson.recorded");
+  });
+
+  it("renders human-readable markdown from lessons", () => {
+    const markdown = renderEvoMemMarkdown([
+      {
+        id: "lesson_001",
+        failureClass: "compile",
+        symptom: "Missing .js import extension",
+        rootCause: "NodeNext ESM",
+        fix: "Use .js extension",
+        detector: "esm_import_extension_validator",
+        confidence: 0.95,
+        reuseWhen: ["module=NodeNext"],
+        createdAt: "2026-07-04T00:00:00.000Z",
+      },
+    ]);
+
+    expect(markdown).toContain("Missing .js import extension");
+  });
+});
+```
+
+- [ ] **Step 4: Verify**
+
+Run:
+
+```bash
+npm test
+npx tsc --noEmit
+```
+
+Expected: all tests pass and TypeScript exits with code 0.
+
+### Task 5: Add Deterministic Validators And Protected File Policy
+
+**Files:**
+- Create: `src/verification/validators.ts`
+- Test: `src/verification/validators.test.ts`
+
+- [ ] **Step 1: Implement validators**
+
+```ts
+import type { GeneratedFile } from "../os/events.js";
+
+export type ValidatorResult = {
+  name: string;
+  passed: boolean;
+  output: string;
+};
+
+const protectedFiles = [
+  ".github/",
+  ".env",
+  "package.json",
+  "package-lock.json",
+  "bun.lockb",
+];
+
+export function validateGeneratedFiles(files: GeneratedFile[]): ValidatorResult[] {
+  return [
+    validateFileAllowlist(files),
+    validateNoProtectedFiles(files),
+    validateEsmImportExtensions(files),
+  ];
+}
+
+export function validateFileAllowlist(files: GeneratedFile[]): ValidatorResult {
+  const invalid = files.filter(
+    (file) =>
+      !file.path.startsWith("src/") &&
+      !file.path.startsWith("tests/") &&
+      !file.path.startsWith(".planning/") &&
+      !file.path.startsWith(".skills/"),
+  );
+
+  return {
+    name: "file_allowlist",
+    passed: invalid.length === 0,
+    output:
+      invalid.length === 0
+        ? "All files are inside allowed paths"
+        : `Disallowed paths: ${invalid.map((file) => file.path).join(", ")}`,
+  };
+}
+
+export function validateNoProtectedFiles(files: GeneratedFile[]): ValidatorResult {
+  const invalid = files.filter((file) =>
+    protectedFiles.some((protectedPath) => file.path.startsWith(protectedPath)),
+  );
+
+  return {
+    name: "protected_files",
+    passed: invalid.length === 0,
+    output:
+      invalid.length === 0
+        ? "No protected files changed"
+        : `Protected paths require approval: ${invalid
+            .map((file) => file.path)
+            .join(", ")}`,
+  };
+}
+
+export function validateEsmImportExtensions(
+  files: GeneratedFile[],
+): ValidatorResult {
+  const offenders = files.filter(
+    (file) =>
+      file.path.endsWith(".ts") &&
+      /from\s+["']\.{1,2}\/[^"']*(?<!\.js)["']/.test(file.content),
+  );
+
+  return {
+    name: "esm_import_extensions",
+    passed: offenders.length === 0,
+    output:
+      offenders.length === 0
+        ? "Local ESM imports use .js extensions"
+        : `Missing .js import extension in: ${offenders
+            .map((file) => file.path)
+            .join(", ")}`,
+  };
+}
+```
+
+- [ ] **Step 2: Test validators**
+
+```ts
+import { describe, expect, it } from "vitest";
+import {
+  validateEsmImportExtensions,
+  validateFileAllowlist,
+  validateNoProtectedFiles,
+} from "./validators.js";
+
+describe("validators", () => {
+  it("rejects files outside generated-code allowlist", () => {
+    const result = validateFileAllowlist([
+      { path: "README.md", content: "# bad" },
+    ]);
+
+    expect(result.passed).toBe(false);
+  });
+
+  it("rejects protected files", () => {
+    const result = validateNoProtectedFiles([
+      { path: ".github/workflows/forever.yml", content: "name: test" },
+    ]);
+
+    expect(result.passed).toBe(false);
+  });
+
+  it("catches local ESM imports without .js extension", () => {
+    const result = validateEsmImportExtensions([
+      { path: "src/main.ts", content: 'import { x } from "./x";' },
+    ]);
+
+    expect(result.passed).toBe(false);
+  });
+
+  it("accepts local ESM imports with .js extension", () => {
+    const result = validateEsmImportExtensions([
+      { path: "src/main.ts", content: 'import { x } from "./x.js";' },
+    ]);
+
+    expect(result.passed).toBe(true);
+  });
+});
+```
+
+- [ ] **Step 3: Verify**
+
+Run:
+
+```bash
+npm test
+npx tsc --noEmit
+```
+
+Expected: all tests pass and TypeScript exits with code 0.
+
+### Task 6: Add Pearl-Style Research Runtime
+
+**Files:**
+- Create: `src/research/objectives.ts`
+- Create: `src/research/traces.ts`
+- Create: `src/research/interventions.ts`
+- Create: `src/research/scorecard.ts`
+- Test: `src/research/scorecard.test.ts`
+
+- [ ] **Step 1: Define trace span and intervention types**
+
+```ts
+export type TraceSpan = {
+  runId: string;
+  phase: string;
+  promptTemplateId?: string;
+  model?: string;
+  inputContextIds: string[];
+  toolCalls: string[];
+  validatorResults: Array<{ name: string; passed: boolean }>;
+  reward: number;
+  durationMs: number;
+  costEstimateUsd: number;
+  outcome: "passed" | "failed" | "blocked";
+  createdAt: string;
+};
+
+export type InterventionRecord = {
+  id: string;
+  runId: string;
+  intervention: string;
+  targetMetric:
+    | "first_pass_success"
+    | "retry_count"
+    | "rollback_count"
+    | "time_to_green"
+    | "cost_per_green_pr";
+  before?: number;
+  after?: number;
+  confidence?: number;
+  createdAt: string;
+};
+```
+
+- [ ] **Step 2: Implement scorecard reducer**
+
+```ts
+import type { TraceSpan } from "./traces.js";
+
+export type Scorecard = {
+  runs: number;
+  passed: number;
+  failed: number;
+  blocked: number;
+  firstPassSuccessRate: number;
+  averageCostUsd: number;
+};
+
+export function buildScorecard(spans: TraceSpan[]): Scorecard {
+  const terminal = spans.filter((span) =>
+    ["passed", "failed", "blocked"].includes(span.outcome),
+  );
+  const passed = terminal.filter((span) => span.outcome === "passed").length;
+  const failed = terminal.filter((span) => span.outcome === "failed").length;
+  const blocked = terminal.filter((span) => span.outcome === "blocked").length;
+  const totalCost = terminal.reduce(
+    (sum, span) => sum + span.costEstimateUsd,
+    0,
+  );
+
+  return {
+    runs: terminal.length,
+    passed,
+    failed,
+    blocked,
+    firstPassSuccessRate: terminal.length === 0 ? 0 : passed / terminal.length,
+    averageCostUsd: terminal.length === 0 ? 0 : totalCost / terminal.length,
+  };
+}
+```
+
+- [ ] **Step 3: Test scorecard**
+
+```ts
+import { describe, expect, it } from "vitest";
+import { buildScorecard } from "./scorecard.js";
+import type { TraceSpan } from "./traces.js";
+
+describe("research scorecard", () => {
+  it("computes pass rate and average cost", () => {
+    const spans: TraceSpan[] = [
+      {
+        runId: "1",
+        phase: "completed",
+        inputContextIds: [],
+        toolCalls: [],
+        validatorResults: [],
+        reward: 1,
+        durationMs: 100,
+        costEstimateUsd: 0.2,
+        outcome: "passed",
+        createdAt: "2026-07-04T00:00:00.000Z",
+      },
+      {
+        runId: "2",
+        phase: "completed",
+        inputContextIds: [],
+        toolCalls: [],
+        validatorResults: [],
+        reward: 0,
+        durationMs: 100,
+        costEstimateUsd: 0.4,
+        outcome: "failed",
+        createdAt: "2026-07-04T00:00:00.000Z",
+      },
+    ];
+
+    expect(buildScorecard(spans)).toMatchObject({
+      runs: 2,
+      passed: 1,
+      failed: 1,
+      firstPassSuccessRate: 0.5,
+      averageCostUsd: 0.3,
+    });
+  });
+});
+```
+
+- [ ] **Step 4: Verify**
+
+Run:
+
+```bash
+npm test
+npx tsc --noEmit
+```
+
+Expected: all tests pass and TypeScript exits with code 0.
+
+### Task 7: Add No-Code Operator Surface
+
+**Files:**
+- Create: `src/operator/commands.ts`
+- Create: `src/operator/cockpit.ts`
+- Test: `src/operator/commands.test.ts`
+
+- [ ] **Step 1: Parse slash commands**
+
+```ts
+export type OperatorCommand =
+  | { type: "plan" }
+  | { type: "approve" }
+  | { type: "retry" }
+  | { type: "rollback" }
+  | { type: "status" }
+  | { type: "deploy" }
+  | { type: "unknown"; raw: string };
+
+export function parseOperatorCommand(input: string): OperatorCommand {
+  const command = input.trim().split(/\s+/)[0]?.toLowerCase();
+
+  switch (command) {
+    case "/plan":
+      return { type: "plan" };
+    case "/approve":
+      return { type: "approve" };
+    case "/retry":
+      return { type: "retry" };
+    case "/rollback":
+      return { type: "rollback" };
+    case "/status":
+      return { type: "status" };
+    case "/deploy":
+      return { type: "deploy" };
+    default:
+      return { type: "unknown", raw: input };
+  }
+}
+```
+
+- [ ] **Step 2: Generate cockpit comment**
+
+```ts
+import type { OSContext } from "../os/events.js";
+
+export function renderCockpitComment(state: string, context: OSContext) {
+  const changedFiles = context.generatedFiles.map((file) => `- ${file.path}`);
+  const failures = context.failures.map(
+    (failure) => `- ${failure.failureClass}: ${failure.symptom}`,
+  );
+
+  return [
+    "## Vibe Engine OS Cockpit",
+    "",
+    `**State:** ${state}`,
+    `**Issue:** #${context.issueNumber} ${context.issueTitle}`,
+    `**Vibe Depth:** ${context.vibeDepth}`,
+    `**Attempts:** ${context.attempts}/${context.maxAttempts}`,
+    "",
+    "### Changed Files",
+    changedFiles.length > 0 ? changedFiles.join("\n") : "No files generated yet.",
+    "",
+    "### Latest Failures",
+    failures.length > 0 ? failures.join("\n") : "No failures recorded.",
+    "",
+    "### Commands",
+    "`/plan` `/approve` `/retry` `/rollback` `/status` `/deploy`",
+    "",
+  ].join("\n");
+}
+```
+
+- [ ] **Step 3: Test commands**
+
+```ts
+import { describe, expect, it } from "vitest";
+import { parseOperatorCommand } from "./commands.js";
+
+describe("operator commands", () => {
+  it("parses known commands", () => {
+    expect(parseOperatorCommand("/approve")).toEqual({ type: "approve" });
+    expect(parseOperatorCommand("/deploy please")).toEqual({ type: "deploy" });
+  });
+
+  it("marks unknown commands as non-mutating unknowns", () => {
+    expect(parseOperatorCommand("/shipit")).toEqual({
+      type: "unknown",
+      raw: "/shipit",
+    });
+  });
+});
+```
+
+- [ ] **Step 4: Verify**
+
+Run:
+
+```bash
+npm test
+npx tsc --noEmit
+```
+
+Expected: all tests pass and TypeScript exits with code 0.
+
+### Task 8: Add nanochat-Style Runs, Scoreboard, And Generated Wiki
+
+**Files:**
+- Create: `runs/smoke.sh`
+- Create: `runs/local-issue.sh`
+- Create: `runs/replay-run.sh`
+- Create: `src/wiki/generate.ts`
+- Create: `docs/wiki/overview.md`
+- Create: `docs/wiki/operator-guide.md`
+- Create: `docs/wiki/architecture-dag.md`
+- Create: `docs/wiki/scorecard.md`
+- Modify: `package.json`
+- Test: `src/wiki/generate.test.ts`
+
+- [ ] **Step 1: Add scripts**
+
+Add package scripts:
+
+```json
+"check": "tsc --noEmit && vitest run",
+"wiki": "tsx src/wiki/generate.ts",
+"smoke": "bash runs/smoke.sh"
+```
+
+- [ ] **Step 2: Add smoke script**
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+npm test
+npx tsc --noEmit
+```
+
+- [ ] **Step 3: Add local issue script**
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+export ISSUE_NUMBER="${ISSUE_NUMBER:-000}"
+export ISSUE_TITLE="${ISSUE_TITLE:-Local Smoke Issue}"
+export ISSUE_BODY="${ISSUE_BODY:-Run local Vibe Engine smoke path.}"
+
+bun run agent.ts
+```
+
+- [ ] **Step 4: Add generated wiki overview**
+
+`src/wiki/generate.ts` should write Markdown pages from static architecture metadata first, then later include scorecards and memory summaries.
+
+```ts
+import * as fs from "fs";
+import * as path from "path";
+
+const wikiDir = path.join(process.cwd(), "docs", "wiki");
+
+fs.mkdirSync(wikiDir, { recursive: true });
+
+fs.writeFileSync(
+  path.join(wikiDir, "overview.md"),
+  [
+    "# Vibe Engine OS Wiki",
+    "",
+    "Vibe Engine OS is a no-code-friendly autonomous software delivery runtime.",
+    "",
+    "The core loop is: intent -> DAG plan -> bounded patch -> verification -> PR/deploy -> learning.",
+    "",
+  ].join("\n"),
+);
+
+fs.writeFileSync(
+  path.join(wikiDir, "operator-guide.md"),
+  [
+    "# Operator Guide",
+    "",
+    "Use GitHub labels and slash commands to control the system.",
+    "",
+    "- `/plan`: generate a plan without mutation",
+    "- `/approve`: approve a paused high-risk change",
+    "- `/retry`: retry after a recoverable failure",
+    "- `/rollback`: request rollback instructions",
+    "- `/status`: refresh status",
+    "- `/deploy`: request preview deploy",
+    "",
+  ].join("\n"),
+);
+```
+
+- [ ] **Step 5: Verify**
+
+Run:
+
+```bash
+npm run check
+npm run wiki
+test -f docs/wiki/overview.md
+test -f docs/wiki/operator-guide.md
+```
+
+Expected: tests and TypeScript pass, and wiki files exist.
+
+### Task 9: Add Cloudflare And Oracle Adapters Behind Interfaces
+
+**Files:**
+- Create: `src/cloudflare/intake.ts`
+- Create: `src/cloudflare/status.ts`
+- Create: `src/oracle/runner.ts`
+- Test: `src/cloudflare/intake.test.ts`
+- Test: `src/oracle/runner.test.ts`
+
+- [ ] **Step 1: Define Cloudflare intake contract**
+
+```ts
+export type IntakeEvent = {
+  source: "github";
+  eventName: string;
+  deliveryId: string;
+  body: unknown;
+};
+
+export type NormalizedJob = {
+  idempotencyKey: string;
+  source: "github";
+  issueNumber: string;
+  title: string;
+  body: string;
+};
+
+export function normalizeIntakeEvent(event: IntakeEvent): NormalizedJob {
+  const body = event.body as {
+    issue?: { number?: number; title?: string; body?: string };
+    comment?: { body?: string };
+    review?: { body?: string };
+    pull_request?: { number?: number; title?: string };
+  };
+
+  const issueNumber =
+    body.issue?.number?.toString() ??
+    body.pull_request?.number?.toString() ??
+    "000";
+
+  return {
+    idempotencyKey: `${event.eventName}:${event.deliveryId}`,
+    source: "github",
+    issueNumber,
+    title: body.issue?.title ?? body.pull_request?.title ?? "Vibe Request",
+    body: body.comment?.body ?? body.review?.body ?? body.issue?.body ?? "",
+  };
+}
+```
+
+- [ ] **Step 2: Define Oracle runner contract**
+
+```ts
+export type RunnerJob = {
+  id: string;
+  issueNumber: string;
+  title: string;
+  body: string;
+};
+
+export type RunnerResult = {
+  jobId: string;
+  status: "completed" | "failed" | "blocked";
+  summary: string;
+};
+
+export async function runOracleJob(job: RunnerJob): Promise<RunnerResult> {
+  return {
+    jobId: job.id,
+    status: "blocked",
+    summary:
+      "Oracle runner adapter is defined but not connected to a live runner yet.",
+  };
+}
+```
+
+- [ ] **Step 3: Verify**
+
+Run:
+
+```bash
+npm test
+npx tsc --noEmit
+```
+
+Expected: all tests pass and TypeScript exits with code 0.
+
+## Production Acceptance Criteria
+
+- `agent.ts` is a thin entrypoint and all runtime logic lives under `src/`.
+- xmachines/XState owns lifecycle transitions.
+- Every plan is represented as a validated DAG before mutation.
+- Every generated file passes deterministic validators before writing or promotion.
+- Protected paths require explicit approval.
+- Structured memory uses append-only JSONL plus generated Markdown summaries.
+- Research traces and scorecards record improvement over time.
+- No-code users can operate with labels, slash commands, and cockpit comments.
+- The generated wiki reflects actual runtime state and operator commands.
+- Cloudflare and Oracle integration exists behind testable adapters before live credentials are required.
+- `npm run check` passes.
+
+## Rollout Order
+
+1. Split the monolith and add the xmachines/XState lifecycle.
+2. Add DAG planning, validators, and protected-file approval policy.
+3. Add structured EvoMem and LCM-style raw memory.
+4. Add Pearl-style traces, interventions, and scorecards.
+5. Add no-code cockpit comments and slash command parsing.
+6. Add nanochat-style scripts, generated wiki, and scoreboard.
+7. Add Cloudflare intake/status adapters.
+8. Add Oracle runner adapter.
+9. Move heavy execution from GitHub Actions to Oracle while preserving Actions fallback.
+10. Add offline HyperAgents-style prompt/policy tournament only after deterministic benchmarks exist.
+
+## Sources To Keep In The Design Covenant
+
+- Karpathy/nanochat: one complexity dial, complete pipeline, small fast eval loops, leaderboard, repeatable scripts.
+- Karpathy/Software 2.0 and vibe coding: English as interface, but production requires verification and system design.
+- Ilya Sutskever: scaling alone is not enough; future gains require research and better generalization from limited data.
+- Pearl: causal interventions, not ritual accumulation.
+- Volt/LCM: immutable memory store, summary DAG, lossless retrieval, deterministic compaction.
+- Agent Lightning: traces/spans as the substrate for optimization.
+- Helios: overnight loops, remote execution, metrics, sleep/wake, experiment comparison.
+- HyperAgents: meta-improvement as offline research, not direct production self-modification.
+</file>
+
+<file path="runs/operator-smoke.sh">
+#!/usr/bin/env bash
+set -euo pipefail
+
+LEDGER=".runs/operator-events.ndjson"
+TMP_DIR="$(mktemp -d)"
+
+cleanup() {
+  if [ -f "$TMP_DIR/operator-events.ndjson" ]; then
+    mkdir -p .runs
+    cp "$TMP_DIR/operator-events.ndjson" "$LEDGER"
+  else
+    rm -f "$LEDGER"
+    rmdir .runs 2>/dev/null || true
+  fi
+  rm -rf "$TMP_DIR"
+}
+trap cleanup EXIT
+
+if [ -f "$LEDGER" ]; then
+  cp "$LEDGER" "$TMP_DIR/operator-events.ndjson"
+fi
+
+env \
+  GITHUB_EVENT_NAME=issue_comment \
+  ISSUE_NUMBER=101 \
+  ISSUE_TITLE="Local status smoke" \
+  ISSUE_BODY="/status" \
+  GITHUB_ACTOR="local-operator" \
+  GITHUB_COMMENT_ID="local-status-smoke" \
+  npm run local-issue >"$TMP_DIR/status.log"
+
+grep -q "operator.status_requested" "$TMP_DIR/status.log"
+grep -q "Operator comment skipped" "$TMP_DIR/status.log"
+
+env \
+  GITHUB_EVENT_NAME=issue_comment \
+  ISSUE_NUMBER=101 \
+  ISSUE_TITLE="Local rollback smoke" \
+  ISSUE_BODY="/rollback" \
+  GITHUB_ACTOR="local-operator" \
+  GITHUB_COMMENT_ID="local-rollback-smoke" \
+  npm run local-issue >"$TMP_DIR/rollback.log"
+
+grep -q "operator.rollback_requested" "$TMP_DIR/rollback.log"
+grep -q "Operator comment skipped" "$TMP_DIR/rollback.log"
+grep -q "operator.status_requested" "$LEDGER"
+grep -q "operator.rollback_requested" "$LEDGER"
+</file>
+
+<file path="src/operator/cockpit.test.ts">
+import { describe, expect, it } from "vitest";
+import { renderCockpitComment } from "./cockpit.js";
+import type { OSContext } from "../os/events.js";
+
+describe("operator cockpit", () => {
+  it("renders state, files, failures, rollback, and commands", () => {
+    const text = renderCockpitComment("learning", {
+      issueNumber: "7",
+      issueTitle: "Fix compile failure",
+      issueBody: "Please fix it",
+      attempts: 2,
+      maxAttempts: 3,
+      risk: "medium",
+      riskReason: "Package mutation",
+      findings: [],
+      generatedFiles: [{ path: "src/index.ts", content: "export {};" }],
+      verificationResults: [],
+      failures: [
+        {
+          failureClass: "compile",
+          symptom: "Missing .js import extension",
+          output: "TS2835",
+        },
+      ],
+    } satisfies OSContext);
+
+    expect(text).toContain("Vibe Engine OS Cockpit");
+    expect(text).toContain("learning");
+    expect(text).toContain("#7 Fix compile failure");
+    expect(text).toContain("medium");
+    expect(text).toContain("src/index.ts");
+    expect(text).toContain("compile: Missing .js import extension");
+    expect(text).toContain("/approve");
+    expect(text).toContain("/rollback");
+  });
+});
+</file>
+
+<file path="src/operator/cockpit.ts">
+import type { OSContext } from "../os/events.js";
+
+export function renderCockpitComment(state: string, context: OSContext) {
+  return [
+    "## Vibe Engine OS Cockpit",
+    "",
+    `**State:** ${state}`,
+    `**Issue:** #${context.issueNumber} ${context.issueTitle}`,
+    `**Risk:** ${context.risk ?? "unreviewed"}`,
+    context.riskReason ? `**Risk reason:** ${context.riskReason}` : undefined,
+    `**Attempts:** ${context.attempts}/${context.maxAttempts}`,
+    "",
+    "### Changed Files",
+    renderChangedFiles(context),
+    "",
+    "### Latest Failures",
+    renderFailures(context),
+    "",
+    "### Rollback",
+    "Rollback metadata is recorded in `.runs/<runId>/ROLLBACK.md` after a verified generated run.",
+    "",
+    "### Commands",
+    "`/plan` `/approve` `/retry` `/rollback` `/status` `/deploy`",
+    "",
+  ]
+    .filter((line): line is string => line !== undefined)
+    .join("\n");
+}
+
+function renderChangedFiles(context: OSContext) {
+  if (context.generatedFiles.length === 0) return "No generated files yet.";
+  return context.generatedFiles.map((file) => `- ${file.path}`).join("\n");
+}
+
+function renderFailures(context: OSContext) {
+  if (context.failures.length === 0) return "No failures recorded.";
+  return context.failures
+    .map((failure) => `- ${failure.failureClass}: ${failure.symptom}`)
+    .join("\n");
+}
+</file>
+
+<file path="src/operator/commands.test.ts">
+import { describe, expect, it } from "vitest";
+import { parseOperatorCommand } from "./commands.js";
+
+describe("operator commands", () => {
+  it("parses supported slash commands", () => {
+    expect(parseOperatorCommand("/plan")).toEqual({ type: "plan" });
+    expect(parseOperatorCommand("/approve")).toEqual({ type: "approve" });
+    expect(parseOperatorCommand("/retry please")).toEqual({ type: "retry" });
+    expect(parseOperatorCommand("/rollback")).toEqual({ type: "rollback" });
+    expect(parseOperatorCommand("/status")).toEqual({ type: "status" });
+    expect(parseOperatorCommand("/deploy")).toEqual({ type: "deploy" });
+  });
+
+  it("keeps unknown commands non-mutating", () => {
+    expect(parseOperatorCommand("/shipit")).toEqual({
+      type: "unknown",
+      raw: "/shipit",
+    });
+  });
+});
+</file>
+
+<file path="src/operator/commands.ts">
+export type OperatorCommand =
+  | { type: "plan" }
+  | { type: "approve" }
+  | { type: "retry" }
+  | { type: "rollback" }
+  | { type: "status" }
+  | { type: "deploy" }
+  | { type: "unknown"; raw: string };
+
+export function parseOperatorCommand(input: string): OperatorCommand {
+  const command = input.trim().split(/\s+/)[0]?.toLowerCase();
+
+  switch (command) {
+    case "/plan":
+      return { type: "plan" };
+    case "/approve":
+      return { type: "approve" };
+    case "/retry":
+      return { type: "retry" };
+    case "/rollback":
+      return { type: "rollback" };
+    case "/status":
+      return { type: "status" };
+    case "/deploy":
+      return { type: "deploy" };
+    default:
+      return { type: "unknown", raw: input };
+  }
+}
+</file>
+
+<file path="src/operator/events.test.ts">
+import { describe, expect, it } from "vitest";
+import { mapCommandToEvent } from "./events.js";
+
+describe("operator event mapping", () => {
+  it("maps slash commands into typed OS events", () => {
+    const base = { actor: "alice", commentId: "comment-1" };
+
+    expect(mapCommandToEvent({ type: "plan" }, base)).toEqual({
+      type: "operator.plan_requested",
+      protocolVersion: "os.operator.v1",
+      actor: "alice",
+      commentId: "comment-1",
+    });
+    expect(mapCommandToEvent({ type: "approve" }, base)).toEqual({
+      type: "approval.granted",
+      actor: "alice",
+      commentId: "comment-1",
+    });
+    expect(mapCommandToEvent({ type: "retry" }, base)).toMatchObject({
+      type: "operator.retry_requested",
+      actor: "alice",
+    });
+    expect(mapCommandToEvent({ type: "rollback" }, base)).toMatchObject({
+      type: "operator.rollback_requested",
+      actor: "alice",
+    });
+    expect(mapCommandToEvent({ type: "status" }, base)).toMatchObject({
+      type: "operator.status_requested",
+      actor: "alice",
+    });
+    expect(mapCommandToEvent({ type: "deploy" }, base)).toMatchObject({
+      type: "operator.deploy_requested",
+      actor: "alice",
+    });
+  });
+
+  it("does not create OS events for unknown commands", () => {
+    expect(
+      mapCommandToEvent(
+        { type: "unknown", raw: "/shipit" },
+        { actor: "alice", commentId: "comment-1" },
+      ),
+    ).toBeNull();
+  });
+});
+</file>
+
+<file path="src/operator/events.ts">
+import type { OSEvent } from "../os/events.js";
+import type { OperatorCommand } from "./commands.js";
+
+type OperatorEventBase = {
+  protocolVersion: "os.operator.v1";
+  actor: string;
+  commentId: string;
+};
+
+export type OperatorRequestedEvent =
+  | ({ type: "operator.plan_requested" } & OperatorEventBase)
+  | ({ type: "operator.retry_requested" } & OperatorEventBase)
+  | ({ type: "operator.rollback_requested" } & OperatorEventBase)
+  | ({ type: "operator.status_requested" } & OperatorEventBase)
+  | ({ type: "operator.deploy_requested" } & OperatorEventBase);
+
+export type OperatorEventMetadata = {
+  actor: string;
+  commentId: string;
+};
+
+export function mapCommandToEvent(
+  command: OperatorCommand,
+  metadata: OperatorEventMetadata,
+): OSEvent | null {
+  const base = {
+    protocolVersion: "os.operator.v1" as const,
+    actor: metadata.actor,
+    commentId: metadata.commentId,
+  };
+
+  switch (command.type) {
+    case "plan":
+      return { type: "operator.plan_requested", ...base };
+    case "approve":
+      return {
+        type: "approval.granted",
+        actor: metadata.actor,
+        commentId: metadata.commentId,
+      };
+    case "retry":
+      return { type: "operator.retry_requested", ...base };
+    case "rollback":
+      return { type: "operator.rollback_requested", ...base };
+    case "status":
+      return { type: "operator.status_requested", ...base };
+    case "deploy":
+      return { type: "operator.deploy_requested", ...base };
+    case "unknown":
+      return null;
+  }
+}
+</file>
+
+<file path="src/operator/github-comment-router.test.ts">
+import { describe, expect, it } from "vitest";
+import { routeGitHubComment } from "./github-comment-router.js";
+import type { OSContext } from "../os/events.js";
+
+const context: OSContext = {
+  issueNumber: "9",
+  issueTitle: "Improve operator flow",
+  issueBody: "Route comments",
+  attempts: 1,
+  maxAttempts: 3,
+  risk: "high",
+  riskReason: "Protected file",
+  findings: [],
+  generatedFiles: [],
+  verificationResults: [],
+  failures: [],
+};
+
+describe("GitHub comment router", () => {
+  it("routes /approve into an approval event and acknowledgement", () => {
+    const result = routeGitHubComment({
+      body: "/approve",
+      actor: "alice",
+      commentId: "comment-1",
+      state: "awaiting_approval",
+      context,
+      readRollback: () => ({ found: false, body: "missing" }),
+    });
+
+    expect(result.event).toEqual({
+      type: "approval.granted",
+      actor: "alice",
+      commentId: "comment-1",
+    });
+    expect(result.responseBody).toContain("Approval received");
+  });
+
+  it("routes /status to a cockpit projection", () => {
+    const result = routeGitHubComment({
+      body: "/status",
+      actor: "alice",
+      commentId: "comment-2",
+      state: "learning",
+      context,
+      readRollback: () => ({ found: false, body: "missing" }),
+    });
+
+    expect(result.event?.type).toBe("operator.status_requested");
+    expect(result.responseBody).toContain("Vibe Engine OS Cockpit");
+    expect(result.responseBody).toContain("learning");
+  });
+
+  it("routes /rollback to read-only rollback instructions", () => {
+    const result = routeGitHubComment({
+      body: "/rollback",
+      actor: "alice",
+      commentId: "comment-3",
+      state: "learning",
+      context,
+      readRollback: () => ({
+        found: true,
+        runId: "run-1",
+        body: "# Rollback run-1\n",
+      }),
+    });
+
+    expect(result.event?.type).toBe("operator.rollback_requested");
+    expect(result.responseBody).toContain("# Rollback run-1");
+    expect(result.responseBody).not.toContain("git reset");
+  });
+
+  it("ignores unknown comments", () => {
+    const result = routeGitHubComment({
+      body: "looks good",
+      actor: "alice",
+      commentId: "comment-4",
+      state: "learning",
+      context,
+      readRollback: () => ({ found: false, body: "missing" }),
+    });
+
+    expect(result).toEqual({
+      handled: false,
+      event: null,
+      responseBody: null,
+    });
+  });
+});
+</file>
+
+<file path="src/operator/github-comment-router.ts">
+import type { OSContext, OSEvent } from "../os/events.js";
+import type { RollbackInstructions } from "../run/rollback.js";
+import { parseOperatorCommand } from "./commands.js";
+import { mapCommandToEvent } from "./events.js";
+import { renderCockpitComment } from "./cockpit.js";
+
+export type GitHubCommentRouteInput = {
+  body: string;
+  actor: string;
+  commentId: string;
+  state: string;
+  context: OSContext;
+  readRollback: () => RollbackInstructions;
+};
+
+export type GitHubCommentRouteResult =
+  | {
+      handled: true;
+      event: OSEvent;
+      responseBody: string;
+    }
+  | {
+      handled: false;
+      event: null;
+      responseBody: null;
+    };
+
+export function routeGitHubComment(
+  input: GitHubCommentRouteInput,
+): GitHubCommentRouteResult {
+  const command = parseOperatorCommand(input.body);
+  if (command.type === "unknown") {
+    return { handled: false, event: null, responseBody: null };
+  }
+
+  const event = mapCommandToEvent(command, {
+    actor: input.actor,
+    commentId: input.commentId,
+  });
+
+  if (!event) {
+    return { handled: false, event: null, responseBody: null };
+  }
+
+  return {
+    handled: true,
+    event,
+    responseBody: responseBodyForCommand(command.type, input),
+  };
+}
+
+function responseBodyForCommand(
+  commandType: Exclude<ReturnType<typeof parseOperatorCommand>["type"], "unknown">,
+  input: GitHubCommentRouteInput,
+): string {
+  switch (commandType) {
+    case "approve":
+      return [
+        "## Approval received",
+        "",
+        "The approval intent was recorded as a typed OS event. The actor decides whether it is valid from the current state.",
+        "",
+        renderCockpitComment(input.state, input.context),
+      ].join("\n");
+    case "rollback":
+      return input.readRollback().body;
+    case "status":
+      return renderCockpitComment(input.state, input.context);
+    case "plan":
+      return [
+        "## Plan requested",
+        "",
+        "The plan request was recorded as a typed OS event.",
+        "",
+        renderCockpitComment(input.state, input.context),
+      ].join("\n");
+    case "retry":
+      return [
+        "## Retry requested",
+        "",
+        "The retry request was recorded as a typed OS event. The actor decides whether retry is valid from the current state.",
+        "",
+        renderCockpitComment(input.state, input.context),
+      ].join("\n");
+    case "deploy":
+      return [
+        "## Deploy requested",
+        "",
+        "The deploy request was recorded as a typed OS event. Deployment remains gated until the actor reaches a deployable state.",
+        "",
+        renderCockpitComment(input.state, input.context),
+      ].join("\n");
+  }
+}
+</file>
+
+<file path="src/os/event-ledger.test.ts">
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+import { describe, expect, it } from "vitest";
+import { appendOperatorEvent } from "./event-ledger.js";
+
+describe("operator event ledger", () => {
+  it("appends typed operator events as JSONL audit records", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "event-ledger-"));
+
+    appendOperatorEvent(root, {
+      type: "operator.status_requested",
+      protocolVersion: "os.operator.v1",
+      actor: "alice",
+      commentId: "comment-1",
+    });
+
+    const ledgerPath = path.join(root, ".runs", "operator-events.ndjson");
+    const lines = fs.readFileSync(ledgerPath, "utf8").trim().split("\n");
+    const record = JSON.parse(lines[0]);
+
+    expect(record.event).toEqual({
+      type: "operator.status_requested",
+      protocolVersion: "os.operator.v1",
+      actor: "alice",
+      commentId: "comment-1",
+    });
+    expect(record.recordedAt).toEqual(expect.any(String));
+  });
+});
+</file>
+
+<file path="src/os/event-ledger.ts">
+import * as fs from "node:fs";
+import * as path from "node:path";
+import type { OSEvent } from "./events.js";
+
+export function appendOperatorEvent(rootDir: string, event: OSEvent): void {
+  const runsDir = path.join(rootDir, ".runs");
+  fs.mkdirSync(runsDir, { recursive: true });
+  fs.appendFileSync(
+    path.join(runsDir, "operator-events.ndjson"),
+    `${JSON.stringify({ recordedAt: new Date().toISOString(), event })}\n`,
+    "utf8",
+  );
+}
+</file>
+
+<file path="src/planning/dag.test.ts">
+import { describe, expect, it } from "vitest";
+import {
+  riskForFiles,
+  topologicalSort,
+  validateDag,
+} from "./dag.js";
+import type { ExecutionDagNode } from "../os/events.js";
+
+describe("execution DAG", () => {
+  it("rejects missing dependencies", () => {
+    const errors = validateDag({
+      issueNumber: "1",
+      title: "Bad DAG",
+      nodes: [
+        node({
+          id: "test",
+          title: "Run tests",
+          kind: "test",
+          dependsOn: ["missing"],
+        }),
+      ],
+    });
+
+    expect(errors).toContain("Node test depends on missing node missing");
+  });
+
+  it("rejects dependency cycles", () => {
+    const errors = validateDag({
+      issueNumber: "1",
+      title: "Cycle DAG",
+      nodes: [
+        node({ id: "a", title: "A", dependsOn: ["b"] }),
+        node({ id: "b", title: "B", dependsOn: ["a"] }),
+      ],
+    });
+
+    expect(errors).toContain("DAG contains a dependency cycle");
+  });
+
+  it("sorts nodes topologically", () => {
+    const sorted = topologicalSort([
+      node({ id: "verify", title: "Verify", kind: "verify", dependsOn: ["edit"] }),
+      node({ id: "edit", title: "Edit", kind: "edit", dependsOn: [] }),
+      node({
+        id: "publish",
+        title: "Publish",
+        kind: "publish",
+        dependsOn: ["verify"],
+      }),
+    ]);
+
+    expect(sorted.map((item) => item.id)).toEqual([
+      "edit",
+      "verify",
+      "publish",
+    ]);
+  });
+
+  it("marks workflow edits high risk", () => {
+    expect(riskForFiles([".github/workflows/forever.yml"])).toBe("high");
+  });
+
+  it("marks package mutations medium risk", () => {
+    expect(riskForFiles(["package.json"])).toBe("medium");
+    expect(riskForFiles(["package-lock.json"])).toBe("medium");
+  });
+
+  it("marks ordinary source edits low risk", () => {
+    expect(riskForFiles(["src/index.ts"])).toBe("low");
+  });
+});
+
+function node(overrides: Partial<ExecutionDagNode>): ExecutionDagNode {
+  return {
+    id: "node",
+    title: "Node",
+    kind: "edit",
+    dependsOn: [],
+    risk: "low",
+    files: [],
+    acceptance: ["complete"],
+    ...overrides,
+  };
+}
+</file>
+
+<file path="src/planning/dag.ts">
+import type { ExecutionDag, ExecutionDagNode, RiskLevel } from "../os/events.js";
+
+export function validateDag(dag: ExecutionDag): string[] {
+  const errors: string[] = [];
+  const ids = new Set(dag.nodes.map((item) => item.id));
+
+  for (const item of dag.nodes) {
+    for (const dependency of item.dependsOn) {
+      if (!ids.has(dependency)) {
+        errors.push(`Node ${item.id} depends on missing node ${dependency}`);
+      }
+    }
+  }
+
+  if (hasCycle(dag.nodes)) {
+    errors.push("DAG contains a dependency cycle");
+  }
+
+  return errors;
+}
+
+export function topologicalSort(nodes: ExecutionDagNode[]) {
+  const remaining = new Map(nodes.map((item) => [item.id, item]));
+  const completed = new Set<string>();
+  const sorted: ExecutionDagNode[] = [];
+
+  while (remaining.size > 0) {
+    const ready = [...remaining.values()].filter((item) =>
+      item.dependsOn.every((dependency) => completed.has(dependency)),
+    );
+
+    if (ready.length === 0) {
+      throw new Error("Cannot sort cyclic DAG");
+    }
+
+    for (const item of ready) {
+      sorted.push(item);
+      completed.add(item.id);
+      remaining.delete(item.id);
+    }
+  }
+
+  return sorted;
+}
+
+export function riskForFiles(files: string[]): RiskLevel {
+  if (files.some((file) => file.startsWith(".github/"))) return "high";
+  if (
+    files.some(
+      (file) =>
+        file === "package.json" ||
+        file === "package-lock.json" ||
+        file.endsWith(".lock"),
+    )
+  ) {
+    return "medium";
+  }
+  return "low";
+}
+
+function hasCycle(nodes: ExecutionDagNode[]) {
+  try {
+    topologicalSort(nodes);
+    return false;
+  } catch {
+    return true;
+  }
+}
+</file>
+
+<file path="src/publishing/github-comments.test.ts">
+import { describe, expect, it } from "vitest";
+import {
+  cockpitCommentMarker,
+  publishCockpitComment,
+  resolveGitHubCommentTarget,
+} from "./github-comments.js";
+
+describe("GitHub cockpit comments", () => {
+  it("skips safely when token or repository is missing", async () => {
+    const target = resolveGitHubCommentTarget({
+      GITHUB_REPOSITORY: "afelin/vibe-engine-os",
+      ISSUE_NUMBER: "12",
+    });
+
+    expect(target).toEqual({
+      enabled: false,
+      reason: "Missing GITHUB_TOKEN",
+    });
+  });
+
+  it("creates a cockpit comment when no existing marker is found", async () => {
+    const calls: Array<{ url: string; init?: RequestInit }> = [];
+    const fetchImpl = async (url: string | URL | Request, init?: RequestInit) => {
+      calls.push({ url: url.toString(), init });
+
+      if (!init?.method) {
+        return jsonResponse([]);
+      }
+
+      return jsonResponse({
+        id: 99,
+        html_url: "https://github.com/afelin/vibe-engine-os/issues/12#issuecomment-99",
+      });
+    };
+
+    const result = await publishCockpitComment({
+      token: "token",
+      repository: "afelin/vibe-engine-os",
+      issueNumber: "12",
+      body: "## Vibe Engine OS Cockpit",
+      fetchImpl,
+    });
+
+    expect(result).toEqual({
+      status: "created",
+      url: "https://github.com/afelin/vibe-engine-os/issues/12#issuecomment-99",
+    });
+    expect(calls).toHaveLength(2);
+    expect(calls[1]?.url).toBe(
+      "https://api.github.com/repos/afelin/vibe-engine-os/issues/12/comments",
+    );
+    expect(calls[1]?.init?.method).toBe("POST");
+    expect(String(calls[1]?.init?.body)).toContain(cockpitCommentMarker);
+  });
+
+  it("updates the existing cockpit comment when the marker is found", async () => {
+    const calls: Array<{ url: string; init?: RequestInit }> = [];
+    const fetchImpl = async (url: string | URL | Request, init?: RequestInit) => {
+      calls.push({ url: url.toString(), init });
+
+      if (!init?.method) {
+        return jsonResponse([
+          {
+            id: 42,
+            body: `${cockpitCommentMarker}\nold body`,
+            url: "https://api.github.com/repos/afelin/vibe-engine-os/issues/comments/42",
+            html_url:
+              "https://github.com/afelin/vibe-engine-os/issues/12#issuecomment-42",
+          },
+        ]);
+      }
+
+      return jsonResponse({
+        id: 42,
+        html_url: "https://github.com/afelin/vibe-engine-os/issues/12#issuecomment-42",
+      });
+    };
+
+    const result = await publishCockpitComment({
+      token: "token",
+      repository: "afelin/vibe-engine-os",
+      issueNumber: "12",
+      body: "## updated",
+      fetchImpl,
+    });
+
+    expect(result).toEqual({
+      status: "updated",
+      url: "https://github.com/afelin/vibe-engine-os/issues/12#issuecomment-42",
+    });
+    expect(calls).toHaveLength(2);
+    expect(calls[1]?.url).toBe(
+      "https://api.github.com/repos/afelin/vibe-engine-os/issues/comments/42",
+    );
+    expect(calls[1]?.init?.method).toBe("PATCH");
+  });
+});
+
+function jsonResponse(body: unknown) {
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+</file>
+
+<file path="src/publishing/github-comments.ts">
+export const cockpitCommentMarker = "<!-- vibe-engine-os-cockpit -->";
+
+type FetchLike = (
+  input: string | URL | Request,
+  init?: RequestInit,
+) => Promise<Response>;
+
+export type GitHubCommentTarget =
+  | {
+      enabled: true;
+      token: string;
+      repository: string;
+      issueNumber: string;
+    }
+  | { enabled: false; reason: string };
+
+export type PublishCockpitCommentOptions = {
+  token: string;
+  repository: string;
+  issueNumber: string;
+  body: string;
+  fetchImpl?: FetchLike;
+};
+
+export type PublishCockpitCommentResult =
+  | { status: "created"; url?: string }
+  | { status: "updated"; url?: string };
+
+type GitHubIssueComment = {
+  id: number;
+  body?: string;
+  url: string;
+  html_url?: string;
+};
+
+export function resolveGitHubCommentTarget(
+  env: NodeJS.ProcessEnv,
+): GitHubCommentTarget {
+  if (!env.GITHUB_TOKEN) {
+    return { enabled: false, reason: "Missing GITHUB_TOKEN" };
+  }
+  if (!env.GITHUB_REPOSITORY) {
+    return { enabled: false, reason: "Missing GITHUB_REPOSITORY" };
+  }
+  if (!env.ISSUE_NUMBER || env.ISSUE_NUMBER === "000") {
+    return { enabled: false, reason: "Missing ISSUE_NUMBER" };
+  }
+
+  return {
+    enabled: true,
+    token: env.GITHUB_TOKEN,
+    repository: env.GITHUB_REPOSITORY,
+    issueNumber: env.ISSUE_NUMBER,
+  };
+}
+
+export async function publishCockpitComment({
+  token,
+  repository,
+  issueNumber,
+  body,
+  fetchImpl = fetch,
+}: PublishCockpitCommentOptions): Promise<PublishCockpitCommentResult> {
+  const commentsUrl = `https://api.github.com/repos/${repository}/issues/${issueNumber}/comments`;
+  const existingComments = await githubJson<GitHubIssueComment[]>(
+    fetchImpl,
+    commentsUrl,
+    token,
+  );
+  const existing = existingComments.find((comment) =>
+    comment.body?.includes(cockpitCommentMarker),
+  );
+  const markedBody = `${cockpitCommentMarker}\n${body}`;
+
+  if (existing) {
+    const updated = await githubJson<GitHubIssueComment>(
+      fetchImpl,
+      existing.url,
+      token,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ body: markedBody }),
+      },
+    );
+    return { status: "updated", url: updated.html_url };
+  }
+
+  const created = await githubJson<GitHubIssueComment>(
+    fetchImpl,
+    commentsUrl,
+    token,
+    {
+      method: "POST",
+      body: JSON.stringify({ body: markedBody }),
+    },
+  );
+  return { status: "created", url: created.html_url };
+}
+
+async function githubJson<T>(
+  fetchImpl: FetchLike,
+  url: string,
+  token: string,
+  init: RequestInit = {},
+) {
+  const response = await fetchImpl(url, {
+    ...init,
+    headers: {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      ...init.headers,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`GitHub comments API failed: ${response.status}`);
+  }
+
+  return (await response.json()) as T;
+}
+</file>
+
+<file path="src/run/manifest.test.ts">
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+import { describe, expect, it } from "vitest";
+import { renderRollbackInstructions, writeRunManifest } from "./manifest.js";
+
+describe("run manifest", () => {
+  it("writes rollback metadata for a run", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "vibe-run-"));
+
+    writeRunManifest(root, {
+      runId: "run_001",
+      issueNumber: "1",
+      issueTitle: "Test",
+      branchName: "vibe/issue-1",
+      baseSha: "abc123",
+      generatedFiles: ["src/index.ts"],
+      createdAt: "2026-07-04T00:00:00.000Z",
+    });
+
+    const manifestPath = path.join(root, ".runs", "run_001", "manifest.json");
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+
+    expect(manifest).toMatchObject({
+      runId: "run_001",
+      issueNumber: "1",
+      baseSha: "abc123",
+      generatedFiles: ["src/index.ts"],
+    });
+  });
+
+  it("renders rollback instructions with the base sha and branch", () => {
+    const text = renderRollbackInstructions({
+      runId: "run_001",
+      issueNumber: "1",
+      issueTitle: "Test",
+      branchName: "vibe/issue-1",
+      baseSha: "abc123",
+      generatedFiles: [],
+      createdAt: "2026-07-04T00:00:00.000Z",
+    });
+
+    expect(text).toContain("Rollback run_001");
+    expect(text).toContain("vibe/issue-1");
+    expect(text).toContain("abc123");
+    expect(text).toContain("git diff abc123..HEAD");
+  });
+});
+</file>
+
+<file path="src/run/manifest.ts">
+import * as fs from "node:fs";
+import * as path from "node:path";
+
+export type RunManifest = {
+  runId: string;
+  issueNumber: string;
+  issueTitle: string;
+  branchName: string;
+  baseSha: string;
+  generatedFiles: string[];
+  createdAt: string;
+};
+
+export function writeRunManifest(rootDir: string, manifest: RunManifest) {
+  const dir = path.join(rootDir, ".runs", manifest.runId);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, "manifest.json"),
+    `${JSON.stringify(manifest, null, 2)}\n`,
+  );
+}
+
+export function renderRollbackInstructions(manifest: RunManifest) {
+  return [
+    `# Rollback ${manifest.runId}`,
+    "",
+    `Issue: #${manifest.issueNumber} ${manifest.issueTitle}`,
+    `Branch: ${manifest.branchName}`,
+    `Base SHA: ${manifest.baseSha}`,
+    "",
+    "Generated files:",
+    ...renderGeneratedFiles(manifest.generatedFiles),
+    "",
+    "To inspect the change:",
+    "",
+    "```bash",
+    `git diff ${manifest.baseSha}..HEAD`,
+    "```",
+    "",
+    "To return to the base commit on this branch after review:",
+    "",
+    "```bash",
+    `git revert --no-edit ${manifest.baseSha}..HEAD`,
+    "```",
+    "",
+  ].join("\n");
+}
+
+function renderGeneratedFiles(files: string[]) {
+  if (files.length === 0) return ["- No generated files recorded."];
+  return files.map((file) => `- ${file}`);
+}
+</file>
+
+<file path="src/run/rollback.test.ts">
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+import { describe, expect, it } from "vitest";
+import { readLatestRollbackInstructions } from "./rollback.js";
+
+describe("rollback instructions reader", () => {
+  it("returns a safe missing-manifest message when rollback metadata does not exist", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "rollback-empty-"));
+
+    const result = readLatestRollbackInstructions(root);
+
+    expect(result.found).toBe(false);
+    expect(result.body).toContain("No verified rollback manifest exists yet.");
+  });
+
+  it("reads the newest rollback instructions without mutating anything", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "rollback-"));
+    const oldDir = path.join(root, ".runs", "run-old");
+    const newDir = path.join(root, ".runs", "run-new");
+    fs.mkdirSync(oldDir, { recursive: true });
+    fs.mkdirSync(newDir, { recursive: true });
+    fs.writeFileSync(path.join(oldDir, "ROLLBACK.md"), "# old rollback\n");
+    fs.writeFileSync(path.join(newDir, "ROLLBACK.md"), "# new rollback\n");
+
+    const result = readLatestRollbackInstructions(root);
+
+    expect(result).toEqual({
+      found: true,
+      runId: "run-new",
+      body: "# new rollback\n",
+    });
+  });
+});
+</file>
+
+<file path="src/run/rollback.ts">
+import * as fs from "node:fs";
+import * as path from "node:path";
+
+export type RollbackInstructions =
+  | { found: true; runId: string; body: string }
+  | { found: false; body: string };
+
+export function readLatestRollbackInstructions(rootDir: string): RollbackInstructions {
+  const runsDir = path.join(rootDir, ".runs");
+  if (!fs.existsSync(runsDir)) {
+    return missingRollbackInstructions();
+  }
+
+  const candidates = fs
+    .readdirSync(runsDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => {
+      const filePath = path.join(runsDir, entry.name, "ROLLBACK.md");
+      if (!fs.existsSync(filePath)) return null;
+      return {
+        runId: entry.name,
+        filePath,
+        mtimeMs: fs.statSync(filePath).mtimeMs,
+      };
+    })
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== null)
+    .sort((left, right) => right.mtimeMs - left.mtimeMs);
+
+  const latest = candidates[0];
+  if (!latest) {
+    return missingRollbackInstructions();
+  }
+
+  return {
+    found: true,
+    runId: latest.runId,
+    body: fs.readFileSync(latest.filePath, "utf8"),
+  };
+}
+
+function missingRollbackInstructions(): RollbackInstructions {
+  return {
+    found: false,
+    body: [
+      "## Rollback",
+      "",
+      "No verified rollback manifest exists yet.",
+      "",
+      "A rollback file is created only after a generated run passes verification.",
+    ].join("\n"),
+  };
+}
+</file>
+
+<file path="src/verification/pipeline.test.ts">
+import { describe, expect, it } from "vitest";
+import { runGeneratedPatchValidators } from "./pipeline.js";
+
+describe("generated patch validator pipeline", () => {
+  it("passes safe generated source and test files", () => {
+    const result = runGeneratedPatchValidators([
+      { path: "src/machine.ts", content: "export const ok = true;" },
+      {
+        path: "src/machine.test.ts",
+        content: 'import { ok } from "./machine.js";',
+      },
+    ]);
+
+    expect(result.passed).toBe(true);
+    expect(result.failures).toEqual([]);
+  });
+
+  it("fails before writes for protected files", () => {
+    const result = runGeneratedPatchValidators([
+      { path: ".github/workflows/forever.yml", content: "name: unsafe" },
+    ]);
+
+    expect(result.passed).toBe(false);
+    expect(result.failures.join("\n")).toContain("Protected paths require approval");
+  });
+
+  it("fails before writes for unsafe traversal paths", () => {
+    const result = runGeneratedPatchValidators([
+      { path: "../outside.ts", content: "export {};" },
+    ]);
+
+    expect(result.passed).toBe(false);
+    expect(result.failures.join("\n")).toContain("Unsafe paths");
+  });
+});
+</file>
+
+<file path="src/verification/pipeline.ts">
+import type { GeneratedFile } from "../os/events.js";
+import {
+  validateEsmImportExtensions,
+  validateFilePolicy,
+  validateNoPathTraversal,
+  validateProtectedFiles,
+  type ValidatorResult,
+} from "./validators.js";
+
+export type ValidatorPipelineResult = {
+  passed: boolean;
+  results: ValidatorResult[];
+  failures: string[];
+};
+
+export function runGeneratedPatchValidators(
+  files: GeneratedFile[],
+): ValidatorPipelineResult {
+  const results = [
+    validateNoPathTraversal(files),
+    validateFilePolicy("generated_patch", files),
+    validateProtectedFiles(files),
+    validateEsmImportExtensions(files),
+  ];
+  const failures = results
+    .filter((result) => !result.passed)
+    .map((result) => `${result.name}: ${result.output}`);
+
+  return {
+    passed: failures.length === 0,
+    results,
+    failures,
+  };
+}
+</file>
+
+<file path="src/verification/validators.test.ts">
+import { describe, expect, it } from "vitest";
+import {
+  validateEsmImportExtensions,
+  validateFilePolicy,
+  validateNoPathTraversal,
+  validateProtectedFiles,
+} from "./validators.js";
+
+describe("deterministic validators", () => {
+  it("allows generated patches only in generated-code paths", () => {
+    const result = validateFilePolicy("generated_patch", [
+      { path: "src/index.ts", content: "" },
+      { path: "tests/index.test.ts", content: "" },
+      { path: ".planning/plan.md", content: "" },
+      { path: ".skills/actor.ts", content: "" },
+    ]);
+
+    expect(result.passed).toBe(true);
+  });
+
+  it("rejects generated patches outside the allowlist", () => {
+    const result = validateFilePolicy("generated_patch", [
+      { path: "README.md", content: "" },
+    ]);
+
+    expect(result.passed).toBe(false);
+    expect(result.output).toContain("README.md");
+  });
+
+  it("allows maintainer changes in docs and runs", () => {
+    const result = validateFilePolicy("maintainer_change", [
+      { path: "docs/superpowers/plans/roadmap.md", content: "" },
+      { path: "runs/smoke.sh", content: "" },
+    ]);
+
+    expect(result.passed).toBe(true);
+  });
+
+  it("flags protected files as requiring approval", () => {
+    const result = validateProtectedFiles([
+      { path: ".github/workflows/forever.yml", content: "" },
+      { path: "package.json", content: "" },
+    ]);
+
+    expect(result.passed).toBe(false);
+    expect(result.output).toContain(".github/workflows/forever.yml");
+    expect(result.output).toContain("package.json");
+  });
+
+  it("rejects path traversal", () => {
+    const result = validateNoPathTraversal([
+      { path: "../outside.ts", content: "" },
+    ]);
+
+    expect(result.passed).toBe(false);
+  });
+
+  it("catches local ESM imports without .js extensions", () => {
+    const result = validateEsmImportExtensions([
+      { path: "src/main.ts", content: 'import { value } from "./value";' },
+    ]);
+
+    expect(result.passed).toBe(false);
+    expect(result.output).toContain("src/main.ts");
+  });
+
+  it("accepts local ESM imports with .js extensions", () => {
+    const result = validateEsmImportExtensions([
+      { path: "src/main.ts", content: 'import { value } from "./value.js";' },
+    ]);
+
+    expect(result.passed).toBe(true);
+  });
+});
+</file>
+
+<file path="src/verification/validators.ts">
+import type { GeneratedFile } from "../os/events.js";
+
+export type PolicyMode = "generated_patch" | "maintainer_change";
+
+export type ValidatorResult = {
+  name: string;
+  passed: boolean;
+  output: string;
+};
+
+const generatedPatchPrefixes = ["src/", "tests/", ".planning/", ".skills/"];
+const maintainerPrefixes = [
+  ...generatedPatchPrefixes,
+  "docs/",
+  "runs/",
+  ".github/",
+];
+const protectedPaths = [
+  ".github/",
+  ".env",
+  "package.json",
+  "package-lock.json",
+  "bun.lockb",
+];
+
+export function validateFilePolicy(
+  mode: PolicyMode,
+  files: GeneratedFile[],
+): ValidatorResult {
+  const allowedPrefixes =
+    mode === "generated_patch" ? generatedPatchPrefixes : maintainerPrefixes;
+
+  const invalid = files.filter(
+    (file) => !allowedPrefixes.some((prefix) => file.path.startsWith(prefix)),
+  );
+
+  return {
+    name: `${mode}_file_policy`,
+    passed: invalid.length === 0,
+    output:
+      invalid.length === 0
+        ? "All files are inside allowed paths"
+        : `Disallowed paths: ${invalid.map((file) => file.path).join(", ")}`,
+  };
+}
+
+export function validateProtectedFiles(files: GeneratedFile[]): ValidatorResult {
+  const protectedFiles = files.filter((file) =>
+    protectedPaths.some(
+      (protectedPath) =>
+        file.path === protectedPath || file.path.startsWith(protectedPath),
+    ),
+  );
+
+  return {
+    name: "protected_files",
+    passed: protectedFiles.length === 0,
+    output:
+      protectedFiles.length === 0
+        ? "No protected files changed"
+        : `Protected paths require approval: ${protectedFiles
+            .map((file) => file.path)
+            .join(", ")}`,
+  };
+}
+
+export function validateNoPathTraversal(files: GeneratedFile[]): ValidatorResult {
+  const invalid = files.filter(
+    (file) =>
+      file.path.includes("..") ||
+      file.path.startsWith("/") ||
+      file.path.startsWith("~"),
+  );
+
+  return {
+    name: "path_traversal",
+    passed: invalid.length === 0,
+    output:
+      invalid.length === 0
+        ? "No path traversal detected"
+        : `Unsafe paths: ${invalid.map((file) => file.path).join(", ")}`,
+  };
+}
+
+export function validateEsmImportExtensions(
+  files: GeneratedFile[],
+): ValidatorResult {
+  const offenders = files.filter(
+    (file) =>
+      file.path.endsWith(".ts") &&
+      /from\s+["']\.{1,2}\/[^"']*(?<!\.js)["']/.test(file.content),
+  );
+
+  return {
+    name: "esm_import_extensions",
+    passed: offenders.length === 0,
+    output:
+      offenders.length === 0
+        ? "Local ESM imports use .js extensions"
+        : `Missing .js import extension in: ${offenders
+            .map((file) => file.path)
+            .join(", ")}`,
+  };
+}
+</file>
+
+<file path="src/index.test.ts">
+import { describe, expect, it } from "vitest";
+import { status } from "./index.js";
+
+describe("baseline status", () => {
+  it("reports the Sovereign OS as online", () => {
+    expect(status).toBe("Sovereign OS Online");
+  });
+});
+</file>
+
+<file path="src/index.ts">
+export const status = "Sovereign OS Online";
+</file>
+
+<file path=".gitignore">
+node_modules/
+dist/
+coverage/
+</file>
+
+<file path=".nvmrc">
+22
+</file>
+
+<file path="README.md">
+# vibe-engine-os
+Sovereign AI Dev Cluster
+</file>
+
+<file path="tsconfig.json">
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "include": ["agent.ts", "src/**/*.ts"]
+}
+</file>
+
+<file path="docs/superpowers/plans/2026-07-04-v0-v3-production-roadmap.md">
+# V0-V3 Production Roadmap Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Ship `vibe-engine-os` as a low-maintenance, no-code-safe autonomous delivery runtime in staged layers instead of attempting the full recursive architecture at once.
+
+**Architecture:** V0 stabilizes the current GitHub Actions agent, V1 adds xmachines/DAG governance and reversible no-code controls, V2 adds structured learning with Pearl-style traces and LCM-lite memory, and V3 distributes the runtime across Cloudflare and Oracle Free Tier. The system follows the nanochat taste profile: one clear dial, complete loop, tight evals, repeatable scripts, and measurable scoreboards.
+
+**Tech Stack:** TypeScript ESM, Vitest, XState/xmachines, GitHub Actions, GitHub issues/comments/labels, append-only JSONL, generated Markdown reports, later Cloudflare Workers/D1/Queues and Oracle Free Tier runner.
+
+---
+
+## Premortem-Driven Scope
+
+The maximal plan is directionally right but too large for the first production pass. The likely failure mode is overbuilding Pearl, LCM, Cloudflare, Oracle, generated wiki, and meta-agent learning before the current repo has a trustworthy local/GitHub execution spine.
+
+This staged roadmap keeps the covenant but narrows the first slice:
+
+```text
+V0: Stabilize current runner
+V1: Govern mutations with xmachines, DAGs, validators, approvals, rollback
+V2: Learn from runs with structured memory, scorecards, and causal traces
+V3: Distribute safely across Cloudflare and Oracle
+```
+
+The product promise for no-code users is:
+
+> Every change is visible, risk-classified, tested, and reversible. The system never silently traps the user.
+
+## V0: Stabilize
+
+**Goal:** Make the current repo and GitHub Actions runner boring, testable, and recoverable before adding architecture.
+
+**What ships:**
+- Existing `agent.ts` hardening remains.
+- Baseline TypeScript/Vitest project remains.
+- Workflow crash/fallback behavior remains.
+- Add smoke scripts and a minimal no-code status report.
+- Add rollback metadata for every generated patch.
+
+### V0 Tasks
+
+#### Task V0.1: Preserve The Current Hardening Baseline
+
+**Files:**
+- Keep: `agent.ts`
+- Keep: `.github/workflows/forever.yml`
+- Keep: `package.json`
+- Keep: `tsconfig.json`
+- Keep: `src/index.ts`
+- Keep: `src/index.test.ts`
+
+- [ ] Confirm `agent.ts` has a global `uncaughtException` handler and `runOS().catch(...)` exits non-zero on fatal failure.
+- [ ] Confirm `.github/workflows/forever.yml` has no `git repack --write-midx=incremental`.
+- [ ] Confirm Cloudflare deploy failure exports `PREVIEW_URL=cloudflare-failed.local` and does not fail the PR handoff.
+- [ ] Confirm multi-line GitHub issue/comment/review bodies are written to `$GITHUB_ENV` with generated delimiters.
+
+Run:
+
+```bash
+npm test
+npx tsc --noEmit
+```
+
+Expected: Vitest passes and TypeScript exits with code 0.
+
+#### Task V0.2: Add Canonical Local Smoke Scripts
+
+**Files:**
+- Create: `runs/smoke.sh`
+- Create: `runs/local-issue.sh`
+- Modify: `package.json`
+
+- [ ] Add package scripts:
+
+```json
+{
+  "scripts": {
+    "test": "vitest run",
+    "check": "tsc --noEmit && vitest run",
+    "smoke": "bash runs/smoke.sh",
+    "local-issue": "bash runs/local-issue.sh"
+  }
+}
+```
+
+- [ ] Create `runs/smoke.sh`:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+npm test
+npx tsc --noEmit
+```
+
+- [ ] Create `runs/local-issue.sh`:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+export ISSUE_NUMBER="${ISSUE_NUMBER:-000}"
+export ISSUE_TITLE="${ISSUE_TITLE:-Local Smoke Issue}"
+export ISSUE_BODY="${ISSUE_BODY:-Run local Vibe Engine smoke path.}"
+
+bun run agent.ts
+```
+
+Run:
+
+```bash
+npm run check
+npm run smoke
+```
+
+Expected: both commands exit 0.
+
+#### Task V0.3: Add Run Metadata And Rollback Manifest
+
+**Files:**
+- Create: `src/run/manifest.ts`
+- Test: `src/run/manifest.test.ts`
+
+- [ ] Implement manifest writer:
+
+```ts
+import * as fs from "fs";
+import * as path from "path";
+
+export type RunManifest = {
+  runId: string;
+  issueNumber: string;
+  issueTitle: string;
+  branchName: string;
+  baseSha: string;
+  generatedFiles: string[];
+  createdAt: string;
+};
+
+export function writeRunManifest(rootDir: string, manifest: RunManifest) {
+  const dir = path.join(rootDir, ".runs", manifest.runId);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, "manifest.json"),
+    `${JSON.stringify(manifest, null, 2)}\n`,
+  );
+}
+
+export function renderRollbackInstructions(manifest: RunManifest) {
+  return [
+    `# Rollback ${manifest.runId}`,
+    "",
+    `Branch: ${manifest.branchName}`,
+    `Base SHA: ${manifest.baseSha}`,
+    "",
+    "To inspect the change:",
+    "",
+    "```bash",
+    `git diff ${manifest.baseSha}..HEAD`,
+    "```",
+    "",
+    "To return to the base commit on this branch after review:",
+    "",
+    "```bash",
+    `git revert --no-edit ${manifest.baseSha}..HEAD`,
+    "```",
+    "",
+  ].join("\n");
+}
+```
+
+- [ ] Test it:
+
+```ts
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
+import { describe, expect, it } from "vitest";
+import { renderRollbackInstructions, writeRunManifest } from "./manifest.js";
+
+describe("run manifest", () => {
+  it("writes rollback metadata", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "vibe-run-"));
+    writeRunManifest(root, {
+      runId: "run_001",
+      issueNumber: "1",
+      issueTitle: "Test",
+      branchName: "vibe/issue-1",
+      baseSha: "abc123",
+      generatedFiles: ["src/index.ts"],
+      createdAt: "2026-07-04T00:00:00.000Z",
+    });
+
+    expect(fs.existsSync(path.join(root, ".runs", "run_001", "manifest.json"))).toBe(true);
+  });
+
+  it("renders rollback instructions with base sha", () => {
+    const text = renderRollbackInstructions({
+      runId: "run_001",
+      issueNumber: "1",
+      issueTitle: "Test",
+      branchName: "vibe/issue-1",
+      baseSha: "abc123",
+      generatedFiles: [],
+      createdAt: "2026-07-04T00:00:00.000Z",
+    });
+
+    expect(text).toContain("abc123");
+    expect(text).toContain("git diff");
+  });
+});
+```
+
+Run:
+
+```bash
+npm run check
+```
+
+Expected: all tests pass.
+
+## V1: Govern
+
+**Goal:** Add the production safety spine: xmachines authority, typed DAG plans, protected-file policy, deterministic validators, slash commands, cockpit comments, and approval gates.
+
+**What ships:**
+- `agent.ts` becomes a thin entrypoint.
+- OS lifecycle is explicit in XState/xmachines.
+- Every plan becomes a DAG.
+- Every mutation is risk-classified.
+- High-risk changes pause for `/approve`.
+- No-code user sees a cockpit comment and rollback path.
+
+### V1 Tasks
+
+#### Task V1.1: Introduce xmachines/XState Lifecycle
+
+**Files:**
+- Modify: `package.json`
+- Create: `src/os/events.ts`
+- Create: `src/os/machine.ts`
+- Create: `src/os/run.ts`
+- Modify: `agent.ts`
+- Test: `src/os/machine.test.ts`
+
+- [ ] Add dependencies:
+
+```json
+{
+  "dependencies": {
+    "@xmachines/play-xstate": "latest",
+    "xstate": "latest"
+  }
+}
+```
+
+- [ ] Define lifecycle states:
+
+```text
+received -> preflight -> planning -> risk_review
+risk_review -> awaiting_approval | generating_patch
+generating_patch -> verifying -> publishing -> completed
+verifying -> learning -> preflight
+any unrecoverable failure -> failed
+```
+
+- [ ] Define core events:
+
+```ts
+export type RiskLevel = "low" | "medium" | "high";
+
+export type OSEvent =
+  | { type: "os.received"; source: "github" | "cloudflare"; payload: unknown }
+  | { type: "preflight.completed"; findings: PreflightFinding[] }
+  | { type: "plan.created"; dag: ExecutionDag }
+  | { type: "risk.reviewed"; risk: RiskLevel; reason: string }
+  | { type: "approval.granted"; actor: string }
+  | { type: "patch.generated"; files: GeneratedFile[] }
+  | { type: "verification.passed"; results: VerificationResult[] }
+  | { type: "verification.failed"; failure: ClassifiedFailure }
+  | { type: "learning.recorded"; lessonIds: string[] }
+  | { type: "publish.completed"; prUrl?: string; previewUrl?: string };
+```
+
+- [ ] Test high-risk approval pause and verification failure learning transition.
+
+Run:
+
+```bash
+npm run check
+```
+
+Expected: machine tests pass and TypeScript exits 0.
+
+#### Task V1.2: Add Typed DAG Planning
+
+**Files:**
+- Create: `src/planning/dag.ts`
+- Test: `src/planning/dag.test.ts`
+
+- [ ] Add DAG types:
+
+```ts
+export type DagNodeKind =
+  | "research"
+  | "edit"
+  | "test"
+  | "verify"
+  | "publish"
+  | "learn";
+
+export type ExecutionDagNode = {
+  id: string;
+  title: string;
+  kind: DagNodeKind;
+  dependsOn: string[];
+  risk: RiskLevel;
+  files: string[];
+  acceptance: string[];
+};
+
+export type ExecutionDag = {
+  issueNumber: string;
+  title: string;
+  nodes: ExecutionDagNode[];
+};
+```
+
+- [ ] Implement validators for missing dependencies and cycles.
+- [ ] Implement topological sort.
+- [ ] Test valid DAG, missing dependency, and cycle rejection.
+
+Run:
+
+```bash
+npm run check
+```
+
+Expected: DAG tests pass.
+
+#### Task V1.3: Add File Policy And Validators
+
+**Files:**
+- Create: `src/verification/policy.ts`
+- Create: `src/verification/validators.ts`
+- Test: `src/verification/validators.test.ts`
+
+- [ ] Implement two policy modes:
+
+```ts
+export type PolicyMode = "generated_patch" | "maintainer_change";
+```
+
+- [ ] For `generated_patch`, allow only:
+
+```text
+src/**
+tests/**
+.planning/**
+.skills/**
+```
+
+- [ ] For `maintainer_change`, allow planned repo maintenance paths but still require approval for:
+
+```text
+.github/**
+package.json
+package-lock.json
+bun.lockb
+*.env
+```
+
+- [ ] Add validators:
+  - schema-valid generated file list
+  - no path traversal
+  - policy allowlist
+  - protected-file approval required
+  - local ESM imports use `.js`
+
+Run:
+
+```bash
+npm run check
+```
+
+Expected: validators pass and policy conflict from the maximal plan is resolved.
+
+#### Task V1.4: Add No-Code Cockpit And Slash Commands
+
+**Files:**
+- Create: `src/operator/commands.ts`
+- Create: `src/operator/cockpit.ts`
+- Test: `src/operator/commands.test.ts`
+
+- [ ] Support slash commands:
+
+```text
+/plan
+/approve
+/retry
+/rollback
+/status
+/deploy
+```
+
+- [ ] Render cockpit comment with:
+  - current state
+  - issue
+  - vibe depth
+  - DAG progress
+  - changed files
+  - latest error
+  - rollback pointer
+  - available commands
+
+Run:
+
+```bash
+npm run check
+```
+
+Expected: command parser tests pass.
+
+## V2: Learn
+
+**Goal:** Add structured recursivity without pretending the system has enough data for grand claims. V2 records high-quality traces and uses simple retrieval before planning.
+
+**What ships:**
+- Structured EvoMem.
+- LCM-lite append-only memory.
+- Failure classifier.
+- Scorecards.
+- Pearl-style intervention logs.
+- Generated human-readable summaries.
+
+### V2 Tasks
+
+#### Task V2.1: Add Structured EvoMem
+
+**Files:**
+- Create: `src/memory/evomem.ts`
+- Test: `src/memory/evomem.test.ts`
+- Runtime dirs: `.evomem/events/`, `.evomem/lessons/`, `.evomem/scorecards/`
+
+- [ ] Store lessons as JSON:
+
+```ts
+export type EvoLesson = {
+  id: string;
+  failureClass:
+    | "compile"
+    | "test"
+    | "dependency"
+    | "api_drift"
+    | "permission"
+    | "cloud_deploy"
+    | "model_output"
+    | "invariant"
+    | "operator_intent";
+  symptom: string;
+  rootCause: string;
+  fix: string;
+  detector: string;
+  confidence: number;
+  reuseWhen: string[];
+  createdAt: string;
+};
+```
+
+- [ ] Append every lesson event to daily JSONL.
+- [ ] Generate `EVOMEM.md` from JSON lessons.
+
+Run:
+
+```bash
+npm run check
+```
+
+Expected: memory tests pass.
+
+#### Task V2.2: Add LCM-Lite Raw Memory
+
+**Files:**
+- Create: `src/memory/raw-store.ts`
+- Create: `src/memory/retrieval.ts`
+- Test: `src/memory/retrieval.test.ts`
+- Runtime dirs: `.memory/raw/`, `.memory/index/`
+
+- [ ] Append raw run events:
+
+```ts
+export type RawMemoryEvent = {
+  id: string;
+  runId: string;
+  kind: "prompt" | "tool" | "validator" | "operator" | "patch" | "publish";
+  content: unknown;
+  createdAt: string;
+};
+```
+
+- [ ] Implement retrieval by:
+  - failure class
+  - detector name
+  - touched path prefix
+  - latest successful patch for similar path
+
+- [ ] Defer full summary DAG until V3 or later. V2 only needs append-only raw memory plus simple indexes.
+
+Run:
+
+```bash
+npm run check
+```
+
+Expected: raw memory and retrieval tests pass.
+
+#### Task V2.3: Add Pearl-Style Traces And Scorecards
+
+**Files:**
+- Create: `src/research/traces.ts`
+- Create: `src/research/interventions.ts`
+- Create: `src/research/scorecard.ts`
+- Test: `src/research/scorecard.test.ts`
+
+- [ ] Record trace spans:
+
+```ts
+export type TraceSpan = {
+  runId: string;
+  phase: string;
+  promptTemplateId?: string;
+  model?: string;
+  inputContextIds: string[];
+  validatorResults: Array<{ name: string; passed: boolean }>;
+  reward: number;
+  durationMs: number;
+  costEstimateUsd: number;
+  outcome: "passed" | "failed" | "blocked";
+  createdAt: string;
+};
+```
+
+- [ ] Record interventions:
+
+```ts
+export type InterventionRecord = {
+  id: string;
+  runId: string;
+  intervention: string;
+  targetMetric:
+    | "first_pass_success"
+    | "retry_count"
+    | "rollback_count"
+    | "time_to_green"
+    | "cost_per_green_pr";
+  createdAt: string;
+};
+```
+
+- [ ] Compute scorecards:
+  - run count
+  - pass/fail/blocked count
+  - first-pass success rate
+  - average retry count
+  - rollback count
+  - average cost estimate
+
+- [ ] Do not expose causal confidence yet. V2 records interventions and outcomes; confidence estimates wait for enough data.
+
+Run:
+
+```bash
+npm run check
+```
+
+Expected: scorecard tests pass.
+
+## V3: Distribute
+
+**Goal:** Move from a GitHub Actions-only runner to a resilient Cloudflare + Oracle architecture after the local/GitHub spine is reliable.
+
+**What ships:**
+- Cloudflare Worker intake.
+- D1 status projection.
+- Queue dispatch.
+- Oracle runner daemon.
+- GitHub Actions fallback.
+- Sleep/wake triggers.
+- Generated operator wiki and status pages.
+
+### V3 Tasks
+
+#### Task V3.1: Add Cloudflare Adapters
+
+**Files:**
+- Create: `src/cloudflare/intake.ts`
+- Create: `src/cloudflare/status.ts`
+- Create: `src/cloudflare/queue.ts`
+- Test: `src/cloudflare/intake.test.ts`
+
+- [ ] Normalize GitHub webhook payloads into jobs.
+- [ ] Create deterministic idempotency keys:
+
+```text
+github:{eventName}:{deliveryId}
+```
+
+- [ ] Store public status projection fields:
+  - run id
+  - issue number
+  - state
+  - risk
+  - latest error
+  - PR URL
+  - preview URL
+  - updated timestamp
+
+- [ ] Keep live Cloudflare credentials out of unit tests.
+
+Run:
+
+```bash
+npm run check
+```
+
+Expected: Cloudflare adapter tests pass locally with no credentials.
+
+#### Task V3.2: Add Oracle Runner Adapter
+
+**Files:**
+- Create: `src/oracle/runner.ts`
+- Create: `src/runtime/sleep-wake.ts`
+- Test: `src/oracle/runner.test.ts`
+
+- [ ] Define runner contract:
+
+```ts
+export type RunnerJob = {
+  id: string;
+  issueNumber: string;
+  title: string;
+  body: string;
+};
+
+export type RunnerResult = {
+  jobId: string;
+  status: "completed" | "failed" | "blocked";
+  summary: string;
+};
+```
+
+- [ ] Add sleep/wake trigger types:
+
+```ts
+export type WakeTrigger =
+  | { type: "timer"; wakeAt: string }
+  | { type: "github_comment"; issueNumber: string }
+  | { type: "ci_completed"; runId: string }
+  | { type: "queue_message"; queueId: string };
+```
+
+- [ ] Keep the adapter inert until deployment configuration is provided.
+- [ ] Preserve GitHub Actions as fallback runner.
+
+Run:
+
+```bash
+npm run check
+```
+
+Expected: Oracle adapter tests pass locally with no credentials.
+
+#### Task V3.3: Add Generated Wiki And Status Pages
+
+**Files:**
+- Create: `src/wiki/generate.ts`
+- Create: `docs/wiki/overview.md`
+- Create: `docs/wiki/operator-guide.md`
+- Create: `docs/wiki/scorecard.md`
+- Modify: `package.json`
+- Test: `src/wiki/generate.test.ts`
+
+- [ ] Add script:
+
+```json
+{
+  "scripts": {
+    "wiki": "tsx src/wiki/generate.ts"
+  }
+}
+```
+
+- [ ] Generate wiki from:
+  - OS machine states
+  - slash command definitions
+  - latest scorecard
+  - latest EvoMem summary
+  - rollout stage
+
+- [ ] Do not hand-maintain generated wiki pages.
+
+Run:
+
+```bash
+npm run wiki
+npm run check
+```
+
+Expected: wiki files are generated and tests pass.
+
+## Explicit Deferrals
+
+Do not implement these before V0 and V1 are stable:
+
+- Full LCM summary DAG with async compaction.
+- Agent Lightning-compatible trainer or external store.
+- HyperAgents-style meta-agent tournaments.
+- Live Cloudflare queue deployment.
+- Live Oracle daemon deployment.
+- Automatic actor promotion to `.skills/actors`.
+- Causal confidence claims from small sample sizes.
+- Self-modifying workflow/security/approval policies.
+
+## Production Acceptance Criteria By Stage
+
+### V0 Acceptance
+- `npm run check` passes.
+- GitHub workflow does not crash on Cloudflare failure.
+- Local smoke script exists.
+- Rollback manifest exists for generated runs.
+
+### V1 Acceptance
+- xmachines/XState lifecycle controls run state.
+- Typed DAG is validated before mutation.
+- Protected-file edits require approval.
+- Generated patches pass deterministic validators.
+- Cockpit comment tells no-code user current state and next action.
+
+### V1 Next Primitive Sequence
+
+Use the xmachines invariants to keep this stage lean:
+
+- **Actor Authority:** GitHub comments and labels must never decide. They only display state or forward slash-command events into the OS machine.
+- **Passive Infrastructure:** The cockpit comment is a projection of `OSContext`, not a second source of truth.
+- **Event Sourcing:** Slash commands become typed events such as `approval.granted`, `retry.requested`, and `rollback.requested`.
+- **No-Code Safety:** The next action should always be visible in the cockpit comment, and risky transitions should require `/approve`.
+
+Implement V1 in this order:
+
+1. Wire `renderCockpitComment()` into GitHub issue/PR comments as best-effort passive infrastructure.
+2. Route `/plan`, `/approve`, `/retry`, `/rollback`, `/status`, and `/deploy` into typed OS events.
+3. Connect DAG risk classification to the machine's `risk.reviewed` event.
+4. Block generated writes unless the validator pipeline passes.
+5. Add rollback request handling that posts rollback instructions instead of mutating automatically.
+
+### V2 Acceptance
+- Failures become structured lessons.
+- Relevant lessons are retrieved before planning.
+- Trace spans and scorecards are recorded.
+- No causal confidence is reported without enough observations.
+
+### V3 Acceptance
+- Cloudflare intake/status/queue adapters pass local tests.
+- Oracle runner adapter passes local tests.
+- GitHub Actions fallback remains available.
+- Generated wiki reflects actual runtime state.
+
+## Final Implementation Rule
+
+Prefer the smallest complete loop over impressive partial architecture:
+
+```text
+intent -> risk-classified DAG -> approval if needed -> bounded patch -> verify -> PR/comment -> rollback metadata -> lesson
+```
+
+Only after that loop is stable should the system grow into Pearl scorecards, LCM summaries, Cloudflare queueing, Oracle runners, and offline meta-improvement.
+</file>
+
+<file path="runs/local-issue.sh">
+#!/usr/bin/env bash
+set -euo pipefail
+
+export ISSUE_NUMBER="${ISSUE_NUMBER:-000}"
+export ISSUE_TITLE="${ISSUE_TITLE:-Local Smoke Issue}"
+export ISSUE_BODY="${ISSUE_BODY:-Run local Vibe Engine smoke path.}"
+
+if command -v bun >/dev/null 2>&1; then
+  bun run agent.ts
+else
+  npx tsx agent.ts
+fi
+</file>
+
+<file path="runs/smoke.sh">
+#!/usr/bin/env bash
+set -euo pipefail
+
+npm test
+npx tsc --noEmit
+bash runs/operator-smoke.sh
+</file>
+
+<file path="src/os/events.ts">
+export type RiskLevel = "low" | "medium" | "high";
+
+export type PreflightFinding = {
+  kind: "memory" | "repo" | "dependency" | "policy";
+  summary: string;
+  confidence: number;
+};
+
+export type GeneratedFile = {
+  path: string;
+  content: string;
+};
+
+export type VerificationResult = {
+  name: string;
+  passed: boolean;
+  output: string;
+};
+
+export type FailureClass =
+  | "compile"
+  | "test"
+  | "dependency"
+  | "api_drift"
+  | "permission"
+  | "cloud_deploy"
+  | "model_output"
+  | "invariant"
+  | "operator_intent";
+
+export type ClassifiedFailure = {
+  failureClass: FailureClass;
+  symptom: string;
+  output: string;
+};
+
+export type DagNodeKind =
+  | "research"
+  | "edit"
+  | "test"
+  | "verify"
+  | "publish"
+  | "learn";
+
+export type ExecutionDagNode = {
+  id: string;
+  title: string;
+  kind: DagNodeKind;
+  dependsOn: string[];
+  risk: RiskLevel;
+  files: string[];
+  acceptance: string[];
+};
+
+export type ExecutionDag = {
+  issueNumber: string;
+  title: string;
+  nodes: ExecutionDagNode[];
+};
+
+export type OSContext = {
+  issueNumber: string;
+  issueTitle: string;
+  issueBody: string;
+  attempts: number;
+  maxAttempts: number;
+  risk?: RiskLevel;
+  riskReason?: string;
+  findings: PreflightFinding[];
+  dag?: ExecutionDag;
+  generatedFiles: GeneratedFile[];
+  verificationResults: VerificationResult[];
+  failures: ClassifiedFailure[];
+};
+
+export type OSEvent =
+  | { type: "os.received"; source: "github" | "cloudflare"; payload: unknown }
+  | { type: "preflight.completed"; findings: PreflightFinding[] }
+  | { type: "plan.created"; dag: ExecutionDag }
+  | { type: "risk.reviewed"; risk: RiskLevel; reason: string }
+  | { type: "approval.granted"; actor: string; commentId?: string }
+  | { type: "patch.generated"; files: GeneratedFile[] }
+  | { type: "verification.passed"; results: VerificationResult[] }
+  | { type: "verification.failed"; failure: ClassifiedFailure }
+  | { type: "learning.recorded"; lessonIds: string[] }
+  | { type: "publish.completed"; prUrl?: string; previewUrl?: string }
+  | {
+      type:
+        | "operator.plan_requested"
+        | "operator.retry_requested"
+        | "operator.rollback_requested"
+        | "operator.status_requested"
+        | "operator.deploy_requested";
+      protocolVersion: "os.operator.v1";
+      actor: string;
+      commentId: string;
+    };
+</file>
+
+<file path="src/os/machine.test.ts">
+import { createActor } from "xstate";
+import { describe, expect, it } from "vitest";
+import { createOSMachine } from "./machine.js";
+
+describe("vibe engine OS machine", () => {
+  it("pauses for approval when risk review marks a change high risk", () => {
+    const actor = createActor(createOSMachine()).start();
+
+    actor.send({ type: "preflight.completed", findings: [] });
+    actor.send({
+      type: "plan.created",
+      dag: {
+        issueNumber: "1",
+        title: "Workflow edit",
+        nodes: [
+          {
+            id: "edit-workflow",
+            title: "Edit workflow",
+            kind: "edit",
+            dependsOn: [],
+            risk: "high",
+            files: [".github/workflows/forever.yml"],
+            acceptance: ["workflow parses"],
+          },
+        ],
+      },
+    });
+    actor.send({
+      type: "risk.reviewed",
+      risk: "high",
+      reason: "Protected workflow edit",
+    });
+
+    expect(actor.getSnapshot().value).toBe("awaiting_approval");
+    expect(actor.getSnapshot().context.risk).toBe("high");
+  });
+
+  it("continues to patch generation when risk is low", () => {
+    const actor = createActor(createOSMachine()).start();
+
+    actor.send({ type: "preflight.completed", findings: [] });
+    actor.send({
+      type: "plan.created",
+      dag: {
+        issueNumber: "2",
+        title: "Safe source edit",
+        nodes: [
+          {
+            id: "edit-source",
+            title: "Edit source",
+            kind: "edit",
+            dependsOn: [],
+            risk: "low",
+            files: ["src/index.ts"],
+            acceptance: ["tests pass"],
+          },
+        ],
+      },
+    });
+    actor.send({
+      type: "risk.reviewed",
+      risk: "low",
+      reason: "Generated source-only edit",
+    });
+
+    expect(actor.getSnapshot().value).toBe("generating_patch");
+  });
+
+  it("ignores approval unless the actor is awaiting approval", () => {
+    const actor = createActor(createOSMachine()).start();
+
+    actor.send({ type: "approval.granted", actor: "alice" });
+
+    expect(actor.getSnapshot().value).toBe("received");
+  });
+
+  it("records verification failure and moves into learning", () => {
+    const actor = createActor(createOSMachine()).start();
+
+    actor.send({ type: "preflight.completed", findings: [] });
+    actor.send({
+      type: "plan.created",
+      dag: { issueNumber: "3", title: "Compile fix", nodes: [] },
+    });
+    actor.send({
+      type: "risk.reviewed",
+      risk: "low",
+      reason: "No protected files",
+    });
+    actor.send({
+      type: "patch.generated",
+      files: [{ path: "src/index.ts", content: "export const x = 1;" }],
+    });
+    actor.send({
+      type: "verification.failed",
+      failure: {
+        failureClass: "compile",
+        symptom: "Missing .js import extension",
+        output: "TS2835",
+      },
+    });
+
+    expect(actor.getSnapshot().value).toBe("learning");
+    expect(actor.getSnapshot().context.failures).toHaveLength(1);
+  });
+
+  it("allows retry requests from learning to return to preflight", () => {
+    const actor = createActor(createOSMachine()).start();
+
+    actor.send({ type: "preflight.completed", findings: [] });
+    actor.send({
+      type: "plan.created",
+      dag: { issueNumber: "3", title: "Compile fix", nodes: [] },
+    });
+    actor.send({
+      type: "risk.reviewed",
+      risk: "low",
+      reason: "No protected files",
+    });
+    actor.send({
+      type: "verification.failed",
+      failure: {
+        failureClass: "compile",
+        symptom: "Missing .js import extension",
+        output: "TS2835",
+      },
+    });
+
+    actor.send({
+      type: "operator.retry_requested",
+      protocolVersion: "os.operator.v1",
+      actor: "alice",
+      commentId: "comment-1",
+    });
+
+    expect(actor.getSnapshot().value).toBe("preflight");
+  });
+
+  it("keeps rollback requests passive in learning state", () => {
+    const actor = createActor(createOSMachine()).start();
+
+    actor.send({ type: "preflight.completed", findings: [] });
+    actor.send({
+      type: "plan.created",
+      dag: { issueNumber: "4", title: "Rollback", nodes: [] },
+    });
+    actor.send({
+      type: "risk.reviewed",
+      risk: "low",
+      reason: "No protected files",
+    });
+    actor.send({
+      type: "verification.failed",
+      failure: {
+        failureClass: "test",
+        symptom: "Test failed",
+        output: "expected true",
+      },
+    });
+
+    actor.send({
+      type: "operator.rollback_requested",
+      protocolVersion: "os.operator.v1",
+      actor: "alice",
+      commentId: "comment-2",
+    });
+
+    expect(actor.getSnapshot().value).toBe("learning");
+  });
+});
+</file>
+
+<file path="src/os/machine.ts">
+import { assign, setup } from "xstate";
+import type { OSContext, OSEvent } from "./events.js";
+
+export function createInitialOSContext(): OSContext {
+  return {
+    issueNumber: process.env.ISSUE_NUMBER || "000",
+    issueTitle: process.env.ISSUE_TITLE || "Vibe Request",
+    issueBody: process.env.ISSUE_BODY || "No details provided.",
+    attempts: 0,
+    maxAttempts: 3,
+    findings: [],
+    generatedFiles: [],
+    verificationResults: [],
+    failures: [],
+  };
+}
+
+export function createOSMachine(context: OSContext = createInitialOSContext()) {
+  return setup({
+    types: {
+      context: {} as OSContext,
+      events: {} as OSEvent,
+    },
+    guards: {
+      requiresApproval: ({ context }) => context.risk === "high",
+    },
+  }).createMachine({
+    id: "vibe-engine-os",
+    initial: "received",
+    context,
+    states: {
+      received: {
+        on: {
+          "preflight.completed": {
+            target: "preflight",
+            actions: assign({
+              findings: ({ event }) => event.findings,
+            }),
+          },
+        },
+      },
+      preflight: {
+        on: {
+          "plan.created": {
+            target: "planning",
+            actions: assign({
+              dag: ({ event }) => event.dag,
+            }),
+          },
+        },
+      },
+      planning: {
+        on: {
+          "risk.reviewed": {
+            target: "risk_review",
+            actions: assign({
+              risk: ({ event }) => event.risk,
+              riskReason: ({ event }) => event.reason,
+            }),
+          },
+        },
+      },
+      risk_review: {
+        always: [
+          { target: "awaiting_approval", guard: "requiresApproval" },
+          { target: "generating_patch" },
+        ],
+      },
+      awaiting_approval: {
+        on: {
+          "approval.granted": "generating_patch",
+        },
+      },
+      generating_patch: {
+        on: {
+          "patch.generated": {
+            target: "verifying",
+            actions: assign({
+              generatedFiles: ({ event }) => event.files,
+            }),
+          },
+          "verification.failed": {
+            target: "learning",
+            actions: assign({
+              failures: ({ context, event }) => [
+                ...context.failures,
+                event.failure,
+              ],
+            }),
+          },
+        },
+      },
+      verifying: {
+        on: {
+          "verification.passed": {
+            target: "publishing",
+            actions: assign({
+              verificationResults: ({ event }) => event.results,
+            }),
+          },
+          "verification.failed": {
+            target: "learning",
+            actions: assign({
+              failures: ({ context, event }) => [
+                ...context.failures,
+                event.failure,
+              ],
+            }),
+          },
+        },
+      },
+      learning: {
+        on: {
+          "learning.recorded": "preflight",
+          "operator.retry_requested": "preflight",
+          "operator.rollback_requested": {
+            actions: () => undefined,
+          },
+          "operator.status_requested": {
+            actions: () => undefined,
+          },
+        },
+      },
+      publishing: {
+        on: {
+          "publish.completed": "completed",
+        },
+      },
+      completed: {
+        type: "final",
+      },
+      failed: {
+        type: "final",
+      },
+    },
+  });
+}
+</file>
+
+<file path="agent.md">
+# AI Agent Constitution (Software 3.0 OS)
+You are a sovereign, causal-reasoning developer cluster. You compile natural language "vibes" into mathematically verifiable software using the xmachines architecture.
+
+## CRITICAL DIRECTIVES
+
+**1. Epistemology (Auto-Research First):**
+Never hallucinate API usage. Before writing a plan, perform automated research to ingest the latest documentation. Ground your logic in reality.
+
+**2. The System 2 DAG (Planning Ratchet):**
+Generate 3 divergent architectural approaches in `.planning/`. Critique them against system invariants, discard the two weakest, and commit only the surviving blueprint mapped out as a Directed Acyclic Graph (DAG) of dependencies.
+
+**3. The xmachines Paradigm (Formal Verification):**
+- **INV-01 (Actor Authority):** ALL logic is modeled as XState v5 machines.
+- **INV-02 (Strict Separation):** You MUST define UI contracts using `@xmachines/play-catalog` (Zod schemas). The UI layer has zero business logic.
+- **INV-04 (Passive Infrastructure):** Routers and UI reflect state; they never decide it.
+- **INV-05 (Signal-Only Reactivity):** You are FORBIDDEN from using `useState` or `useEffect` for business logic. All state propagation must use `@xmachines/play-signals` (TC39).
+
+**4. Evaluation Physics (Test-Driven Ratchet):**
+Code without an execution test is a hallucination. You MUST write a strict Vitest evaluation file (`.test.ts`) alongside every logic file. The system will physically execute your test to verify your logic before merging.
+
+**5. Skill Extraction (The Voyager Protocol):**
+Whenever you successfully compile a reusable xmachines actor that passes the Vitest and Causal Critic ratchet, you MUST extract the generic template of that machine and save it to `.skills/actors/`. Always check the `.skills/` directory to reuse existing components before generating new ones from scratch.
+
+**6. Evolutionary Memory (EvoMem):**
+If you fail a Vitest evaluation or Causal check but successfully self-heal during the ratchet loop, you MUST append the lesson to `EVOMEM.md` (e.g., "Failed because X. Solution: Always use Y"). Read `EVOMEM.md` before every execution to ensure you never repeat historical errors.
+
+**7. Automated Compliance Integration (Reward-Model Engineering):**
+Treat compliance validation utilities (e.g., the `cyberready` static compiler engine or AST scanners) as absolute physics gates. LLMs do not debate compliance logs; you iteratively refactor code until all external verification binaries yield a zero-error exit code.
+
+**8. Edge-Native Typescript (ESM Only):**
+Code must be ESM-only (`"type": "module"`). You MUST use `.js` extensions in all local imports, even within `.ts` files. CommonJS is banned. 
+
+**9. Surgical AST Patching:**
+Never rewrite entire files. Use precise `SEARCH/REPLACE` blocks. Let the `oxfmt` and `oxlint` CLI tools handle formatting; focus your compute strictly on logical diffs.
+
+**10. Pearl's Causal Analysis:**
+Before merging, evaluate: "If I inject this node, does it causally break downstream systems?" You have a maximum of 3 attempts to self-heal against the test runner before quarantining the code.
+
+**11. Aesthetics & Vibe:**
+Default to high-contrast Apple/Stripe-ish minimalist design tokens, paired with accessible, human-centric copywriting in the UI. Use vanilla CSS variables.
+</file>
+
+<file path="package.json">
+{
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "check": "tsc --noEmit && vitest run",
+    "smoke": "bash runs/smoke.sh",
+    "local-issue": "bash runs/local-issue.sh"
+  },
+  "dependencies": {
+    "@xmachines/play-catalog": "latest",
+    "@xmachines/play-signals": "latest",
+    "@xmachines/play-xstate": "^1.0.0-beta.3",
+    "typescript": "latest",
+    "vitest": "latest",
+    "xstate": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "tsx": "^4.23.0"
+  }
+}
+</file>
+
+<file path="src/agent-entrypoint.test.ts">
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { describe, expect, it } from "vitest";
+
+describe("agent entrypoint hardening", () => {
+  it("exits non-zero when the top-level OS run rejects", () => {
+    const agentSource = fs.readFileSync(
+      path.join(process.cwd(), "agent.ts"),
+      "utf8",
+    );
+
+    expect(agentSource).toMatch(/runOS\(\)\.catch\([\s\S]*process\.exit\(1\)/);
+  });
+
+  it("records a run manifest and rollback instructions for generated files", () => {
+    const agentSource = fs.readFileSync(
+      path.join(process.cwd(), "agent.ts"),
+      "utf8",
+    );
+
+    expect(agentSource).toContain("./src/run/manifest.js");
+    expect(agentSource).toContain("writeRunManifest");
+    expect(agentSource).toContain("renderRollbackInstructions");
+  });
+
+  it("falls back to agent.md when AGENTS.md is not present", () => {
+    const agentSource = fs.readFileSync(
+      path.join(process.cwd(), "agent.ts"),
+      "utf8",
+    );
+
+    expect(agentSource).toContain('fs.existsSync("AGENTS.md")');
+    expect(agentSource).toContain('"agent.md"');
+  });
+
+  it("validates generated patches before writing them to disk", () => {
+    const agentSource = fs.readFileSync(
+      path.join(process.cwd(), "agent.ts"),
+      "utf8",
+    );
+    const validatorIndex = agentSource.indexOf("runGeneratedPatchValidators");
+    const writeIndex = agentSource.indexOf("fs.writeFileSync(file.path");
+
+    expect(validatorIndex).toBeGreaterThan(-1);
+    expect(writeIndex).toBeGreaterThan(-1);
+    expect(validatorIndex).toBeLessThan(writeIndex);
+  });
+
+  it("publishes passive cockpit comments for terminal run states", () => {
+    const agentSource = fs.readFileSync(
+      path.join(process.cwd(), "agent.ts"),
+      "utf8",
+    );
+
+    expect(agentSource).toContain("publishCockpitFromEnv");
+    expect(agentSource).toContain('publishCockpitFromEnv("failed"');
+    expect(agentSource).toContain('publishCockpitFromEnv("completed"');
+    expect(agentSource).toContain("renderCockpitComment");
+    expect(agentSource).toContain("publishCockpitComment");
+  });
+
+  it("routes operator comments before model inference starts", () => {
+    const agentSource = fs.readFileSync(
+      path.join(process.cwd(), "agent.ts"),
+      "utf8",
+    );
+    const routerIndex = agentSource.indexOf("routeGitHubComment");
+    const modelIndex = agentSource.indexOf("Phase 1: Planning Architecture");
+
+    expect(agentSource).toContain("./src/operator/github-comment-router.js");
+    expect(agentSource).toContain("./src/os/event-ledger.js");
+    expect(agentSource).toContain("./src/run/rollback.js");
+    expect(agentSource).toContain("appendOperatorEvent");
+    expect(agentSource).toContain("readLatestRollbackInstructions");
+    expect(routerIndex).toBeGreaterThan(-1);
+    expect(modelIndex).toBeGreaterThan(-1);
+    expect(routerIndex).toBeLessThan(modelIndex);
+  });
+});
+</file>
+
+<file path=".github/workflows/forever.yml">
+name: Sovereign OS Event Bus
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created]
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: os-thread-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  run-os:
+    runs-on: ubuntu-latest
+    if: ${{ !github.event.sender.bot }}
+    
+    steps:
+      - name: 📥 Checkout Codebase
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ⚡ Ultra-Fast Runtime (Bun)
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: 📦 Install System Utilities (Cached)
+        run: bun install -g repomix typescript vitest wrangler
+
+      - name: 🗺️ Map Global State
+        run: repomix --output repomix-output.txt
+
+      - name: 🔀 Route Event Context (Multi-line Safe)
+        id: context
+        env:
+          BODY_ISSUE: ${{ github.event.issue.body }}
+          BODY_COMMENT: ${{ github.event.comment.body }}
+          BODY_REVIEW: ${{ github.event.review.body }}
+        run: |
+          write_env_multiline() {
+            local name="$1"
+            local value="$2"
+            local delimiter="EOF_${name}_$(uuidgen)"
+            {
+              echo "${name}<<${delimiter}"
+              printf '%s\n' "$value"
+              echo "${delimiter}"
+            } >> "$GITHUB_ENV"
+          }
+
+          if [ "${{ github.event_name }}" == "issue_comment" ]; then
+            echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
+            echo "ISSUE_TITLE=${{ github.event.issue.title }} (Revision)" >> $GITHUB_ENV
+            write_env_multiline "ISSUE_BODY" "$BODY_COMMENT"
+          elif [ "${{ github.event_name }}" == "pull_request_review" ]; then
+            echo "ISSUE_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+            echo "ISSUE_TITLE=${{ github.event.pull_request.title }} (PR Feedback)" >> $GITHUB_ENV
+            write_env_multiline "ISSUE_BODY" "$BODY_REVIEW"
+          else
+            echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
+            echo "ISSUE_TITLE=${{ github.event.issue.title }}" >> $GITHUB_ENV
+            write_env_multiline "ISSUE_BODY" "$BODY_ISSUE"
+          fi
+
+      - name: 🧠 Fire AI Inference Ratchet (agent.ts)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_COMMENT_ID: ${{ github.event.comment.id || github.event.review.id || github.run_id }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GH_MODELS_TOKEN: ${{ secrets.GH_MODELS_TOKEN }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: bun run agent.ts
+
+      - name: 🧹 Hardware-Accelerated Formatting (oxlint & oxfmt)
+        continue-on-error: true
+        run: |
+          bunx oxlint@latest --fix
+          bunx oxfmt@latest -w .
+
+      - name: 🚀 Deploy Vibe Blueprint to Cloudflare Edge
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # Safe Edge deployment execution block via Wrangler CLI
+          if [ ! -z "$CLOUDFLARE_API_TOKEN" ]; then
+            # We add '|| true' so a Cloudflare failure doesn't crash the PR handoff
+            OUTPUT=$(bunx wrangler pages deploy . --project-name="vibe-engine-os" --branch="vibe/issue-${{ env.ISSUE_NUMBER }}" 2>&1) || true
+            
+            # Extract the preview URL safely
+            PREVIEW_URL=$(echo "$OUTPUT" | grep -oE "https://[a-zA-Z0-9.-]+\.pages\.dev" | head -1)
+            
+            if [ -z "$PREVIEW_URL" ]; then
+              echo "PREVIEW_URL=cloudflare-failed.local" >> $GITHUB_ENV
+              echo "⚠️ Cloudflare deploy failed. Ensure the project 'vibe-engine-os' is created in your CF Dashboard."
+            else
+              echo "PREVIEW_URL=$PREVIEW_URL" >> $GITHUB_ENV
+            fi
+          else
+            echo "PREVIEW_URL=https://cloudflare-preview-not-configured.local" >> $GITHUB_ENV
+          fi
+
+      - name: 🔄 Smart Git Sync & PR Handoff
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.name "Vibe Engine OS"
+          git config --global user.email "ai@vibe-engine.local"
+          
+          BRANCH_NAME="vibe/issue-${{ env.ISSUE_NUMBER }}"
+          git checkout $BRANCH_NAME || git checkout -b $BRANCH_NAME
+          
+          git add .
+          git commit -m "feat(ai): causal compilation & edge deployment for #${{ env.ISSUE_NUMBER }}" || echo "No changes to commit"
+          git push origin $BRANCH_NAME || git push --set-upstream origin $BRANCH_NAME
+          
+          gh pr create \
+            --title "🚀 Vibe Compilation: ${{ env.ISSUE_TITLE }}" \
+            --body "Autonomous xmachines compilation complete. Evaluated via Vitest. Formatted via Oxlint.
+            
+            🌐 **Live Edge Preview URL:** ${{ env.PREVIEW_URL }}
+            
+            Closes #${{ env.ISSUE_NUMBER }}" \
+            --base main \
+            --head $BRANCH_NAME || echo "PR already exists, updated in place."
+</file>
+
+<file path="agent.ts">
+import * as fs from 'fs';
+import * as path from 'path';
+import { execSync } from 'child_process';
+import { appendOperatorEvent } from './src/os/event-ledger.js';
+import { renderCockpitComment } from './src/operator/cockpit.js';
+import { routeGitHubComment } from './src/operator/github-comment-router.js';
+import { publishCockpitComment, resolveGitHubCommentTarget } from './src/publishing/github-comments.js';
+import { renderRollbackInstructions, writeRunManifest } from './src/run/manifest.js';
+import { readLatestRollbackInstructions } from './src/run/rollback.js';
+import { runGeneratedPatchValidators } from './src/verification/pipeline.js';
+
+process.on("uncaughtException", (error: Error) => {
+    console.error("Fatal uncaught exception:", error.message);
+    if (error.stack) console.error(error.stack);
+    process.exit(1);
+});
+
+// --- 1. SETUP & SECRETS ---
+const GH_MODELS_TOKEN = process.env.GH_MODELS_TOKEN!;
+const GROQ_KEY = process.env.GROQ_API_KEY!;
+const GEMINI_KEY = process.env.GEMINI_API_KEY!;
+const ISSUE_NUMBER = process.env.ISSUE_NUMBER || "000";
+const ISSUE_TITLE = process.env.ISSUE_TITLE || "Vibe Request";
+const ISSUE_BODY = process.env.ISSUE_BODY || "No details provided.";
+const GITHUB_ACTOR = process.env.GITHUB_ACTOR || "unknown-actor";
+const GITHUB_COMMENT_ID = process.env.GITHUB_COMMENT_ID || process.env.GITHUB_RUN_ID || "unknown-comment";
+
+// --- 2. UNIVERSAL API ROUTER ---
+async function callOpenAIFormat(baseUrl: string, apiKey: string, model: string, system: string, user: string, jsonMode = false) {
+    const payload: any = { model, messages: [{ role: "system", content: system }, { role: "user", content: user }] };
+    if (jsonMode) payload.response_format = { type: "json_object" };
+    
+    const res = await fetch(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    
+    if (!res.ok) throw new Error(`API Error from ${baseUrl}: ${res.statusText}`);
+    const data = await res.json();
+    return data.choices[0].message.content;
+}
+
+async function callGemini(apiKey: string, system: string, user: string) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const payload = { system_instruction: { parts: { text: system } }, contents: [{ parts: [{ text: user }] }] };
+    
+    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const data = await res.json();
+    return data.candidates[0].content.parts[0].text;
+}
+
+// --- 3. THE AUTONOMOUS OS ENGINE ---
+async function runOS() {
+    console.log(`\n🚀 Booting Vibe Engine OS for Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}`);
+    
+    // 1. Load System Memory
+    const constitutionPath = fs.existsSync("AGENTS.md") ? "AGENTS.md" : "agent.md";
+    const constitution = fs.readFileSync(constitutionPath, 'utf8');
+    let repoContext = "Repository is currently empty.";
+    if (fs.existsSync('repomix-output.txt')) repoContext = fs.readFileSync('repomix-output.txt', 'utf8');
+
+    // Load Evolutionary Memory historical logs if they exist
+    let evoMemContext = "";
+    if (fs.existsSync('EVOMEM.md')) {
+        evoMemContext = `\n\n⚠️ HISTORICAL RUNTIME ERRORS TO AVOID:\n${fs.readFileSync('EVOMEM.md', 'utf8')}`;
+    }
+
+    const vibe = `TITLE: ${ISSUE_TITLE}\nDESCRIPTION: ${ISSUE_BODY}`;
+
+    if (isOperatorCommentEvent()) {
+        const route = routeGitHubComment({
+            body: ISSUE_BODY,
+            actor: GITHUB_ACTOR,
+            commentId: GITHUB_COMMENT_ID,
+            state: "operator_command",
+            context: {
+                issueNumber: ISSUE_NUMBER,
+                issueTitle: ISSUE_TITLE,
+                issueBody: ISSUE_BODY,
+                attempts: 0,
+                maxAttempts: 3,
+                findings: [],
+                generatedFiles: [],
+                verificationResults: [],
+                failures: [],
+            },
+            readRollback: () => readLatestRollbackInstructions("."),
+        });
+
+        if (route.handled) {
+            console.log(`🧭 Operator command routed as typed event: ${route.event.type}`);
+            appendOperatorEvent(".", route.event);
+            await publishCommentBodyFromEnv(route.responseBody);
+            return;
+        }
+    }
+
+    // --- PHASE 1: SYSTEM 2 PLANNER (gpt-4o) ---
+    console.log("\n🧠 Phase 1: Planning Architecture (Reading global context)...");
+    const plan = await callOpenAIFormat(
+        "https://models.inference.ai.azure.com", GH_MODELS_TOKEN, "gpt-4o",
+        `You are a Software 3.0 Architect. Follow this constitution strictly:\n${constitution}\n\nGlobal Codebase Map:\n${repoContext}${evoMemContext}`,
+        `Create a strict execution blueprint for this request:\n${vibe}`
+    );
+    
+    const planDir = '.planning/milestones';
+    if (!fs.existsSync(planDir)) fs.mkdirSync(planDir, { recursive: true });
+    fs.writeFileSync(path.join(planDir, `ISSUE_${ISSUE_NUMBER}_PLAN.md`), plan);
+    console.log("✔️ Blueprint saved to immutable ledger.");
+
+    // --- PHASE 2: INFERENCE-TIME COMPUTE RATCHET LOOP ---
+    console.log("\n⚡ Phase 2: Entering Inference-Time Compute Ratchet...");
+    let attempts = 0;
+    const MAX_ATTEMPTS = 3;
+    let finalVerifiedFiles: any[] = [];
+    let feedback = ""; 
+    let recordedErrors: string[] = [];
+
+    while (attempts < MAX_ATTEMPTS) {
+        attempts++;
+        console.log(`\n🔄 Inference Loop ${attempts}/${MAX_ATTEMPTS}...`);
+        
+        let codePrompt = `Execute this plan strictly:\n${plan}\n\nOutput ONLY valid JSON matching this schema: 
+        {
+          "files": [
+            {"path": "src/machine.ts", "content": "source code"},
+            {"path": "src/machine.test.ts", "content": "Vitest evaluation code"}
+          ]
+        }`;
+        
+        if (feedback !== "") codePrompt += `\n\n🚨 PREVIOUS ATTEMPT FAILED. Fix these exact errors:\n${feedback}`;
+
+        // 1. Code Generation (Groq / llama-3.3-70b)
+        const rawCode = await callOpenAIFormat(
+            "https://api.groq.com/openai/v1", GROQ_KEY, "llama-3.3-70b-versatile",
+            "You are an expert xmachines coder. Output strictly in JSON.", codePrompt, true
+        );
+        
+        let generatedFiles;
+        try {
+            generatedFiles = JSON.parse(rawCode).files || [];
+        } catch (error: any) {
+            console.error("JSON Parsing failed this iteration:", error.message);
+            continue;
+        }
+        if (generatedFiles.length === 0) continue;
+
+        const validation = runGeneratedPatchValidators(generatedFiles);
+        if (!validation.passed) {
+            const errMsg = validation.failures.join("\n");
+            console.error("❌ Generated Patch Validation Failed.");
+            feedback += `Generated Patch Validation Failed:\n${errMsg}\n`;
+            recordedErrors.push(errMsg);
+            continue;
+        }
+
+        // 2. Snapshot current disk state (for rollback safety)
+        console.log("💾 Writing temporary files for verification...");
+        const backups = new Map<string, string | null>();
+        for (const file of generatedFiles) {
+            const dir = path.dirname(file.path);
+            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+            
+            if (fs.existsSync(file.path)) backups.set(file.path, fs.readFileSync(file.path, 'utf8'));
+            else backups.set(file.path, null);
+            
+            fs.writeFileSync(file.path, file.content);
+        }
+
+        let loopPassed = true;
+        feedback = "";
+
+        // 3. DETERMINISTIC COMPILER CRITIC (TypeScript)
+        try {
+            console.log("⚙️ Running Deterministic Compiler Check (tsc --noEmit)...");
+            if (fs.existsSync('tsconfig.json')) execSync('npx tsc --noEmit', { stdio: 'pipe' });
+            console.log("✔️ Compiler Check Passed.");
+        } catch (error: any) {
+            console.error("❌ Compiler Check Failed.");
+            const errMsg = error.stdout?.toString() || "Unknown compile error";
+            feedback += `TypeScript Compiler Error:\n${errMsg}\n`;
+            recordedErrors.push(errMsg);
+            loopPassed = false;
+        }
+
+        // 4. DETERMINISTIC EVALUATION (Vitest Execution Physics)
+        if (loopPassed) {
+            try {
+                console.log("🧪 Running Execution Evals (Vitest)...");
+                execSync('npx vitest run', { stdio: 'pipe' });
+                console.log("✔️ Evaluation Tests Passed.");
+            } catch (error: any) {
+                console.error("❌ Evaluation Tests Failed.");
+                const errMsg = error.stdout?.toString() || "Test suit failed execution";
+                feedback += `Test Execution Failed:\n${errMsg}\n`;
+                recordedErrors.push(errMsg);
+                loopPassed = false;
+            }
+        }
+
+        // 5. PEARL'S CAUSAL CRITIC (Gemini-1.5-Flash)
+        if (loopPassed) {
+            console.log("🛡️ Running Causal Do-Calculus Verification...");
+            for (const file of generatedFiles) {
+                const criticSystem = `You are a Judea Pearl Causal Critic. Codebase context:\n${repoContext}\n\nDoes this code violate xmachines invariants or break downstream logic? If safe, reply EXACTLY 'PASS'. If it fails, explain why.`;
+                const criticUser = `Review this new code for ${file.path}:\n\n${file.content}`;
+                const verdict = await callGemini(GEMINI_KEY, criticSystem, criticUser);
+                
+                if (!verdict.toUpperCase().includes("PASS")) {
+                    console.error(`❌ Critic Rejected ${file.path}`);
+                    feedback += `File ${file.path} Failed: ${verdict}\n`;
+                    recordedErrors.push(verdict);
+                    loopPassed = false;
+                    break; 
+                }
+            }
+        }
+
+        // 6. RATCHET DECISION: Keep or Rollback?
+        if (loopPassed) {
+            finalVerifiedFiles = generatedFiles;
+            console.log("\n✅ Mathematical, Execution, and Causal verification complete. Ratchet locked.");
+            
+            // If we recovered from failures on previous loops, log the lessons to EvoMem
+            if (attempts > 1 && recordedErrors.length > 0) {
+                console.log("📝 Writing self-healing lessons to EvoMem Ledger...");
+                const lessons = `\n- [Issue #${ISSUE_NUMBER}] Resolved runtime failures during iteration:\n  ${recordedErrors.join('\n  ')}\n`;
+                fs.appendFileSync('EVOMEM.md', lessons, 'utf8');
+            }
+            break; 
+        } else {
+            console.log("⚠️ Ratchet slipped. Rolling back files and feeding errors to Groq...");
+            for (const [filepath, oldContent] of backups.entries()) {
+                if (oldContent === null) {
+                    if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
+                } else {
+                    fs.writeFileSync(filepath, oldContent);
+                }
+            }
+        }
+    }
+
+    // --- PHASE 3: CIRCUIT BREAKER & EXIT ---
+    if (finalVerifiedFiles.length === 0) {
+        console.error("\n🛑 Circuit Breaker Tripped: AI could not self-heal after 3 attempts.");
+        fs.writeFileSync('CRITIC_FAILED.md', `🚨 **System Halted.**\nFailed to pass Eval/Critic after ${MAX_ATTEMPTS} attempts.\n\nFinal Feedback:\n${feedback}`);
+        await publishCockpitFromEnv("failed", {
+            generatedFiles: [],
+            failures: recordedErrors.map((error) => ({
+                failureClass: "model_output",
+                symptom: error.split("\n")[0] || "Circuit breaker tripped",
+                output: error,
+            })),
+            attempts,
+            maxAttempts: MAX_ATTEMPTS,
+        });
+        process.exit(1);
+    }
+
+    const runId = `issue-${ISSUE_NUMBER}-${new Date().toISOString().replace(/[:.]/g, "-")}`;
+    const branchName = getGitValue("git branch --show-current", "unknown-branch");
+    const baseSha = getGitValue("git rev-parse HEAD", "unknown-sha");
+    const manifest = {
+        runId,
+        issueNumber: ISSUE_NUMBER,
+        issueTitle: ISSUE_TITLE,
+        branchName,
+        baseSha,
+        generatedFiles: finalVerifiedFiles.map((file) => file.path),
+        createdAt: new Date().toISOString(),
+    };
+    writeRunManifest(".", manifest);
+    fs.writeFileSync(
+        path.join(".runs", runId, "ROLLBACK.md"),
+        renderRollbackInstructions(manifest),
+    );
+    console.log(`🧭 Run manifest recorded: .runs/${runId}/manifest.json`);
+    await publishCockpitFromEnv("completed", {
+        generatedFiles: finalVerifiedFiles,
+        failures: [],
+        attempts,
+        maxAttempts: MAX_ATTEMPTS,
+    });
+
+    // Extract Skills automatically for passing xmachines actors
+    for (const file of finalVerifiedFiles) {
+        if (file.path.includes('src/') && !file.path.includes('.test.ts')) {
+            const skillDir = '.skills/actors';
+            if (!fs.existsSync(skillDir)) fs.mkdirSync(skillDir, { recursive: true });
+            const skillName = path.basename(file.path);
+            fs.writeFileSync(path.join(skillDir, skillName), file.content);
+            console.log(`⚡ Skill Extracted: ${skillName}`);
+        }
+    }
+    
+    console.log("🎯 Handoff Complete. Engine spinning down.");
+}
+
+function getGitValue(command: string, fallback: string) {
+    try {
+        return execSync(command, { stdio: "pipe" }).toString().trim() || fallback;
+    } catch {
+        return fallback;
+    }
+}
+
+function isOperatorCommentEvent() {
+    const eventName = process.env.GITHUB_EVENT_NAME;
+    return eventName === "issue_comment" || eventName === "pull_request_review";
+}
+
+async function publishCommentBodyFromEnv(body: string) {
+    const target = resolveGitHubCommentTarget(process.env);
+    if (!target.enabled) {
+        console.log(`🧭 Operator comment skipped: ${target.reason}`);
+        return;
+    }
+
+    try {
+        const result = await publishCockpitComment({
+            token: target.token,
+            repository: target.repository,
+            issueNumber: target.issueNumber,
+            body,
+        });
+        console.log(`🧭 Operator comment ${result.status}: ${result.url ?? "no URL returned"}`);
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error("⚠️ Operator comment publish failed:", message);
+    }
+}
+
+async function publishCockpitFromEnv(
+    state: string,
+    runState: {
+        generatedFiles: Array<{ path: string; content: string }>;
+        failures: Array<{ failureClass: "model_output"; symptom: string; output: string }>;
+        attempts: number;
+        maxAttempts: number;
+    },
+) {
+    const target = resolveGitHubCommentTarget(process.env);
+    if (!target.enabled) {
+        console.log(`🧭 Cockpit comment skipped: ${target.reason}`);
+        return;
+    }
+
+    const body = renderCockpitComment(state, {
+        issueNumber: ISSUE_NUMBER,
+        issueTitle: ISSUE_TITLE,
+        issueBody: ISSUE_BODY,
+        attempts: runState.attempts,
+        maxAttempts: runState.maxAttempts,
+        findings: [],
+        generatedFiles: runState.generatedFiles,
+        verificationResults: [],
+        failures: runState.failures,
+    });
+
+    try {
+        const result = await publishCockpitComment({
+            token: target.token,
+            repository: target.repository,
+            issueNumber: target.issueNumber,
+            body,
+        });
+        console.log(`🧭 Cockpit comment ${result.status}: ${result.url ?? "no URL returned"}`);
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error("⚠️ Cockpit comment publish failed:", message);
+    }
+}
+
+runOS().catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Fatal OS run failure:", message);
+    process.exit(1);
+});
+</file>
+
+</files>
