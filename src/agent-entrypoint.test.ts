@@ -32,4 +32,17 @@ describe("agent entrypoint hardening", () => {
     expect(agentSource).toContain('fs.existsSync("AGENTS.md")');
     expect(agentSource).toContain('"agent.md"');
   });
+
+  it("validates generated patches before writing them to disk", () => {
+    const agentSource = fs.readFileSync(
+      path.join(process.cwd(), "agent.ts"),
+      "utf8",
+    );
+    const validatorIndex = agentSource.indexOf("runGeneratedPatchValidators");
+    const writeIndex = agentSource.indexOf("fs.writeFileSync(file.path");
+
+    expect(validatorIndex).toBeGreaterThan(-1);
+    expect(writeIndex).toBeGreaterThan(-1);
+    expect(validatorIndex).toBeLessThan(writeIndex);
+  });
 });

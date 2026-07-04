@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
 import { renderRollbackInstructions, writeRunManifest } from './src/run/manifest.js';
+import { runGeneratedPatchValidators } from './src/verification/pipeline.js';
 
 process.on("uncaughtException", (error: Error) => {
     console.error("Fatal uncaught exception:", error.message);
@@ -109,6 +110,15 @@ async function runOS() {
             continue;
         }
         if (generatedFiles.length === 0) continue;
+
+        const validation = runGeneratedPatchValidators(generatedFiles);
+        if (!validation.passed) {
+            const errMsg = validation.failures.join("\n");
+            console.error("❌ Generated Patch Validation Failed.");
+            feedback += `Generated Patch Validation Failed:\n${errMsg}\n`;
+            recordedErrors.push(errMsg);
+            continue;
+        }
 
         // 2. Snapshot current disk state (for rollback safety)
         console.log("💾 Writing temporary files for verification...");
