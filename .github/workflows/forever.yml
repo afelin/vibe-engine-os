@@ -33,6 +33,9 @@ jobs:
         with:
           bun-version: latest
 
+      - name: 📦 Install Project Dependencies
+        run: bun install
+
       - name: 📦 Install System Utilities (Cached)
         run: bun install -g repomix typescript vitest wrangler
 
@@ -46,41 +49,51 @@ jobs:
           BODY_COMMENT: ${{ github.event.comment.body }}
           BODY_REVIEW: ${{ github.event.review.body }}
         run: |
+          write_env_multiline() {
+            local name="$1"
+            local value="$2"
+            local delimiter="EOF_${name}_$(uuidgen)"
+            {
+              echo "${name}<<${delimiter}"
+              printf '%s\n' "$value"
+              echo "${delimiter}"
+            } >> "$GITHUB_ENV"
+          }
+
           if [ "${{ github.event_name }}" == "issue_comment" ]; then
             echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
             echo "ISSUE_TITLE=${{ github.event.issue.title }} (Revision)" >> $GITHUB_ENV
-            echo "ISSUE_BODY<<EOF" >> $GITHUB_ENV
-            echo "$BODY_COMMENT" >> $GITHUB_ENV
-            echo "EOF" >> $GITHUB_ENV
+            write_env_multiline "ISSUE_BODY" "$BODY_COMMENT"
           elif [ "${{ github.event_name }}" == "pull_request_review" ]; then
             echo "ISSUE_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
             echo "ISSUE_TITLE=${{ github.event.pull_request.title }} (PR Feedback)" >> $GITHUB_ENV
-            echo "ISSUE_BODY<<EOF" >> $GITHUB_ENV
-            echo "$BODY_REVIEW" >> $GITHUB_ENV
-            echo "EOF" >> $GITHUB_ENV
+            write_env_multiline "ISSUE_BODY" "$BODY_REVIEW"
           else
             echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
             echo "ISSUE_TITLE=${{ github.event.issue.title }}" >> $GITHUB_ENV
-            echo "ISSUE_BODY<<EOF" >> $GITHUB_ENV
-            echo "$BODY_ISSUE" >> $GITHUB_ENV
-            echo "EOF" >> $GITHUB_ENV
+            write_env_multiline "ISSUE_BODY" "$BODY_ISSUE"
           fi
 
       - name: 🧠 Fire AI Inference Ratchet (agent.ts)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_COMMENT_ID: ${{ github.event.comment.id || github.event.review.id || github.run_id }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
           GH_MODELS_TOKEN: ${{ secrets.GH_MODELS_TOKEN }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: bun run agent.ts
 
       - name: 🧹 Hardware-Accelerated Formatting (oxlint & oxfmt)
+        if: ${{ env.VIBE_OPERATOR_ONLY != '1' }}
         continue-on-error: true
         run: |
           bunx oxlint@latest --fix
           bunx oxfmt@latest -w .
 
       - name: 🚀 Deploy Vibe Blueprint to Cloudflare Edge
+        if: ${{ env.VIBE_OPERATOR_ONLY != '1' }}
         id: deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -95,7 +108,7 @@ jobs:
             PREVIEW_URL=$(echo "$OUTPUT" | grep -oE "https://[a-zA-Z0-9.-]+\.pages\.dev" | head -1)
             
             if [ -z "$PREVIEW_URL" ]; then
-              echo "PREVIEW_URL=https://cloudflare-deployment-failed.local" >> $GITHUB_ENV
+              echo "PREVIEW_URL=cloudflare-failed.local" >> $GITHUB_ENV
               echo "⚠️ Cloudflare deploy failed. Ensure the project 'vibe-engine-os' is created in your CF Dashboard."
             else
               echo "PREVIEW_URL=$PREVIEW_URL" >> $GITHUB_ENV
@@ -105,8 +118,10 @@ jobs:
           fi
 
       - name: 🔄 Smart Git Sync & PR Handoff
+        if: ${{ env.VIBE_OPERATOR_ONLY != '1' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --global user.name "Vibe Engine OS"
           git config --global user.email "ai@vibe-engine.local"
