@@ -737,6 +737,23 @@ Do not implement these before V0 and V1 are stable:
 - Generated patches pass deterministic validators.
 - Cockpit comment tells no-code user current state and next action.
 
+### V1 Next Primitive Sequence
+
+Use the xmachines invariants to keep this stage lean:
+
+- **Actor Authority:** GitHub comments and labels must never decide. They only display state or forward slash-command events into the OS machine.
+- **Passive Infrastructure:** The cockpit comment is a projection of `OSContext`, not a second source of truth.
+- **Event Sourcing:** Slash commands become typed events such as `approval.granted`, `retry.requested`, and `rollback.requested`.
+- **No-Code Safety:** The next action should always be visible in the cockpit comment, and risky transitions should require `/approve`.
+
+Implement V1 in this order:
+
+1. Wire `renderCockpitComment()` into GitHub issue/PR comments as best-effort passive infrastructure.
+2. Route `/plan`, `/approve`, `/retry`, `/rollback`, `/status`, and `/deploy` into typed OS events.
+3. Connect DAG risk classification to the machine's `risk.reviewed` event.
+4. Block generated writes unless the validator pipeline passes.
+5. Add rollback request handling that posts rollback instructions instead of mutating automatically.
+
 ### V2 Acceptance
 - Failures become structured lessons.
 - Relevant lessons are retrieved before planning.

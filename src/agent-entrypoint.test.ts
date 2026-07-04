@@ -45,4 +45,17 @@ describe("agent entrypoint hardening", () => {
     expect(writeIndex).toBeGreaterThan(-1);
     expect(validatorIndex).toBeLessThan(writeIndex);
   });
+
+  it("publishes passive cockpit comments for terminal run states", () => {
+    const agentSource = fs.readFileSync(
+      path.join(process.cwd(), "agent.ts"),
+      "utf8",
+    );
+
+    expect(agentSource).toContain("publishCockpitFromEnv");
+    expect(agentSource).toContain('publishCockpitFromEnv("failed"');
+    expect(agentSource).toContain('publishCockpitFromEnv("completed"');
+    expect(agentSource).toContain("renderCockpitComment");
+    expect(agentSource).toContain("publishCockpitComment");
+  });
 });

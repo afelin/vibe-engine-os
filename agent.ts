@@ -1,6 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
+import { renderCockpitComment } from './src/operator/cockpit.js';
+import { publishCockpitComment, resolveGitHubCommentTarget } from './src/publishing/github-comments.js';
 import { renderRollbackInstructions, writeRunManifest } from './src/run/manifest.js';
 import { runGeneratedPatchValidators } from './src/verification/pipeline.js';
 
@@ -210,6 +212,16 @@ async function runOS() {
     if (finalVerifiedFiles.length === 0) {
         console.error("\n🛑 Circuit Breaker Tripped: AI could not self-heal after 3 attempts.");
         fs.writeFileSync('CRITIC_FAILED.md', `🚨 **System Halted.**\nFailed to pass Eval/Critic after ${MAX_ATTEMPTS} attempts.\n\nFinal Feedback:\n${feedback}`);
+        await publishCockpitFromEnv("failed", {
+            generatedFiles: [],
+            failures: recordedErrors.map((error) => ({
+                failureClass: "model_output",
+                symptom: error.split("\n")[0] || "Circuit breaker tripped",
+                output: error,
+            })),
+            attempts,
+            maxAttempts: MAX_ATTEMPTS,
+        });
         process.exit(1);
     }
 
@@ -231,6 +243,12 @@ async function runOS() {
         renderRollbackInstructions(manifest),
     );
     console.log(`🧭 Run manifest recorded: .runs/${runId}/manifest.json`);
+    await publishCockpitFromEnv("completed", {
+        generatedFiles: finalVerifiedFiles,
+        failures: [],
+        attempts,
+        maxAttempts: MAX_ATTEMPTS,
+    });
 
     // Extract Skills automatically for passing xmachines actors
     for (const file of finalVerifiedFiles) {
@@ -251,6 +269,47 @@ function getGitValue(command: string, fallback: string) {
         return execSync(command, { stdio: "pipe" }).toString().trim() || fallback;
     } catch {
         return fallback;
+    }
+}
+
+async function publishCockpitFromEnv(
+    state: string,
+    runState: {
+        generatedFiles: Array<{ path: string; content: string }>;
+        failures: Array<{ failureClass: "model_output"; symptom: string; output: string }>;
+        attempts: number;
+        maxAttempts: number;
+    },
+) {
+    const target = resolveGitHubCommentTarget(process.env);
+    if (!target.enabled) {
+        console.log(`🧭 Cockpit comment skipped: ${target.reason}`);
+        return;
+    }
+
+    const body = renderCockpitComment(state, {
+        issueNumber: ISSUE_NUMBER,
+        issueTitle: ISSUE_TITLE,
+        issueBody: ISSUE_BODY,
+        attempts: runState.attempts,
+        maxAttempts: runState.maxAttempts,
+        findings: [],
+        generatedFiles: runState.generatedFiles,
+        verificationResults: [],
+        failures: runState.failures,
+    });
+
+    try {
+        const result = await publishCockpitComment({
+            token: target.token,
+            repository: target.repository,
+            issueNumber: target.issueNumber,
+            body,
+        });
+        console.log(`🧭 Cockpit comment ${result.status}: ${result.url ?? "no URL returned"}`);
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error("⚠️ Cockpit comment publish failed:", message);
     }
 }
 
