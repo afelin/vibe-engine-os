@@ -1,6 +1,19 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
+import { appendOperatorEvent } from './src/os/event-ledger.js';
+import { renderCockpitComment } from './src/operator/cockpit.js';
+import { routeGitHubComment } from './src/operator/github-comment-router.js';
+import { publishCockpitComment, resolveGitHubCommentTarget } from './src/publishing/github-comments.js';
+import { renderRollbackInstructions, writeRunManifest } from './src/run/manifest.js';
+import { readLatestRollbackInstructions } from './src/run/rollback.js';
+import { runGeneratedPatchValidators } from './src/verification/pipeline.js';
+
+process.on("uncaughtException", (error: Error) => {
+    console.error("Fatal uncaught exception:", error.message);
+    if (error.stack) console.error(error.stack);
+    process.exit(1);
+});
 
 // --- 1. SETUP & SECRETS ---
 const GH_MODELS_TOKEN = process.env.GH_MODELS_TOKEN!;
@@ -9,6 +22,8 @@ const GEMINI_KEY = process.env.GEMINI_API_KEY!;
 const ISSUE_NUMBER = process.env.ISSUE_NUMBER || "000";
 const ISSUE_TITLE = process.env.ISSUE_TITLE || "Vibe Request";
 const ISSUE_BODY = process.env.ISSUE_BODY || "No details provided.";
+const GITHUB_ACTOR = process.env.GITHUB_ACTOR || "unknown-actor";
+const GITHUB_COMMENT_ID = process.env.GITHUB_COMMENT_ID || process.env.GITHUB_RUN_ID || "unknown-comment";
 
 // --- 2. UNIVERSAL API ROUTER ---
 async function callOpenAIFormat(baseUrl: string, apiKey: string, model: string, system: string, user: string, jsonMode = false) {
@@ -40,7 +55,8 @@ async function runOS() {
     console.log(`\n🚀 Booting Vibe Engine OS for Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}`);
     
     // 1. Load System Memory
-    const constitution = fs.readFileSync('AGENTS.md', 'utf8');
+    const constitutionPath = fs.existsSync("AGENTS.md") ? "AGENTS.md" : "agent.md";
+    const constitution = fs.readFileSync(constitutionPath, 'utf8');
     let repoContext = "Repository is currently empty.";
     if (fs.existsSync('repomix-output.txt')) repoContext = fs.readFileSync('repomix-output.txt', 'utf8');
 
@@ -51,6 +67,34 @@ async function runOS() {
     }
 
     const vibe = `TITLE: ${ISSUE_TITLE}\nDESCRIPTION: ${ISSUE_BODY}`;
+
+    if (isOperatorCommentEvent()) {
+        const route = routeGitHubComment({
+            body: ISSUE_BODY,
+            actor: GITHUB_ACTOR,
+            commentId: GITHUB_COMMENT_ID,
+            state: "operator_command",
+            context: {
+                issueNumber: ISSUE_NUMBER,
+                issueTitle: ISSUE_TITLE,
+                issueBody: ISSUE_BODY,
+                attempts: 0,
+                maxAttempts: 3,
+                findings: [],
+                generatedFiles: [],
+                verificationResults: [],
+                failures: [],
+            },
+            readRollback: () => readLatestRollbackInstructions("."),
+        });
+
+        if (route.handled) {
+            console.log(`🧭 Operator command routed as typed event: ${route.event.type}`);
+            appendOperatorEvent(".", route.event);
+            await publishCommentBodyFromEnv(route.responseBody);
+            return;
+        }
+    }
 
     // --- PHASE 1: SYSTEM 2 PLANNER (gpt-4o) ---
     console.log("\n🧠 Phase 1: Planning Architecture (Reading global context)...");
@@ -101,6 +145,15 @@ async function runOS() {
             continue;
         }
         if (generatedFiles.length === 0) continue;
+
+        const validation = runGeneratedPatchValidators(generatedFiles);
+        if (!validation.passed) {
+            const errMsg = validation.failures.join("\n");
+            console.error("❌ Generated Patch Validation Failed.");
+            feedback += `Generated Patch Validation Failed:\n${errMsg}\n`;
+            recordedErrors.push(errMsg);
+            continue;
+        }
 
         // 2. Snapshot current disk state (for rollback safety)
         console.log("💾 Writing temporary files for verification...");
@@ -192,8 +245,43 @@ async function runOS() {
     if (finalVerifiedFiles.length === 0) {
         console.error("\n🛑 Circuit Breaker Tripped: AI could not self-heal after 3 attempts.");
         fs.writeFileSync('CRITIC_FAILED.md', `🚨 **System Halted.**\nFailed to pass Eval/Critic after ${MAX_ATTEMPTS} attempts.\n\nFinal Feedback:\n${feedback}`);
+        await publishCockpitFromEnv("failed", {
+            generatedFiles: [],
+            failures: recordedErrors.map((error) => ({
+                failureClass: "model_output",
+                symptom: error.split("\n")[0] || "Circuit breaker tripped",
+                output: error,
+            })),
+            attempts,
+            maxAttempts: MAX_ATTEMPTS,
+        });
         process.exit(1);
     }
+
+    const runId = `issue-${ISSUE_NUMBER}-${new Date().toISOString().replace(/[:.]/g, "-")}`;
+    const branchName = getGitValue("git branch --show-current", "unknown-branch");
+    const baseSha = getGitValue("git rev-parse HEAD", "unknown-sha");
+    const manifest = {
+        runId,
+        issueNumber: ISSUE_NUMBER,
+        issueTitle: ISSUE_TITLE,
+        branchName,
+        baseSha,
+        generatedFiles: finalVerifiedFiles.map((file) => file.path),
+        createdAt: new Date().toISOString(),
+    };
+    writeRunManifest(".", manifest);
+    fs.writeFileSync(
+        path.join(".runs", runId, "ROLLBACK.md"),
+        renderRollbackInstructions(manifest),
+    );
+    console.log(`🧭 Run manifest recorded: .runs/${runId}/manifest.json`);
+    await publishCockpitFromEnv("completed", {
+        generatedFiles: finalVerifiedFiles,
+        failures: [],
+        attempts,
+        maxAttempts: MAX_ATTEMPTS,
+    });
 
     // Extract Skills automatically for passing xmachines actors
     for (const file of finalVerifiedFiles) {
@@ -209,4 +297,83 @@ async function runOS() {
     console.log("🎯 Handoff Complete. Engine spinning down.");
 }
 
-runOS().catch(console.error);
+function getGitValue(command: string, fallback: string) {
+    try {
+        return execSync(command, { stdio: "pipe" }).toString().trim() || fallback;
+    } catch {
+        return fallback;
+    }
+}
+
+function isOperatorCommentEvent() {
+    const eventName = process.env.GITHUB_EVENT_NAME;
+    return eventName === "issue_comment" || eventName === "pull_request_review";
+}
+
+async function publishCommentBodyFromEnv(body: string) {
+    const target = resolveGitHubCommentTarget(process.env);
+    if (!target.enabled) {
+        console.log(`🧭 Operator comment skipped: ${target.reason}`);
+        return;
+    }
+
+    try {
+        const result = await publishCockpitComment({
+            token: target.token,
+            repository: target.repository,
+            issueNumber: target.issueNumber,
+            body,
+        });
+        console.log(`🧭 Operator comment ${result.status}: ${result.url ?? "no URL returned"}`);
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error("⚠️ Operator comment publish failed:", message);
+    }
+}
+
+async function publishCockpitFromEnv(
+    state: string,
+    runState: {
+        generatedFiles: Array<{ path: string; content: string }>;
+        failures: Array<{ failureClass: "model_output"; symptom: string; output: string }>;
+        attempts: number;
+        maxAttempts: number;
+    },
+) {
+    const target = resolveGitHubCommentTarget(process.env);
+    if (!target.enabled) {
+        console.log(`🧭 Cockpit comment skipped: ${target.reason}`);
+        return;
+    }
+
+    const body = renderCockpitComment(state, {
+        issueNumber: ISSUE_NUMBER,
+        issueTitle: ISSUE_TITLE,
+        issueBody: ISSUE_BODY,
+        attempts: runState.attempts,
+        maxAttempts: runState.maxAttempts,
+        findings: [],
+        generatedFiles: runState.generatedFiles,
+        verificationResults: [],
+        failures: runState.failures,
+    });
+
+    try {
+        const result = await publishCockpitComment({
+            token: target.token,
+            repository: target.repository,
+            issueNumber: target.issueNumber,
+            body,
+        });
+        console.log(`🧭 Cockpit comment ${result.status}: ${result.url ?? "no URL returned"}`);
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error("⚠️ Cockpit comment publish failed:", message);
+    }
+}
+
+runOS().catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Fatal OS run failure:", message);
+    process.exit(1);
+});
