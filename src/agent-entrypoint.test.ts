@@ -71,9 +71,20 @@ describe("agent entrypoint hardening", () => {
     expect(agentSource).toContain("./src/os/event-ledger.js");
     expect(agentSource).toContain("./src/run/rollback.js");
     expect(agentSource).toContain("appendOperatorEvent");
+    expect(agentSource).toContain("markOperatorOnlyFromEnv");
     expect(agentSource).toContain("readLatestRollbackInstructions");
     expect(routerIndex).toBeGreaterThan(-1);
     expect(modelIndex).toBeGreaterThan(-1);
     expect(routerIndex).toBeLessThan(modelIndex);
+  });
+
+  it("marks operator-only commands so later workflow steps can skip deploy and handoff", () => {
+    const agentSource = fs.readFileSync(
+      path.join(process.cwd(), "agent.ts"),
+      "utf8",
+    );
+
+    expect(agentSource).toContain("VIBE_OPERATOR_ONLY=1");
+    expect(agentSource).toContain("process.env.GITHUB_ENV");
   });
 });

@@ -91,6 +91,7 @@ async function runOS() {
         if (route.handled) {
             console.log(`🧭 Operator command routed as typed event: ${route.event.type}`);
             appendOperatorEvent(".", route.event);
+            markOperatorOnlyFromEnv();
             await publishCommentBodyFromEnv(route.responseBody);
             return;
         }
@@ -308,6 +309,13 @@ function getGitValue(command: string, fallback: string) {
 function isOperatorCommentEvent() {
     const eventName = process.env.GITHUB_EVENT_NAME;
     return eventName === "issue_comment" || eventName === "pull_request_review";
+}
+
+function markOperatorOnlyFromEnv() {
+    const githubEnv = process.env.GITHUB_ENV;
+    if (!githubEnv) return;
+
+    fs.appendFileSync(githubEnv, "VIBE_OPERATOR_ONLY=1\n", "utf8");
 }
 
 async function publishCommentBodyFromEnv(body: string) {
