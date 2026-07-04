@@ -9,6 +9,7 @@
   "dependencies": {
     "@xmachines/play-catalog": "latest",
     "@xmachines/play-signals": "latest",
+    "@xmachines/play-xstate": "^1.0.0-beta.3",
     "typescript": "latest",
     "vitest": "latest",
     "xstate": "latest"
