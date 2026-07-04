@@ -58,4 +58,22 @@ describe("agent entrypoint hardening", () => {
     expect(agentSource).toContain("renderCockpitComment");
     expect(agentSource).toContain("publishCockpitComment");
   });
+
+  it("routes operator comments before model inference starts", () => {
+    const agentSource = fs.readFileSync(
+      path.join(process.cwd(), "agent.ts"),
+      "utf8",
+    );
+    const routerIndex = agentSource.indexOf("routeGitHubComment");
+    const modelIndex = agentSource.indexOf("Phase 1: Planning Architecture");
+
+    expect(agentSource).toContain("./src/operator/github-comment-router.js");
+    expect(agentSource).toContain("./src/os/event-ledger.js");
+    expect(agentSource).toContain("./src/run/rollback.js");
+    expect(agentSource).toContain("appendOperatorEvent");
+    expect(agentSource).toContain("readLatestRollbackInstructions");
+    expect(routerIndex).toBeGreaterThan(-1);
+    expect(modelIndex).toBeGreaterThan(-1);
+    expect(routerIndex).toBeLessThan(modelIndex);
+  });
 });

@@ -66,6 +66,14 @@ describe("vibe engine OS machine", () => {
     expect(actor.getSnapshot().value).toBe("generating_patch");
   });
 
+  it("ignores approval unless the actor is awaiting approval", () => {
+    const actor = createActor(createOSMachine()).start();
+
+    actor.send({ type: "approval.granted", actor: "alice" });
+
+    expect(actor.getSnapshot().value).toBe("received");
+  });
+
   it("records verification failure and moves into learning", () => {
     const actor = createActor(createOSMachine()).start();
 
@@ -94,5 +102,69 @@ describe("vibe engine OS machine", () => {
 
     expect(actor.getSnapshot().value).toBe("learning");
     expect(actor.getSnapshot().context.failures).toHaveLength(1);
+  });
+
+  it("allows retry requests from learning to return to preflight", () => {
+    const actor = createActor(createOSMachine()).start();
+
+    actor.send({ type: "preflight.completed", findings: [] });
+    actor.send({
+      type: "plan.created",
+      dag: { issueNumber: "3", title: "Compile fix", nodes: [] },
+    });
+    actor.send({
+      type: "risk.reviewed",
+      risk: "low",
+      reason: "No protected files",
+    });
+    actor.send({
+      type: "verification.failed",
+      failure: {
+        failureClass: "compile",
+        symptom: "Missing .js import extension",
+        output: "TS2835",
+      },
+    });
+
+    actor.send({
+      type: "operator.retry_requested",
+      protocolVersion: "os.operator.v1",
+      actor: "alice",
+      commentId: "comment-1",
+    });
+
+    expect(actor.getSnapshot().value).toBe("preflight");
+  });
+
+  it("keeps rollback requests passive in learning state", () => {
+    const actor = createActor(createOSMachine()).start();
+
+    actor.send({ type: "preflight.completed", findings: [] });
+    actor.send({
+      type: "plan.created",
+      dag: { issueNumber: "4", title: "Rollback", nodes: [] },
+    });
+    actor.send({
+      type: "risk.reviewed",
+      risk: "low",
+      reason: "No protected files",
+    });
+    actor.send({
+      type: "verification.failed",
+      failure: {
+        failureClass: "test",
+        symptom: "Test failed",
+        output: "expected true",
+      },
+    });
+
+    actor.send({
+      type: "operator.rollback_requested",
+      protocolVersion: "os.operator.v1",
+      actor: "alice",
+      commentId: "comment-2",
+    });
+
+    expect(actor.getSnapshot().value).toBe("learning");
   });
 });

@@ -78,9 +78,20 @@ export type OSEvent =
   | { type: "preflight.completed"; findings: PreflightFinding[] }
   | { type: "plan.created"; dag: ExecutionDag }
   | { type: "risk.reviewed"; risk: RiskLevel; reason: string }
-  | { type: "approval.granted"; actor: string }
+  | { type: "approval.granted"; actor: string; commentId?: string }
   | { type: "patch.generated"; files: GeneratedFile[] }
   | { type: "verification.passed"; results: VerificationResult[] }
   | { type: "verification.failed"; failure: ClassifiedFailure }
   | { type: "learning.recorded"; lessonIds: string[] }
-  | { type: "publish.completed"; prUrl?: string; previewUrl?: string };
+  | { type: "publish.completed"; prUrl?: string; previewUrl?: string }
+  | {
+      type:
+        | "operator.plan_requested"
+        | "operator.retry_requested"
+        | "operator.rollback_requested"
+        | "operator.status_requested"
+        | "operator.deploy_requested";
+      protocolVersion: "os.operator.v1";
+      actor: string;
+      commentId: string;
+    };

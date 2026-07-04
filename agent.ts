@@ -1,9 +1,12 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
+import { appendOperatorEvent } from './src/os/event-ledger.js';
 import { renderCockpitComment } from './src/operator/cockpit.js';
+import { routeGitHubComment } from './src/operator/github-comment-router.js';
 import { publishCockpitComment, resolveGitHubCommentTarget } from './src/publishing/github-comments.js';
 import { renderRollbackInstructions, writeRunManifest } from './src/run/manifest.js';
+import { readLatestRollbackInstructions } from './src/run/rollback.js';
 import { runGeneratedPatchValidators } from './src/verification/pipeline.js';
 
 process.on("uncaughtException", (error: Error) => {
@@ -19,6 +22,8 @@ const GEMINI_KEY = process.env.GEMINI_API_KEY!;
 const ISSUE_NUMBER = process.env.ISSUE_NUMBER || "000";
 const ISSUE_TITLE = process.env.ISSUE_TITLE || "Vibe Request";
 const ISSUE_BODY = process.env.ISSUE_BODY || "No details provided.";
+const GITHUB_ACTOR = process.env.GITHUB_ACTOR || "unknown-actor";
+const GITHUB_COMMENT_ID = process.env.GITHUB_COMMENT_ID || process.env.GITHUB_RUN_ID || "unknown-comment";
 
 // --- 2. UNIVERSAL API ROUTER ---
 async function callOpenAIFormat(baseUrl: string, apiKey: string, model: string, system: string, user: string, jsonMode = false) {
@@ -62,6 +67,34 @@ async function runOS() {
     }
 
     const vibe = `TITLE: ${ISSUE_TITLE}\nDESCRIPTION: ${ISSUE_BODY}`;
+
+    if (isOperatorCommentEvent()) {
+        const route = routeGitHubComment({
+            body: ISSUE_BODY,
+            actor: GITHUB_ACTOR,
+            commentId: GITHUB_COMMENT_ID,
+            state: "operator_command",
+            context: {
+                issueNumber: ISSUE_NUMBER,
+                issueTitle: ISSUE_TITLE,
+                issueBody: ISSUE_BODY,
+                attempts: 0,
+                maxAttempts: 3,
+                findings: [],
+                generatedFiles: [],
+                verificationResults: [],
+                failures: [],
+            },
+            readRollback: () => readLatestRollbackInstructions("."),
+        });
+
+        if (route.handled) {
+            console.log(`🧭 Operator command routed as typed event: ${route.event.type}`);
+            appendOperatorEvent(".", route.event);
+            await publishCommentBodyFromEnv(route.responseBody);
+            return;
+        }
+    }
 
     // --- PHASE 1: SYSTEM 2 PLANNER (gpt-4o) ---
     console.log("\n🧠 Phase 1: Planning Architecture (Reading global context)...");
@@ -269,6 +302,32 @@ function getGitValue(command: string, fallback: string) {
         return execSync(command, { stdio: "pipe" }).toString().trim() || fallback;
     } catch {
         return fallback;
+    }
+}
+
+function isOperatorCommentEvent() {
+    const eventName = process.env.GITHUB_EVENT_NAME;
+    return eventName === "issue_comment" || eventName === "pull_request_review";
+}
+
+async function publishCommentBodyFromEnv(body: string) {
+    const target = resolveGitHubCommentTarget(process.env);
+    if (!target.enabled) {
+        console.log(`🧭 Operator comment skipped: ${target.reason}`);
+        return;
+    }
+
+    try {
+        const result = await publishCockpitComment({
+            token: target.token,
+            repository: target.repository,
+            issueNumber: target.issueNumber,
+            body,
+        });
+        console.log(`🧭 Operator comment ${result.status}: ${result.url ?? "no URL returned"}`);
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error("⚠️ Operator comment publish failed:", message);
     }
 }
 

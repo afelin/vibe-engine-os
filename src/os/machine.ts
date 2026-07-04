@@ -112,6 +112,13 @@ export function createOSMachine(context: OSContext = createInitialOSContext()) {
       learning: {
         on: {
           "learning.recorded": "preflight",
+          "operator.retry_requested": "preflight",
+          "operator.rollback_requested": {
+            actions: () => undefined,
+          },
+          "operator.status_requested": {
+            actions: () => undefined,
+          },
         },
       },
       publishing: {
