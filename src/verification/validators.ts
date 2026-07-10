@@ -82,6 +82,22 @@ export function validateNoPathTraversal(files: GeneratedFile[]): ValidatorResult
   };
 }
 
+export function normalizeEsmImportExtensions(
+  files: GeneratedFile[],
+): GeneratedFile[] {
+  return files.map((file) => {
+    if (!file.path.endsWith(".ts")) return file;
+    const content = file.content.replace(
+      /from\s+(["'])(\.{1,2}\/[^"']+?)\1/g,
+      (match, quote, importPath) => {
+        if (/\.(js|json|node)$/.test(importPath)) return match;
+        return `from ${quote}${importPath}.js${quote}`;
+      },
+    );
+    return content === file.content ? file : { ...file, content };
+  });
+}
+
 export function validateEsmImportExtensions(
   files: GeneratedFile[],
 ): ValidatorResult {

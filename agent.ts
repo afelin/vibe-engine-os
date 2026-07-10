@@ -7,7 +7,7 @@ import { routeGitHubComment } from './src/operator/github-comment-router.js';
 import { publishCockpitComment, resolveGitHubCommentTarget } from './src/publishing/github-comments.js';
 import { renderRollbackInstructions, writeRunManifest } from './src/run/manifest.js';
 import { readLatestRollbackInstructions } from './src/run/rollback.js';
-import { runGeneratedPatchValidators } from './src/verification/pipeline.js';
+import { runGeneratedPatchValidators, prepareGeneratedPatch } from './src/verification/pipeline.js';
 
 process.on("uncaughtException", (error: Error) => {
     console.error("Fatal uncaught exception:", error.message);
@@ -125,6 +125,7 @@ async function runOS() {
 
     // --- PHASE 2: INFERENCE-TIME COMPUTE RATCHET LOOP ---
     console.log("\n⚡ Phase 2: Entering Inference-Time Compute Ratchet...");
+    const requiredPaths = [...ISSUE_BODY.matchAll(/\bsrc\/[\w.-]+\.ts\b/g)].map((match) => match[0]);
     let attempts = 0;
     const MAX_ATTEMPTS = 3;
     let finalVerifiedFiles: any[] = [];
@@ -148,6 +149,10 @@ async function runOS() {
         - In TypeScript files, local ESM imports MUST use a .js extension (e.g. import { x } from "./example.js").
         - Do not emit markdown fences or commentary outside the JSON object.`;
 
+        if (requiredPaths.length > 0) {
+            codePrompt += `\n\nRequired output files (use these exact paths):\n${requiredPaths.join("\n")}`;
+        }
+
         if (feedback !== "") codePrompt += `\n\n🚨 PREVIOUS ATTEMPT FAILED. Fix these exact errors:\n${feedback}`;
 
         // 1. Code Generation (Groq / llama-3.3-70b)
@@ -164,6 +169,8 @@ async function runOS() {
             continue;
         }
         if (generatedFiles.length === 0) continue;
+
+        generatedFiles = prepareGeneratedPatch(generatedFiles);
 
         const validation = runGeneratedPatchValidators(generatedFiles);
         if (!validation.passed) {

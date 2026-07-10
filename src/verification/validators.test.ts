@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  normalizeEsmImportExtensions,
   validateEsmImportExtensions,
   validateFilePolicy,
   validateNoPathTraversal,
@@ -70,5 +71,13 @@ describe("deterministic validators", () => {
     ]);
 
     expect(result.passed).toBe(true);
+  });
+
+  it("normalizes missing .js extensions on relative imports", () => {
+    const normalized = normalizeEsmImportExtensions([
+      { path: "src/main.test.ts", content: 'import { value } from "./main";' },
+    ]);
+
+    expect(normalized[0]?.content).toContain('./main.js"');
   });
 });

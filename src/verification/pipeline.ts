@@ -1,5 +1,6 @@
 import type { GeneratedFile } from "../os/events.js";
 import {
+  normalizeEsmImportExtensions,
   validateEsmImportExtensions,
   validateFilePolicy,
   validateNoPathTraversal,
@@ -12,6 +13,12 @@ export type ValidatorPipelineResult = {
   results: ValidatorResult[];
   failures: string[];
 };
+
+export function prepareGeneratedPatch(
+  files: GeneratedFile[],
+): GeneratedFile[] {
+  return normalizeEsmImportExtensions(files);
+}
 
 export function runGeneratedPatchValidators(
   files: GeneratedFile[],
