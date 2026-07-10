@@ -1,0 +1,12 @@
+{
+  "runId": "issue-3-2026-07-10T22-26-30-347Z",
+  "issueNumber": "3",
+  "issueTitle": "Release gate: V1 cloud loop smoke primitive (Revision)",
+  "branchName": "main",
+  "baseSha": "bfc1688f249d162b101dd49645ec5e8c41cc344a",
+  "generatedFiles": [
+    "src/cloud-loop-smoke.ts",
+    "src/cloud-loop-smoke.test.ts"
+  ],
+  "createdAt": "2026-07-10T22:26:30.352Z"
+}
