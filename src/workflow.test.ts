@@ -46,6 +46,7 @@ describe("GitHub Actions workflow", () => {
     );
 
     expect(workflow).toContain("pull_request_review");
+    expect(workflow).toContain("types: [submitted, edited]");
     expect(workflow).toContain("BODY_REVIEW");
     expect(workflow).toContain("github.event.pull_request.number");
     expect(workflow).toContain("(PR Feedback)");
