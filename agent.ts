@@ -50,6 +50,15 @@ async function callGemini(apiKey: string, system: string, user: string) {
     return data.candidates[0].content.parts[0].text;
 }
 
+// GitHub Models (gpt-4o) rejects oversized requests with HTTP 413 "Payload Too Large".
+// The repomix codebase map grows with the repo, so cap large context blocks to keep
+// the planner request within the provider's input budget instead of crashing Phase 1.
+function capContext(text: string, maxChars: number): string {
+    if (text.length <= maxChars) return text;
+    const omitted = text.length - maxChars;
+    return `${text.slice(0, maxChars)}\n\n…[context truncated: ${omitted} chars omitted to fit model input limits]`;
+}
+
 // --- 3. THE AUTONOMOUS OS ENGINE ---
 async function runOS() {
     console.log(`\n🚀 Booting Vibe Engine OS for Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}`);
@@ -98,10 +107,14 @@ async function runOS() {
     }
 
     // --- PHASE 1: SYSTEM 2 PLANNER (gpt-4o) ---
+    // gpt-4o via GitHub Models has a small input budget; trim the codebase map and
+    // EvoMem so the request body never trips the HTTP 413 "Payload Too Large" gate.
+    const PLANNER_MAP_BUDGET = 16000;
+    const PLANNER_EVOMEM_BUDGET = 2000;
     console.log("\n🧠 Phase 1: Planning Architecture (Reading global context)...");
     const plan = await callOpenAIFormat(
         "https://models.inference.ai.azure.com", GH_MODELS_TOKEN, "gpt-4o",
-        `You are a Software 3.0 Architect. Follow this constitution strictly:\n${constitution}\n\nGlobal Codebase Map:\n${repoContext}${evoMemContext}`,
+        `You are a Software 3.0 Architect. Follow this constitution strictly:\n${constitution}\n\nGlobal Codebase Map:\n${capContext(repoContext, PLANNER_MAP_BUDGET)}${capContext(evoMemContext, PLANNER_EVOMEM_BUDGET)}`,
         `Create a strict execution blueprint for this request:\n${vibe}`
     );
     
