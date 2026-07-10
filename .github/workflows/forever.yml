@@ -63,7 +63,12 @@ jobs:
           if [ "${{ github.event_name }}" == "issue_comment" ]; then
             echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
             echo "ISSUE_TITLE=${{ github.event.issue.title }} (Revision)" >> $GITHUB_ENV
-            write_env_multiline "ISSUE_BODY" "$BODY_COMMENT"
+            COMMENT_CONTEXT="Operator comment:
+$BODY_COMMENT
+
+Original issue:
+$BODY_ISSUE"
+            write_env_multiline "ISSUE_BODY" "$COMMENT_CONTEXT"
           elif [ "${{ github.event_name }}" == "pull_request_review" ]; then
             echo "ISSUE_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
             echo "ISSUE_TITLE=${{ github.event.pull_request.title }} (PR Feedback)" >> $GITHUB_ENV

@@ -135,20 +135,25 @@ async function runOS() {
         attempts++;
         console.log(`\n🔄 Inference Loop ${attempts}/${MAX_ATTEMPTS}...`);
         
-        let codePrompt = `Execute this plan strictly:\n${plan}\n\nOutput ONLY valid JSON matching this schema: 
+        let codePrompt = `Execute this plan strictly:\n${plan}\n\nOutput ONLY valid JSON matching this schema:
         {
           "files": [
-            {"path": "src/machine.ts", "content": "source code"},
-            {"path": "src/machine.test.ts", "content": "Vitest evaluation code"}
+            {"path": "src/example.ts", "content": "source code"},
+            {"path": "src/example.test.ts", "content": "Vitest evaluation code"}
           ]
-        }`;
-        
+        }
+
+        Hard constraints:
+        - Use only paths under src/, tests/, .planning/, or .skills/ (exact filenames from the plan).
+        - In TypeScript files, local ESM imports MUST use a .js extension (e.g. import { x } from "./example.js").
+        - Do not emit markdown fences or commentary outside the JSON object.`;
+
         if (feedback !== "") codePrompt += `\n\n🚨 PREVIOUS ATTEMPT FAILED. Fix these exact errors:\n${feedback}`;
 
         // 1. Code Generation (Groq / llama-3.3-70b)
         const rawCode = await callOpenAIFormat(
             "https://api.groq.com/openai/v1", GROQ_KEY, "llama-3.3-70b-versatile",
-            "You are an expert xmachines coder. Output strictly in JSON.", codePrompt, true
+            "You are an expert xmachines coder. Output strictly valid JSON. Follow path and ESM import constraints exactly.", codePrompt, true
         );
         
         let generatedFiles;
@@ -164,6 +169,7 @@ async function runOS() {
         if (!validation.passed) {
             const errMsg = validation.failures.join("\n");
             console.error("❌ Generated Patch Validation Failed.");
+            console.error(errMsg);
             feedback += `Generated Patch Validation Failed:\n${errMsg}\n`;
             recordedErrors.push(errMsg);
             continue;
