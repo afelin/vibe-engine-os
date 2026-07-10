@@ -68,7 +68,13 @@ jobs:
           elif [ "${{ github.event_name }}" == "pull_request_review" ]; then
             echo "ISSUE_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
             echo "ISSUE_TITLE=${{ github.event.pull_request.title }} (PR Feedback)" >> $GITHUB_ENV
-            write_env_multiline "ISSUE_BODY" "$BODY_REVIEW"
+            PR_TITLE="${{ github.event.pull_request.title }}"
+            if [ -z "$BODY_REVIEW" ]; then
+              REVIEW_CONTEXT=$(printf 'Release gate trigger: pull_request_review\nPR title: %s\n\nRequired outputs:\n- src/pr-review-smoke.ts\n- src/pr-review-smoke.test.ts' "$PR_TITLE")
+            else
+              REVIEW_CONTEXT=$(printf 'PR review feedback:\n%s\n\nPR title: %s' "$BODY_REVIEW" "$PR_TITLE")
+            fi
+            write_env_multiline "ISSUE_BODY" "$REVIEW_CONTEXT"
           else
             echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
             echo "ISSUE_TITLE=${{ github.event.issue.title }}" >> $GITHUB_ENV

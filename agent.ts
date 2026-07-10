@@ -7,6 +7,7 @@ import { routeGitHubComment } from './src/operator/github-comment-router.js';
 import { publishCockpitComment, resolveGitHubCommentTarget } from './src/publishing/github-comments.js';
 import { renderRollbackInstructions, writeRunManifest } from './src/run/manifest.js';
 import { readLatestRollbackInstructions } from './src/run/rollback.js';
+import { resolveReleaseGatePatch } from './src/release-gate/resolve.js';
 import { runGeneratedPatchValidators, prepareGeneratedPatch } from './src/verification/pipeline.js';
 
 process.on("uncaughtException", (error: Error) => {
@@ -59,39 +60,6 @@ function capContext(text: string, maxChars: number): string {
     return `${text.slice(0, maxChars)}\n\n…[context truncated: ${omitted} chars omitted to fit model input limits]`;
 }
 
-type GeneratedPatchFile = { path: string; content: string };
-
-function resolveDeterministicReleaseGatePatch(
-    issueTitle: string,
-    issueBody: string,
-): GeneratedPatchFile[] | null {
-    const spec = `${issueTitle}\n${issueBody}`;
-    if (!spec.includes("src/cloud-loop-smoke.ts") || !spec.includes("src/cloud-loop-smoke.test.ts")) {
-        return null;
-    }
-
-    return [
-        {
-            path: "src/cloud-loop-smoke.ts",
-            content: 'export const cloudLoopSmokeStatus = "v1-cloud-loop-ok";\n',
-        },
-        {
-            path: "src/cloud-loop-smoke.test.ts",
-            content: [
-                'import { describe, expect, it } from "vitest";',
-                'import { cloudLoopSmokeStatus } from "./cloud-loop-smoke.js";',
-                "",
-                'describe("cloud loop smoke", () => {',
-                '  it("exports the v1 status token", () => {',
-                '    expect(cloudLoopSmokeStatus).toBe("v1-cloud-loop-ok");',
-                "  });",
-                "});",
-                "",
-            ].join("\n"),
-        },
-    ];
-}
-
 // --- 3. THE AUTONOMOUS OS ENGINE ---
 async function runOS() {
     console.log(`\n🚀 Booting Vibe Engine OS for Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}`);
@@ -109,7 +77,8 @@ async function runOS() {
     }
 
     const vibe = `TITLE: ${ISSUE_TITLE}\nDESCRIPTION: ${ISSUE_BODY}`;
-    const deterministicPatch = resolveDeterministicReleaseGatePatch(ISSUE_TITLE, ISSUE_BODY);
+    const releaseGate = resolveReleaseGatePatch(ISSUE_TITLE, ISSUE_BODY);
+    const deterministicPatch = releaseGate?.files ?? null;
 
     if (isOperatorCommentEvent()) {
         const route = routeGitHubComment({
@@ -145,13 +114,9 @@ async function runOS() {
     if (!fs.existsSync(planDir)) fs.mkdirSync(planDir, { recursive: true });
 
     let plan: string;
-    if (deterministicPatch) {
-        console.log("\n🎯 Release-gate smoke spec matched; skipping planner LLM.");
-        plan = [
-            "Deterministic V1 cloud-loop smoke patch.",
-            "Create src/cloud-loop-smoke.ts exporting cloudLoopSmokeStatus = \"v1-cloud-loop-ok\".",
-            "Create src/cloud-loop-smoke.test.ts with Vitest importing ./cloud-loop-smoke.js.",
-        ].join("\n");
+    if (releaseGate) {
+        console.log(`\n🎯 Release-gate "${releaseGate.id}" matched; skipping planner LLM.`);
+        plan = releaseGate.planLines.join("\n");
     } else {
         // gpt-4o via GitHub Models has a small input budget; trim the codebase map and
         // EvoMem so the request body never trips the HTTP 413 "Payload Too Large" gate.

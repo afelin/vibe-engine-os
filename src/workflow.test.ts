@@ -38,4 +38,18 @@ describe("GitHub Actions workflow", () => {
     );
     expect(workflow).not.toMatch(/\n\$BODY_COMMENT\n\nOriginal issue:/);
   });
+
+  it("routes pull_request_review into PR feedback context with empty-body fallback", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/forever.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain("pull_request_review");
+    expect(workflow).toContain("BODY_REVIEW");
+    expect(workflow).toContain("github.event.pull_request.number");
+    expect(workflow).toContain("(PR Feedback)");
+    expect(workflow).toContain("src/pr-review-smoke.ts");
+    expect(workflow).toContain('if [ -z "$BODY_REVIEW" ]; then');
+  });
 });
