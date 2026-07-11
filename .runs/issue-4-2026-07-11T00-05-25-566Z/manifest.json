@@ -1,0 +1,12 @@
+{
+  "runId": "issue-4-2026-07-11T00-05-25-566Z",
+  "issueNumber": "4",
+  "issueTitle": "Release gate: PR review workflow smoke trigger (PR Feedback)",
+  "branchName": "unknown-branch",
+  "baseSha": "211ed97162300181bf3cbd2cf57e89d0cb741f63",
+  "generatedFiles": [
+    "src/pr-review-smoke.ts",
+    "src/pr-review-smoke.test.ts"
+  ],
+  "createdAt": "2026-07-11T00:05:25.571Z"
+}
