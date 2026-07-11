@@ -26,6 +26,7 @@ export type RunManifest = {
   createdAt: string;
   approvalRequired?: boolean;
   vowsHash?: string;
+  bondHash?: string;
   capsuleHash?: string;
   metrics?: RunMetrics;
 };

@@ -7,6 +7,8 @@ import {
   mandatesSchema,
   runManifestSchema,
   scoreboardEntrySchema,
+  taskBondEvalSchema,
+  taskBondSchema,
   vowAttestationSchema,
 } from "./catalog.js";
 
@@ -59,6 +61,14 @@ export function parseMandateEval(data: unknown) {
 
 export function parseMandates(data: unknown) {
   return parseWith("Mandates", mandatesSchema, data);
+}
+
+export function parseTaskBond(data: unknown) {
+  return parseWith("TaskBond", taskBondSchema, data);
+}
+
+export function parseTaskBondEval(data: unknown) {
+  return parseWith("TaskBondEval", taskBondEvalSchema, data);
 }
 
 export function exportCatalogJsonSchema(): Record<string, unknown> {

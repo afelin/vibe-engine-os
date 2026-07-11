@@ -1,0 +1,16 @@
+{"id":"allow_01","case_hash":"f47db501251960d4","pass":true}
+{"id":"allow_02","case_hash":"74a963da718fd82d","pass":true}
+{"id":"allow_03","case_hash":"b26a4747cb86cf33","pass":true}
+{"id":"parse_allow_01","case_hash":"9aa84bb05afa213f","pass":true}
+{"id":"missing_intent_01","case_hash":"97e379bea2aabbe9","pass":true,"reason":"missing_intent"}
+{"id":"missing_files_01","case_hash":"a7adf0567d145d9c","pass":true,"reason":"missing_bound_files"}
+{"id":"missing_files_02","case_hash":"a6c82a242efa1de5","pass":true,"reason":"missing_bound_files"}
+{"id":"forbidden_01","case_hash":"8eedd03861bb168e","pass":true,"reason":"forbidden_prefix"}
+{"id":"disallowed_01","case_hash":"ec9f4b6a6895c7b9","pass":true,"reason":"disallowed_prefix"}
+{"id":"traversal_01","case_hash":"096aa4129c439783","pass":true,"reason":"disallowed_prefix"}
+{"id":"tabdab_allow_01","case_hash":"55a6f2d5cf3cf663","pass":true}
+{"id":"tabdab_allow_02","case_hash":"b1202451c900dd71","pass":true}
+{"id":"tabdab_allow_03","case_hash":"4757ed638e60d293","pass":true}
+{"id":"tabdab_allow_04","case_hash":"42d9afd32756ec10","pass":true}
+{"id":"tabdab_disallowed_01","case_hash":"d6696d438553c22d","pass":true,"reason":"disallowed_prefix"}
+{"id":"require_approval_01","case_hash":"9410d66ad3e67be4","pass":true}

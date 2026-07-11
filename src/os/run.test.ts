@@ -88,7 +88,12 @@ describe("vibe engine OS runtime", () => {
       {
         issueNumber: "100",
         issueTitle: "CODEOWNERS edit",
-        issueBody: ".github/CODEOWNERS",
+        issueBody: `### Intent (one sentence)
+Update CODEOWNERS for review routing
+
+### Files to touch (exact paths)
+.github/CODEOWNERS
+`,
         rootDir: root,
       },
       buildStubDeps(
@@ -122,7 +127,12 @@ describe("vibe engine OS runtime", () => {
       {
         issueNumber: "102",
         issueTitle: "Dependency bump",
-        issueBody: "package.json",
+        issueBody: `### Intent (one sentence)
+Bump dependency version
+
+### Files to touch (exact paths)
+package.json
+`,
         rootDir: root,
       },
       buildStubDeps(

@@ -115,6 +115,18 @@ describe("GitHub Actions workflow", () => {
     expect(workflow).not.toContain("git add .");
   });
 
+  it("runs bond preflight before promotion apply", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/forever.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain("bond:preflight");
+    expect(workflow.indexOf("bond:preflight")).toBeLessThan(
+      workflow.indexOf("promote:apply"),
+    );
+  });
+
   it("uses structured gate failure feedback in the runtime ratchet", () => {
     const runSource = fs.readFileSync(
       path.join(process.cwd(), "src/os/run.ts"),

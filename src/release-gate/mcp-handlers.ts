@@ -16,6 +16,14 @@ import {
   readTraceTail,
 } from "../constitution/capsule.js";
 import { computeVowsHash } from "../constitution/vows.js";
+import { sealTaskBond } from "../bond/seal.js";
+import { writeTaskBond } from "../bond/store.js";
+import {
+  envelopeFromVerdict,
+  formatMandateVerdict,
+  formatSealVerdict,
+} from "../bond/verdict.js";
+import { getVibeDepth } from "../os/depth.js";
 
 export const RELEASE_GATE_MCP = {
   name: "vibe-release-gates",
@@ -102,6 +110,36 @@ export const RELEASE_GATE_TOOLS = [
       },
     },
   },
+  {
+    name: "seal_bond",
+    description:
+      "Parse and seal a TaskBond from issue body (intent, outcomes, bound files). Writes .runs/bonds/issue-N.bond.json.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        root_dir: { type: "string" },
+        issue_number: { type: "string" },
+        issue_title: { type: "string" },
+        issue_body: { type: "string" },
+        depth: { type: "number" },
+      },
+      required: ["issue_number", "issue_body"],
+    },
+  },
+  {
+    name: "validate_bond",
+    description:
+      "Evaluate issue body as TaskBond without writing. Uses agent mandates and optional VIBE_PROJECT_PROFILE.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        root_dir: { type: "string" },
+        issue_body: { type: "string" },
+        depth: { type: "number" },
+      },
+      required: ["issue_body"],
+    },
+  },
 ] as const;
 
 export function callReleaseGateTool(
@@ -128,10 +166,12 @@ export function callReleaseGateTool(
     const proposedFiles = Array.isArray(args.proposed_files)
       ? args.proposed_files.filter((item): item is string => typeof item === "string")
       : [];
+    const evaluation = evaluateMandates(proposedFiles);
     return JSON.stringify(
       {
+        ...envelopeFromVerdict(formatMandateVerdict(evaluation)),
         mandates: loadMandates(),
-        evaluation: evaluateMandates(proposedFiles),
+        evaluation,
       },
       null,
       2,
@@ -235,6 +275,92 @@ export function callReleaseGateTool(
             ? (snapshot as { status?: string }).status
             : null,
       },
+      null,
+      2,
+    );
+  }
+
+  if (name === "seal_bond") {
+    const rootDir = typeof args.root_dir === "string" ? args.root_dir : ".";
+    const issueNumber =
+      typeof args.issue_number === "string" ? args.issue_number : "";
+    const issueTitle =
+      typeof args.issue_title === "string" ? args.issue_title : "Vibe Request";
+    const issueBody = typeof args.issue_body === "string" ? args.issue_body : "";
+    const depthArg = typeof args.depth === "number" ? args.depth : getVibeDepth();
+
+    if (!issueNumber || !issueBody) {
+      throw new Error("issue_number and issue_body required");
+    }
+
+    const result = sealTaskBond({
+      issueNumber,
+      issueTitle,
+      issueBody,
+      depth: depthArg as 0 | 1 | 2 | 3 | 4 | 5,
+      rootDir,
+    });
+
+    if (result.ok) {
+      const bondPath = writeTaskBond(rootDir, result.bond);
+      return JSON.stringify(
+        {
+          valid: true,
+          ...envelopeFromVerdict(formatSealVerdict(result)),
+          bond: result.bond,
+          path: bondPath,
+          evaluation: result.evaluation,
+        },
+        null,
+        2,
+      );
+    }
+
+    const verdict = formatSealVerdict(result);
+    return JSON.stringify(
+      {
+        valid: false,
+        ...envelopeFromVerdict(verdict),
+        errors: result.errors,
+        evaluation: result.evaluation,
+      },
+      null,
+      2,
+    );
+  }
+
+  if (name === "validate_bond") {
+    const rootDir = typeof args.root_dir === "string" ? args.root_dir : ".";
+    const issueBody = typeof args.issue_body === "string" ? args.issue_body : "";
+    const depthArg = typeof args.depth === "number" ? args.depth : getVibeDepth();
+
+    if (!issueBody) {
+      throw new Error("issue_body required");
+    }
+
+    const result = sealTaskBond({
+      issueNumber: "0",
+      issueTitle: "validate",
+      issueBody,
+      depth: depthArg as 0 | 1 | 2 | 3 | 4 | 5,
+      rootDir,
+    });
+
+    const verdict = formatSealVerdict(result);
+    return JSON.stringify(
+      result.ok
+        ? {
+            valid: true,
+            ...envelopeFromVerdict(verdict),
+            bond: result.bond,
+            evaluation: result.evaluation,
+          }
+        : {
+            valid: false,
+            ...envelopeFromVerdict(verdict),
+            errors: result.errors,
+            evaluation: result.evaluation,
+          },
       null,
       2,
     );

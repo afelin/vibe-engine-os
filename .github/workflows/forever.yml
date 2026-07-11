@@ -174,13 +174,20 @@ jobs:
 
       - name: Validate capsule
         run: |
-          RUN_ID=$(ls .runs 2>/dev/null | grep -v idempotency | grep -v scoreboard | grep -v research | grep -v approvals | head -1 || true)
+          RUN_ID=$(ls .runs 2>/dev/null | grep -v idempotency | grep -v scoreboard | grep -v research | grep -v approvals | grep -v bonds | grep -v gauntlet | head -1 || true)
           if [ -n "$RUN_ID" ] && [ -f ".runs/$RUN_ID/manifest.json" ]; then
             npm run gate:validate-capsule -- . "$RUN_ID"
             echo "RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
           else
             echo "No run capsule to validate"
           fi
+
+      - name: Bond preflight
+        if: ${{ env.RUN_ID != '' }}
+        env:
+          ISSUE_NUMBER: ${{ needs.gate-check.outputs.issue_number }}
+          RUN_ID: ${{ env.RUN_ID }}
+        run: npm run bond:preflight -- . "$ISSUE_NUMBER" "$RUN_ID"
 
       - name: Apply promotion bundle
         if: ${{ env.RUN_ID != '' }}

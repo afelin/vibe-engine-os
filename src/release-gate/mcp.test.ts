@@ -7,7 +7,7 @@ import {
 import { computeVowsHash } from "../constitution/vows.js";
 
 describe("release gate MCP handlers", () => {
-  it("advertises six deterministic tools", () => {
+  it("advertises eight deterministic tools", () => {
     expect(RELEASE_GATE_TOOLS.map((tool) => tool.name)).toEqual([
       "list_gates",
       "resolve_gate",
@@ -15,6 +15,8 @@ describe("release gate MCP handlers", () => {
       "evaluate_mandate",
       "constitution_schemas",
       "validate_capsule",
+      "seal_bond",
+      "validate_bond",
     ]);
   });
 
@@ -72,6 +74,8 @@ describe("release gate MCP handlers", () => {
       proposed_files: ["src/auth/session.ts"],
     });
     const parsed = JSON.parse(text);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.reason).toBe("forbidden_prefix");
     expect(parsed.evaluation.passed).toBe(false);
     expect(parsed.evaluation.violations[0].rule).toBe("forbidden");
   });
@@ -105,5 +109,21 @@ describe("release gate MCP handlers", () => {
     expect(parsed.valid).toBe(true);
     expect(parsed.capsuleHash).toMatch(/^[a-f0-9]{64}$/);
     expect(parsed.vowsHash).toBeTruthy();
+  });
+
+  it("validates bond from issue body", () => {
+    const text = callReleaseGateTool("validate_bond", {
+      issue_body: `### Intent (one sentence)
+Add endpoint
+
+### Files to touch (exact paths)
+src/x.ts
+`,
+      depth: 3,
+    });
+    const parsed = JSON.parse(text);
+    expect(parsed.valid).toBe(true);
+    expect(parsed.ok).toBe(true);
+    expect(parsed.bond.boundFiles).toContain("src/x.ts");
   });
 });

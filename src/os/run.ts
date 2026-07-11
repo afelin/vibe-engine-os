@@ -64,6 +64,8 @@ import {
 import { readPersistedApproval } from "./approval-store.js";
 import { sanitizeRunId } from "../run/paths.js";
 import { sha256Content } from "../run/promotion.js";
+import { sealTaskBond, type TaskBond } from "../bond/seal.js";
+import { readTaskBond, writeTaskBond } from "../bond/store.js";
 
 export type RunInput = {
   issueNumber: string;
@@ -187,14 +189,72 @@ export async function runOSActor(
   const repoContext = deps.readRepoContext();
   const evoMemContext = deps.readEvoMem();
   const vibe = `TITLE: ${input.issueTitle}\nDESCRIPTION: ${input.issueBody}`;
-  const requiredPaths = extractRequiredPaths(input.issueBody);
 
   appendTraceSpan(rootDir, runId, { phase: "preflight" });
   if (!pastPlanning) {
     actor.send({ type: "preflight.completed", findings: [] });
   }
 
-  const failureRecall = requiredPaths
+  const gateBoundFiles = releaseGate?.files.map((file) => file.path) ?? [];
+  let taskBond: TaskBond | null =
+    pastPlanning ? readTaskBond(rootDir, input.issueNumber) : null;
+
+  if (!taskBond) {
+    const sealed = sealTaskBond({
+      issueNumber: input.issueNumber,
+      issueTitle: input.issueTitle,
+      issueBody: input.issueBody,
+      depth,
+      rootDir,
+      extraBoundFiles: gateBoundFiles,
+    });
+
+    appendTraceSpan(rootDir, runId, {
+      phase: "bond_seal",
+      passed: sealed.ok,
+      detail: sealed.ok ? sealed.bond.bondHash : sealed.errors.join("; "),
+    });
+
+    if (!sealed.ok && depth >= 2) {
+      const remediation = [
+        "## TaskBond seal failed",
+        "",
+        "Fix the issue body and re-run. Required at this depth:",
+        "- **Intent** (one sentence)",
+        "- **Files to touch** (exact paths under allowed prefixes)",
+        "",
+        ...sealed.errors.map((error) => `- ${error}`),
+      ].join("\n");
+
+      return finishRun({
+        input,
+        deps,
+        rootDir,
+        runId,
+        startedAt,
+        actor,
+        success: false,
+        state: "failed",
+        generatedFiles: [],
+        feedbackMarkdown: remediation,
+        gateFailures: [],
+        recordedErrors: sealed.errors,
+        attempts: 0,
+        gateIdsFailed: [],
+        firstPassGreen: false,
+        approvalRequired: false,
+      });
+    }
+
+    if (sealed.ok) {
+      taskBond = sealed.bond;
+      writeTaskBond(rootDir, taskBond);
+    }
+  }
+
+  const boundFiles = taskBond?.boundFiles ?? gateBoundFiles;
+
+  const failureRecall = boundFiles
     .flatMap((filePath) => readRecentFailuresByPathPrefix(rootDir, filePath, 3))
     .slice(0, 3);
   const recalledFailures = formatFailureRecall(failureRecall);
@@ -236,8 +296,8 @@ export async function runOSActor(
           title: "Generated patch",
           kind: "edit",
           dependsOn: [],
-          risk: riskForFiles(requiredPaths, mandates),
-          files: requiredPaths,
+          risk: riskForFiles(boundFiles, mandates),
+          files: boundFiles,
           acceptance: ["tests pass"],
         },
       ],
@@ -245,9 +305,11 @@ export async function runOSActor(
 
     const scopedContext = buildScopedRepomix(rootDir, fallbackDag);
     const contextBlob =
-      scopedContext.length >= 500
+      boundFiles.length > 0
         ? scopedContext
-        : capContext(repoContext, 16000);
+        : depth < 2
+          ? capContext(repoContext, 16000)
+          : scopedContext;
 
     const plannerSystem = depth === 0
       ? `You are a Software 3.0 Architect. Explain the request without proposing file edits.\n${constitution}`
@@ -401,7 +463,7 @@ ${vibe}`;
     collectPlannedFiles(dag).length > 0
       ? collectPlannedFiles(dag)
       : releaseGate?.files.map((file) => file.path) ??
-        (requiredPaths.length > 0 ? requiredPaths : ["src/generated.ts"]);
+        (boundFiles.length > 0 ? boundFiles : ["src/generated.ts"]);
 
   const mandateEval = evaluateMandates(plannedFiles, mandates);
   if (!mandateEval.passed) {
@@ -792,6 +854,7 @@ type FinishRunInput = {
   firstPassGreen: boolean;
   tokensEstimate?: number;
   approvalRequired: boolean;
+  bondHash?: string;
 };
 
 function finishRun(args: FinishRunInput): RunOutput {
@@ -803,6 +866,10 @@ function finishRun(args: FinishRunInput): RunOutput {
     tokensEstimate: args.tokensEstimate,
   };
 
+  const bondHash =
+    args.bondHash ??
+    readTaskBond(args.rootDir, args.input.issueNumber)?.bondHash;
+
   const manifest = buildManifest(
     args.input,
     args.generatedFiles,
@@ -811,6 +878,7 @@ function finishRun(args: FinishRunInput): RunOutput {
     args.runId,
     metrics,
     args.rootDir,
+    bondHash,
   );
 
   const snapshot = getPersistedSnapshot(args.actor);
@@ -917,6 +985,7 @@ function buildManifest(
   runId: string,
   metrics: RunMetrics,
   rootDir: string,
+  bondHash?: string,
 ): RunManifest {
   const paths = generatedFiles.map((file) => file.path);
   const generatedFileDigests =
@@ -937,6 +1006,7 @@ function buildManifest(
     createdAt: new Date().toISOString(),
     approvalRequired: approvalRequired || undefined,
     vowsHash: computeVowsHash(rootDir),
+    bondHash,
     metrics,
   };
 }

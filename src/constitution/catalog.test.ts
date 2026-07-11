@@ -121,6 +121,7 @@ describe("constitution catalog", () => {
     expect(Object.keys(schemas).sort()).toEqual(
       [
         "AwaitingApprovalPhase",
+        "BondPolicy",
         "CompletedPhase",
         "ExecutionDag",
         "FailedPhase",
@@ -136,6 +137,8 @@ describe("constitution catalog", () => {
         "RiskReviewPhase",
         "RunManifest",
         "ScoreboardEntry",
+        "TaskBond",
+        "TaskBondEval",
         "VowAttestation",
         "VerifyingPhase",
       ].sort(),

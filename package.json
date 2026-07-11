@@ -14,6 +14,9 @@
     "gate:resolve": "tsx src/release-gate/cli.ts",
     "gate:validate-capsule": "tsx src/release-gate/validate-capsule-cli.ts",
     "promote:apply": "tsx src/promote/apply-cli.ts",
+    "bond:seal": "tsx src/bond/seal-cli.ts",
+    "eval:bond": "tsx src/bond/gauntlet-cli.ts",
+    "bond:preflight": "tsx src/bond/preflight-cli.ts",
     "gate:mcp": "tsx src/release-gate/mcp.ts",
     "constitution:export": "tsx src/constitution/cli.ts",
     "constitution:serve": "tsx src/cloud/verify-server.ts"

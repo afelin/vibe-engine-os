@@ -3,11 +3,19 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseMandates } from "../constitution/parse.js";
 
+export type BondPolicy = {
+  require_bound_files_min_depth: number;
+  max_bound_files: number;
+  max_intent_chars: number;
+  allowed_file_prefixes: string[];
+};
+
 export type Mandates = {
   forbidden_prefixes: string[];
   require_approval_prefixes: string[];
   max_attempts: number;
   approved_operators?: string[];
+  bond?: BondPolicy;
 };
 
 export type MandateViolation = {

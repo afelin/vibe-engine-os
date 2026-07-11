@@ -7,6 +7,7 @@ describe("agent mandate evaluation", () => {
     expect(mandates.forbidden_prefixes).toContain("src/auth/");
     expect(mandates.max_attempts).toBe(3);
     expect(mandates.approved_operators).toEqual(["afelin"]);
+    expect(mandates.bond?.require_bound_files_min_depth).toBe(2);
   });
 
   it("blocks forbidden prefixes before codegen", () => {
