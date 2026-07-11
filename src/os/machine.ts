@@ -22,7 +22,8 @@ export function createOSMachine(context: OSContext = createInitialOSContext()) {
       events: {} as OSEvent,
     },
     guards: {
-      requiresApproval: ({ context }) => context.risk === "high",
+      requiresApproval: ({ context }) =>
+        context.approvalRequired === true || context.risk === "high",
     },
   }).createMachine({
     id: "vibe-engine-os",
@@ -56,6 +57,7 @@ export function createOSMachine(context: OSContext = createInitialOSContext()) {
             actions: assign({
               risk: ({ event }) => event.risk,
               riskReason: ({ event }) => event.reason,
+              approvalRequired: ({ event }) => event.approvalRequired,
             }),
           },
         },

@@ -2,8 +2,15 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { execSync } from "node:child_process";
 import { createActor } from "xstate";
-import { riskForFiles } from "../planning/dag.js";
-import { loadMandates } from "../policy/evaluate.js";
+import {
+  collectPlannedFiles,
+  parsePlannerDag,
+  resolveRiskReview,
+  riskForFiles,
+  topologicalSort,
+  validateDag,
+} from "../planning/dag.js";
+import { evaluateMandates, loadMandates } from "../policy/evaluate.js";
 import { resolveCodegenEndpoint, resolveCriticEndpoint, resolvePlannerEndpoint } from "../llm/router.js";
 import { resolveReleaseGatePatch } from "../release-gate/resolve.js";
 import {
@@ -16,13 +23,24 @@ import {
   runGeneratedPatchValidators,
 } from "../verification/pipeline.js";
 import { createInitialOSContext, createOSMachine } from "./machine.js";
+import { depthCapabilities, getVibeDepth } from "./depth.js";
+import {
+  appendTraceSpan,
+  formatFailureRecall,
+  readRecentFailuresByPathPrefix,
+} from "./trace.js";
 import type {
   ClassifiedFailure,
+  ExecutionDag,
   GeneratedFile,
   OSContext,
   VerificationResult,
 } from "./events.js";
-import type { RunManifest } from "../run/manifest.js";
+import {
+  appendScoreboardEntry,
+  type RunManifest,
+  type RunMetrics,
+} from "../run/manifest.js";
 
 export type RunInput = {
   issueNumber: string;
@@ -30,6 +48,7 @@ export type RunInput = {
   issueBody: string;
   githubActor?: string;
   approvedBy?: string;
+  rootDir?: string;
 };
 
 export type RunOutput = {
@@ -107,13 +126,20 @@ export async function runOSActor(
   input: RunInput,
   deps: RunDeps = defaultDeps(),
 ): Promise<RunOutput> {
-  const mandates = loadMandates();
+  const rootDir = input.rootDir ?? ".";
+  const startedAt = Date.now();
+  const depth = getVibeDepth();
+  const caps = depthCapabilities(depth);
+  const mandates = loadMandates(rootDir);
+  const runId = `issue-${input.issueNumber}-${new Date().toISOString().replace(/[:.]/g, "-")}`;
+
   const initialContext: OSContext = {
     ...createInitialOSContext(),
     issueNumber: input.issueNumber,
     issueTitle: input.issueTitle,
     issueBody: input.issueBody,
     maxAttempts: mandates.max_attempts,
+    vibeDepth: depth,
   };
 
   const actor = createActor(createOSMachine(initialContext)).start();
@@ -125,77 +151,217 @@ export async function runOSActor(
   const vibe = `TITLE: ${input.issueTitle}\nDESCRIPTION: ${input.issueBody}`;
   const requiredPaths = extractRequiredPaths(input.issueBody);
 
+  appendTraceSpan(rootDir, runId, { phase: "preflight" });
   actor.send({ type: "preflight.completed", findings: [] });
 
+  const failureRecall = requiredPaths
+    .flatMap((filePath) => readRecentFailuresByPathPrefix(rootDir, filePath, 3))
+    .slice(0, 3);
+  const recalledFailures = formatFailureRecall(failureRecall);
+
   let plan: string;
+  let dag: ExecutionDag;
+
   if (releaseGate) {
     plan = releaseGate.planLines.join("\n");
-    actor.send({
-      type: "plan.created",
-      dag: {
-        issueNumber: input.issueNumber,
-        title: input.issueTitle,
-        nodes: releaseGate.files.map((file, index) => ({
-          id: `gate-${index + 1}`,
-          title: `Release gate ${releaseGate.id}`,
-          kind: "edit" as const,
-          dependsOn: [],
-          risk: riskForFiles([file.path]),
-          files: [file.path],
-          acceptance: ["release gate satisfied"],
-        })),
-      },
-    });
+    dag = {
+      issueNumber: input.issueNumber,
+      title: input.issueTitle,
+      nodes: releaseGate.files.map((file, index) => ({
+        id: `gate-${index + 1}`,
+        title: `Release gate ${releaseGate.id}`,
+        kind: "edit" as const,
+        dependsOn: [],
+        risk: riskForFiles([file.path], mandates),
+        files: [file.path],
+        acceptance: ["release gate satisfied"],
+      })),
+    };
+    actor.send({ type: "plan.created", dag });
   } else {
     const planner = resolvePlannerEndpoint();
     if (planner === "off") {
       throw new Error("Planner provider is off and no release gate matched.");
     }
 
-    plan = await deps.callOpenAI(
+    const fallbackDag: ExecutionDag = {
+      issueNumber: input.issueNumber,
+      title: input.issueTitle,
+      nodes: [
+        {
+          id: "generated-edit",
+          title: "Generated patch",
+          kind: "edit",
+          dependsOn: [],
+          risk: riskForFiles(requiredPaths, mandates),
+          files: requiredPaths,
+          acceptance: ["tests pass"],
+        },
+      ],
+    };
+
+    const plannerSystem = depth === 0
+      ? `You are a Software 3.0 Architect. Explain the request without proposing file edits.\n${constitution}`
+      : `You are a Software 3.0 Architect. Follow this constitution strictly:\n${constitution}\n\nGlobal Codebase Map:\n${capContext(repoContext, 16000)}${capContext(evoMemContext ? `\n\n⚠️ HISTORICAL RUNTIME ERRORS TO AVOID:\n${evoMemContext}` : "", 2000)}${recalledFailures ? `\n\n⚠️ RECENT STRUCTURED FAILURES FOR THESE PATHS:\n${recalledFailures}` : ""}`;
+
+    const plannerUser =
+      depth === 0
+        ? `Explain how to approach this request without writing code:\n${vibe}`
+        : depth === 1
+          ? `Create a strict execution blueprint for this request:\n${vibe}`
+          : `Create a strict execution blueprint as JSON matching this schema:
+{
+  "issueNumber": "${input.issueNumber}",
+  "title": "${input.issueTitle}",
+  "nodes": [
+    {
+      "id": "edit-1",
+      "title": "Implement change",
+      "kind": "edit",
+      "dependsOn": [],
+      "risk": "low",
+      "files": ["src/example.ts"],
+      "acceptance": ["tests pass"]
+    }
+  ]
+}
+
+Request:
+${vibe}`;
+
+    const rawPlan = await deps.callOpenAI(
       planner.baseUrl,
       planner.apiKey,
       planner.model,
-      `You are a Software 3.0 Architect. Follow this constitution strictly:\n${constitution}\n\nGlobal Codebase Map:\n${capContext(repoContext, 16000)}${capContext(evoMemContext ? `\n\n⚠️ HISTORICAL RUNTIME ERRORS TO AVOID:\n${evoMemContext}` : "", 2000)}`,
-      `Create a strict execution blueprint for this request:\n${vibe}`,
+      plannerSystem,
+      plannerUser,
+      depth >= 2,
     );
 
-    actor.send({
-      type: "plan.created",
-      dag: {
-        issueNumber: input.issueNumber,
-        title: input.issueTitle,
-        nodes: [
-          {
-            id: "generated-edit",
-            title: "Generated patch",
-            kind: "edit",
-            dependsOn: [],
-            risk: riskForFiles(requiredPaths),
-            files: requiredPaths,
-            acceptance: ["tests pass"],
-          },
-        ],
-      },
+    plan = depth >= 2 ? rawPlan : rawPlan;
+    dag = depth >= 2 ? parsePlannerDag(rawPlan, fallbackDag) : fallbackDag;
+    actor.send({ type: "plan.created", dag });
+    appendTraceSpan(rootDir, runId, { phase: "planner", detail: plan.slice(0, 200) });
+  }
+
+  if (depth === 0) {
+    return finishRun({
+      input,
+      deps,
+      rootDir,
+      runId,
+      startedAt,
+      actor,
+      success: true,
+      state: "completed",
+      generatedFiles: [],
+      feedbackMarkdown: plan,
+      gateFailures: [],
+      recordedErrors: [],
+      attempts: 0,
+      gateIdsFailed: [],
+      firstPassGreen: true,
+      approvalRequired: false,
     });
   }
 
-  deps.writePlan(input.issueNumber, plan);
+  if (caps.allowsPlanWrite) {
+    deps.writePlan(input.issueNumber, plan);
+  }
+
+  if (depth === 1) {
+    return finishRun({
+      input,
+      deps,
+      rootDir,
+      runId,
+      startedAt,
+      actor,
+      success: true,
+      state: "planning",
+      generatedFiles: [],
+      feedbackMarkdown: "Plan recorded. Depth 1 stops before codegen.",
+      gateFailures: [],
+      recordedErrors: [],
+      attempts: 0,
+      gateIdsFailed: [],
+      firstPassGreen: true,
+      approvalRequired: false,
+    });
+  }
+
+  const dagErrors = validateDag(dag);
+  if (dagErrors.length > 0) {
+    appendTraceSpan(rootDir, runId, {
+      phase: "dag_validation",
+      passed: false,
+      detail: dagErrors.join("; "),
+    });
+    return finishRun({
+      input,
+      deps,
+      rootDir,
+      runId,
+      startedAt,
+      actor,
+      success: false,
+      state: "failed",
+      generatedFiles: [],
+      feedbackMarkdown: `Invalid execution DAG:\n${dagErrors.map((error) => `- ${error}`).join("\n")}`,
+      gateFailures: [],
+      recordedErrors: dagErrors,
+      attempts: 0,
+      gateIdsFailed: ["invalid_dag"],
+      firstPassGreen: false,
+      approvalRequired: false,
+    });
+  }
+
+  topologicalSort(dag.nodes);
+  appendTraceSpan(rootDir, runId, { phase: "dag_validation", passed: true });
 
   const plannedFiles =
-    releaseGate?.files.map((file) => file.path) ??
-    requiredPaths.length > 0
-      ? requiredPaths
-      : ["src/generated.ts"];
-  const risk = riskForFiles(plannedFiles);
-  const riskReason =
-    risk === "high"
-      ? "Protected workflow or high-risk path in planned files"
-      : risk === "medium"
-        ? "Package manifest mutation in planned files"
-        : "Generated source-only edit";
+    collectPlannedFiles(dag).length > 0
+      ? collectPlannedFiles(dag)
+      : releaseGate?.files.map((file) => file.path) ??
+        (requiredPaths.length > 0 ? requiredPaths : ["src/generated.ts"]);
 
-  actor.send({ type: "risk.reviewed", risk, reason: riskReason });
+  const mandateEval = evaluateMandates(plannedFiles, mandates);
+  if (!mandateEval.passed) {
+    const feedback = mandateEval.violations
+      .map((item) => `Forbidden path: ${item.path}`)
+      .join("\n");
+    return finishRun({
+      input,
+      deps,
+      rootDir,
+      runId,
+      startedAt,
+      actor,
+      success: false,
+      state: "failed",
+      generatedFiles: [],
+      feedbackMarkdown: feedback,
+      gateFailures: [],
+      recordedErrors: [feedback],
+      attempts: 0,
+      gateIdsFailed: ["forbidden_path"],
+      firstPassGreen: false,
+      approvalRequired: false,
+    });
+  }
+
+  const riskReview = resolveRiskReview(plannedFiles, mandates);
+  const approvalRequired =
+    riskReview.approvalRequired &&
+    (caps.enforcesProtectedApproval || riskReview.risk === "high");
+
+  actor.send({
+    type: "risk.reviewed",
+    risk: riskReview.risk,
+    reason: riskReview.reason,
+    approvalRequired,
+  });
 
   if (actor.getSnapshot().value === "awaiting_approval") {
     if (input.approvedBy) {
@@ -205,25 +371,55 @@ export async function runOSActor(
         commentId: "env-approval",
       });
     } else {
-      const manifest = buildManifest(input, [], true, deps);
-      return {
+      return finishRun({
+        input,
+        deps,
+        rootDir,
+        runId,
+        startedAt,
+        actor,
         success: false,
         state: String(actor.getSnapshot().value),
-        context: actor.getSnapshot().context,
         generatedFiles: [],
-        manifest,
         feedbackMarkdown: "High-risk change requires /approve before patch generation.",
         gateFailures: [],
         recordedErrors: [],
-      };
+        attempts: 0,
+        gateIdsFailed: [],
+        firstPassGreen: false,
+        approvalRequired: true,
+      });
     }
+  }
+
+  if (!caps.allowsCodegen) {
+    return finishRun({
+      input,
+      deps,
+      rootDir,
+      runId,
+      startedAt,
+      actor,
+      success: false,
+      state: "failed",
+      generatedFiles: [],
+      feedbackMarkdown: `Depth ${depth} does not allow codegen.`,
+      gateFailures: [],
+      recordedErrors: [],
+      attempts: 0,
+      gateIdsFailed: [],
+      firstPassGreen: false,
+      approvalRequired: false,
+    });
   }
 
   let feedbackMarkdown = "";
   let gateFailures: GateFailure[] = [];
   const recordedErrors: string[] = [];
+  const gateIdsFailed: string[] = [];
   let finalVerifiedFiles: GeneratedFile[] = [];
   let attempts = 0;
+  let tokensEstimate = 0;
 
   while (attempts < mandates.max_attempts) {
     attempts++;
@@ -238,7 +434,7 @@ export async function runOSActor(
         throw new Error("Codegen provider is off and no deterministic patch is available.");
       }
 
-      let codePrompt = buildCodegenPrompt(plan, requiredPaths, feedbackMarkdown);
+      const codePrompt = buildCodegenPrompt(plan, plannedFiles, feedbackMarkdown);
       const rawCode = await deps.callOpenAI(
         codegen.baseUrl,
         codegen.apiKey,
@@ -247,6 +443,7 @@ export async function runOSActor(
         codePrompt,
         codegen.jsonMode ?? false,
       );
+      tokensEstimate += estimateTokens(rawCode);
 
       try {
         generatedFiles = JSON.parse(rawCode).files || [];
@@ -258,18 +455,36 @@ export async function runOSActor(
     if (generatedFiles.length === 0) continue;
 
     generatedFiles = prepareGeneratedPatch(generatedFiles);
+    appendTraceSpan(rootDir, runId, {
+      phase: "codegen",
+      path: generatedFiles.map((file) => file.path).join(","),
+    });
 
-    // Ax boundary: deterministic validators run before any disk write.
     const validation = runGeneratedPatchValidators(generatedFiles);
+    // Ax boundary: deterministic validators run before any disk write.
+    appendTraceSpan(rootDir, runId, {
+      phase: "validator",
+      passed: validation.passed,
+      gate_id: validation.gateFailures[0]?.gate_id,
+      path: validation.gateFailures[0]?.analysis.path,
+      detail: validation.gateFailures[0]?.analysis.detail,
+    });
+
     if (!validation.passed) {
       gateFailures = validation.gateFailures;
       feedbackMarkdown = formatGateFailuresMarkdown(gateFailures);
       recordedErrors.push(feedbackMarkdown);
+      gateIdsFailed.push(...gateFailures.map((item) => item.gate_id));
       actor.send({
         type: "verification.failed",
         failure: toClassifiedFailure("model_output", "Generated patch validation failed", feedbackMarkdown),
       });
       continue;
+    }
+
+    if (!caps.allowsDiskWrite) {
+      finalVerifiedFiles = generatedFiles;
+      break;
     }
 
     const backups = deps.writeFilesToDisk(generatedFiles);
@@ -278,57 +493,75 @@ export async function runOSActor(
     gateFailures = [];
     const verificationResults: VerificationResult[] = [];
 
-    try {
-      deps.runTsc();
-      verificationResults.push({
-        name: "tsc",
-        passed: true,
-        output: "Compiler check passed",
-      });
-    } catch (error: unknown) {
-      const errMsg = extractExecError(error);
-      gateFailures.push(
-        createGateFailure(
-          "typescript_compiler",
-          "tsconfig.json",
-          errMsg,
-          "Fix TypeScript compile errors before retrying.",
-        ),
-      );
-      feedbackMarkdown = formatGateFailuresMarkdown(gateFailures);
-      recordedErrors.push(errMsg);
-      loopPassed = false;
-      verificationResults.push({ name: "tsc", passed: false, output: errMsg });
-    }
-
-    if (loopPassed) {
+    if (caps.allowsTests) {
       try {
-        deps.runVitest();
+        deps.runTsc();
         verificationResults.push({
-          name: "vitest",
+          name: "tsc",
           passed: true,
-          output: "Evaluation tests passed",
+          output: "Compiler check passed",
         });
+        appendTraceSpan(rootDir, runId, { phase: "tsc", passed: true });
       } catch (error: unknown) {
         const errMsg = extractExecError(error);
         gateFailures.push(
           createGateFailure(
-            "vitest",
-            "tests",
+            "typescript_compiler",
+            "tsconfig.json",
             errMsg,
-            "Fix failing tests before retrying.",
+            "Fix TypeScript compile errors before retrying.",
           ),
         );
         feedbackMarkdown = formatGateFailuresMarkdown(gateFailures);
         recordedErrors.push(errMsg);
+        gateIdsFailed.push("typescript_compiler");
         loopPassed = false;
-        verificationResults.push({ name: "vitest", passed: false, output: errMsg });
+        verificationResults.push({ name: "tsc", passed: false, output: errMsg });
+        appendTraceSpan(rootDir, runId, {
+          phase: "tsc",
+          passed: false,
+          gate_id: "typescript_compiler",
+          detail: errMsg.slice(0, 500),
+        });
+      }
+
+      if (loopPassed) {
+        try {
+          deps.runVitest();
+          verificationResults.push({
+            name: "vitest",
+            passed: true,
+            output: "Evaluation tests passed",
+          });
+          appendTraceSpan(rootDir, runId, { phase: "vitest", passed: true });
+        } catch (error: unknown) {
+          const errMsg = extractExecError(error);
+          gateFailures.push(
+            createGateFailure(
+              "vitest",
+              "tests",
+              errMsg,
+              "Fix failing tests before retrying.",
+            ),
+          );
+          feedbackMarkdown = formatGateFailuresMarkdown(gateFailures);
+          recordedErrors.push(errMsg);
+          gateIdsFailed.push("vitest");
+          loopPassed = false;
+          verificationResults.push({ name: "vitest", passed: false, output: errMsg });
+          appendTraceSpan(rootDir, runId, {
+            phase: "vitest",
+            passed: false,
+            gate_id: "vitest",
+            detail: errMsg.slice(0, 500),
+          });
+        }
       }
     }
 
     if (loopPassed && deterministicPatch && attempts === 1) {
       // Deterministic release-gate patches skip causal critic.
-    } else if (loopPassed) {
+    } else if (loopPassed && caps.allowsTests) {
       const critic = resolveCriticEndpoint();
       if (critic.kind !== "off") {
         for (const file of generatedFiles) {
@@ -356,7 +589,15 @@ export async function runOSActor(
             );
             feedbackMarkdown = formatGateFailuresMarkdown(gateFailures);
             recordedErrors.push(verdict);
+            gateIdsFailed.push("causal_critic");
             loopPassed = false;
+            appendTraceSpan(rootDir, runId, {
+              phase: "critic",
+              passed: false,
+              gate_id: "causal_critic",
+              path: file.path,
+              detail: verdict.slice(0, 500),
+            });
             break;
           }
         }
@@ -367,7 +608,11 @@ export async function runOSActor(
       finalVerifiedFiles = generatedFiles;
       actor.send({ type: "patch.generated", files: generatedFiles });
       actor.send({ type: "verification.passed", results: verificationResults });
-      actor.send({ type: "publish.completed" });
+      if (caps.allowsDeploy) {
+        actor.send({ type: "publish.completed", previewUrl: "preview://local" });
+      } else {
+        actor.send({ type: "publish.completed" });
+      }
 
       if (attempts > 1 && recordedErrors.length > 0) {
         deps.appendEvoMem(
@@ -392,34 +637,112 @@ export async function runOSActor(
     deps.writeCriticFailed(
       `🚨 **System Halted.**\nFailed to pass Eval/Critic after ${mandates.max_attempts} attempts.\n\nFinal Feedback:\n${feedbackMarkdown}`,
     );
-    return {
+    return finishRun({
+      input,
+      deps,
+      rootDir,
+      runId,
+      startedAt,
+      actor,
       success: false,
       state: "failed",
-      context: actor.getSnapshot().context,
       generatedFiles: [],
       feedbackMarkdown,
       gateFailures,
       recordedErrors,
-    };
+      attempts,
+      gateIdsFailed,
+      firstPassGreen: false,
+      tokensEstimate,
+      approvalRequired: false,
+    });
   }
 
-  const approvalRequired = risk === "high";
-  const manifest = buildManifest(
+  return finishRun({
     input,
-    finalVerifiedFiles.map((file) => file.path),
-    approvalRequired,
     deps,
-  );
-
-  return {
+    rootDir,
+    runId,
+    startedAt,
+    actor,
     success: true,
     state: String(actor.getSnapshot().value),
-    context: actor.getSnapshot().context,
     generatedFiles: finalVerifiedFiles,
-    manifest,
     feedbackMarkdown,
     gateFailures,
     recordedErrors,
+    attempts,
+    gateIdsFailed,
+    firstPassGreen: attempts === 1 && gateIdsFailed.length === 0,
+    tokensEstimate,
+    approvalRequired,
+  });
+}
+
+type FinishRunInput = {
+  input: RunInput;
+  deps: RunDeps;
+  rootDir: string;
+  runId: string;
+  startedAt: number;
+  actor: ReturnType<typeof createActor<ReturnType<typeof createOSMachine>>>;
+  success: boolean;
+  state: string;
+  generatedFiles: GeneratedFile[];
+  feedbackMarkdown: string;
+  gateFailures: GateFailure[];
+  recordedErrors: string[];
+  attempts: number;
+  gateIdsFailed: string[];
+  firstPassGreen: boolean;
+  tokensEstimate?: number;
+  approvalRequired: boolean;
+};
+
+function finishRun(args: FinishRunInput): RunOutput {
+  const metrics: RunMetrics = {
+    attempts: args.attempts,
+    firstPassGreen: args.firstPassGreen,
+    gateIdsFailed: [...new Set(args.gateIdsFailed)],
+    durationMs: Date.now() - args.startedAt,
+    tokensEstimate: args.tokensEstimate,
+  };
+
+  const manifest = buildManifest(
+    args.input,
+    args.generatedFiles.map((file) => file.path),
+    args.approvalRequired,
+    args.deps,
+    args.runId,
+    metrics,
+  );
+
+  appendScoreboardEntry(args.rootDir, {
+    runId: manifest.runId,
+    issueNumber: manifest.issueNumber,
+    issueTitle: manifest.issueTitle,
+    success: args.success,
+    state: args.state,
+    createdAt: manifest.createdAt,
+    metrics,
+  });
+
+  appendTraceSpan(args.rootDir, args.runId, {
+    phase: "run_complete",
+    passed: args.success,
+    durationMs: metrics.durationMs,
+    tokensEstimate: metrics.tokensEstimate,
+  });
+
+  return {
+    success: args.success,
+    state: args.state,
+    context: args.actor.getSnapshot().context,
+    generatedFiles: args.generatedFiles,
+    manifest,
+    feedbackMarkdown: args.feedbackMarkdown,
+    gateFailures: args.gateFailures,
+    recordedErrors: args.recordedErrors,
   };
 }
 
@@ -428,8 +751,9 @@ function buildManifest(
   generatedFiles: string[],
   approvalRequired: boolean,
   deps: RunDeps,
+  runId: string,
+  metrics: RunMetrics,
 ): RunManifest {
-  const runId = `issue-${input.issueNumber}-${new Date().toISOString().replace(/[:.]/g, "-")}`;
   return {
     runId,
     issueNumber: input.issueNumber,
@@ -439,6 +763,7 @@ function buildManifest(
     generatedFiles,
     createdAt: new Date().toISOString(),
     approvalRequired: approvalRequired || undefined,
+    metrics,
   };
 }
 
@@ -480,6 +805,10 @@ function buildCodegenPrompt(
     codePrompt += `\n\n🚨 PREVIOUS ATTEMPT FAILED. Fix these exact errors:\n${feedbackMarkdown}`;
   }
   return codePrompt;
+}
+
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
 }
 
 function toClassifiedFailure(

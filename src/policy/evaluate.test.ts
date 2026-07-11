@@ -20,6 +20,12 @@ describe("agent mandate evaluation", () => {
     expect(result.requiresApproval).toBe(true);
   });
 
+  it("marks approval-required package.json paths", () => {
+    const result = evaluateMandates(["package.json"]);
+    expect(result.requiresApproval).toBe(true);
+    expect(result.passed).toBe(true);
+  });
+
   it("passes ordinary generated source paths", () => {
     const result = evaluateMandates(["src/index.ts", "src/index.test.ts"]);
     expect(result.passed).toBe(true);

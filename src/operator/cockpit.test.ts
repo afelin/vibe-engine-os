@@ -33,4 +33,24 @@ describe("operator cockpit", () => {
     expect(text).toContain("/approve");
     expect(text).toContain("/rollback");
   });
+
+  it("renders depth in cockpit status", () => {
+    const text = renderCockpitComment("learning", {
+      issueNumber: "7",
+      issueTitle: "Fix compile failure",
+      issueBody: "Please fix it",
+      attempts: 2,
+      maxAttempts: 3,
+      risk: "medium",
+      riskReason: "Package mutation",
+      vibeDepth: 3,
+      findings: [],
+      generatedFiles: [{ path: "src/index.ts", content: "export {};" }],
+      verificationResults: [],
+      failures: [],
+    } satisfies OSContext);
+
+    expect(text).toContain("Vibe Depth");
+    expect(text).toContain("tests + implementation");
+  });
 });
