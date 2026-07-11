@@ -3,6 +3,7 @@ import {
   loadReleaseGates,
   resolveGateFromRegistry,
 } from "./registry.js";
+import { evaluateMandates, loadMandates } from "../policy/evaluate.js";
 
 export const RELEASE_GATE_MCP = {
   name: "vibe-release-gates",
@@ -54,6 +55,21 @@ export const RELEASE_GATE_TOOLS = [
       required: ["id"],
     },
   },
+  {
+    name: "evaluate_mandate",
+    description:
+      "Evaluate proposed file paths against agent mandates (forbidden and approval prefixes).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        proposed_files: {
+          type: "array",
+          items: { type: "string" },
+        },
+      },
+      required: ["proposed_files"],
+    },
+  },
 ] as const;
 
 export function callReleaseGateTool(
@@ -74,6 +90,20 @@ export function callReleaseGateTool(
     const id = typeof args.id === "string" ? args.id : "";
     const gate = loadReleaseGates().find((entry) => entry.id === id) ?? null;
     return JSON.stringify(gate, null, 2);
+  }
+
+  if (name === "evaluate_mandate") {
+    const proposedFiles = Array.isArray(args.proposed_files)
+      ? args.proposed_files.filter((item): item is string => typeof item === "string")
+      : [];
+    return JSON.stringify(
+      {
+        mandates: loadMandates(),
+        evaluation: evaluateMandates(proposedFiles),
+      },
+      null,
+      2,
+    );
   }
 
   throw new Error(`Unknown tool: ${name}`);

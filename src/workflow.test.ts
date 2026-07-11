@@ -56,4 +56,35 @@ describe("GitHub Actions workflow", () => {
     expect(workflow).toContain("src/pr-review-smoke.ts");
     expect(workflow).toContain('if [ -z "$REVIEW_BODY" ]; then');
   });
+
+  it("skips git push when approval is required without APPROVED_BY", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/forever.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain("VIBE_APPROVAL_REQUIRED != '1'");
+    expect(workflow).toContain("APPROVED_BY != ''");
+  });
+
+  it("stages only generated files instead of git add .", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/forever.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain("GENERATED_FILES");
+    expect(workflow).not.toContain("git add .");
+  });
+
+  it("uses structured gate failure feedback in the runtime ratchet", () => {
+    const runSource = fs.readFileSync(
+      path.join(process.cwd(), "src/os/run.ts"),
+      "utf8",
+    );
+
+    expect(runSource).toContain("formatGateFailuresMarkdown");
+    expect(runSource).toContain("gateFailures");
+    expect(runSource).toContain("createGateFailure");
+  });
 });

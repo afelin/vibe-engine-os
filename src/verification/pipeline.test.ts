@@ -15,6 +15,21 @@ describe("generated patch validator pipeline", () => {
     expect(result.failures).toEqual([]);
   });
 
+  it("returns structured gate failures for validator failures", () => {
+    const result = runGeneratedPatchValidators([
+      { path: "../outside.ts", content: "export {};" },
+    ]);
+
+    expect(result.passed).toBe(false);
+    expect(result.gateFailures[0]).toMatchObject({
+      status: "gate_failed",
+      gate_id: "path_traversal",
+      analysis: expect.objectContaining({
+        path: "../outside.ts",
+      }),
+    });
+  });
+
   it("fails before writes for protected files", () => {
     const result = runGeneratedPatchValidators([
       { path: ".github/workflows/forever.yml", content: "name: unsafe" },

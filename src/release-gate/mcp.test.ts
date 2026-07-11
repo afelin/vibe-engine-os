@@ -6,11 +6,12 @@ import {
 } from "./mcp-handlers.js";
 
 describe("release gate MCP handlers", () => {
-  it("advertises three deterministic tools", () => {
+  it("advertises four deterministic tools", () => {
     expect(RELEASE_GATE_TOOLS.map((tool) => tool.name)).toEqual([
       "list_gates",
       "resolve_gate",
       "preview_gate",
+      "evaluate_mandate",
     ]);
   });
 
@@ -61,5 +62,14 @@ describe("release gate MCP handlers", () => {
   it("previews a gate by id", () => {
     const text = callReleaseGateTool("preview_gate", { id: "cloud-loop-smoke" });
     expect(JSON.parse(text).files).toHaveLength(2);
+  });
+
+  it("evaluates mandates for proposed files", () => {
+    const text = callReleaseGateTool("evaluate_mandate", {
+      proposed_files: ["src/auth/session.ts"],
+    });
+    const parsed = JSON.parse(text);
+    expect(parsed.evaluation.passed).toBe(false);
+    expect(parsed.evaluation.violations[0].rule).toBe("forbidden");
   });
 });

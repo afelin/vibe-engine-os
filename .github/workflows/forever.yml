@@ -107,7 +107,7 @@ jobs:
           bunx oxfmt@latest -w .
 
       - name: 🚀 Deploy Vibe Blueprint to Cloudflare Edge
-        if: ${{ env.VIBE_OPERATOR_ONLY != '1' }}
+        if: ${{ env.VIBE_OPERATOR_ONLY != '1' && (env.VIBE_APPROVAL_REQUIRED != '1' || env.APPROVED_BY != '') }}
         id: deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -132,7 +132,7 @@ jobs:
           fi
 
       - name: 🔄 Smart Git Sync & PR Handoff
-        if: ${{ env.VIBE_OPERATOR_ONLY != '1' }}
+        if: ${{ env.VIBE_OPERATOR_ONLY != '1' && (env.VIBE_APPROVAL_REQUIRED != '1' || env.APPROVED_BY != '') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -142,8 +142,15 @@ jobs:
           
           BRANCH_NAME="vibe/issue-${{ env.ISSUE_NUMBER }}"
           git checkout $BRANCH_NAME || git checkout -b $BRANCH_NAME
-          
-          git add .
+
+          if [ -n "${GENERATED_FILES:-}" ]; then
+            while IFS= read -r file; do
+              [ -n "$file" ] && git add "$file"
+            done <<< "$GENERATED_FILES"
+          else
+            git add src/ tests/ .planning/ .skills/
+          fi
+
           git commit -m "feat(ai): causal compilation & edge deployment for #${{ env.ISSUE_NUMBER }}" || echo "No changes to commit"
           git push origin $BRANCH_NAME || git push --set-upstream origin $BRANCH_NAME
           

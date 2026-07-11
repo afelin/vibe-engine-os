@@ -9,6 +9,7 @@ export type RunManifest = {
   baseSha: string;
   generatedFiles: string[];
   createdAt: string;
+  approvalRequired?: boolean;
 };
 
 export function writeRunManifest(rootDir: string, manifest: RunManifest) {
