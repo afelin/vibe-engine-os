@@ -46,11 +46,14 @@ describe("GitHub Actions workflow", () => {
     );
 
     expect(workflow).toContain("pull_request_review");
+    expect(workflow).toContain("pull_request_review_comment");
     expect(workflow).toContain("types: [submitted, edited]");
+    expect(workflow).toContain("types: [created, edited]");
+    expect(workflow).toContain('github.event_name }}" == "pull_request_review_comment"');
     expect(workflow).toContain("BODY_REVIEW");
     expect(workflow).toContain("github.event.pull_request.number");
     expect(workflow).toContain("(PR Feedback)");
     expect(workflow).toContain("src/pr-review-smoke.ts");
-    expect(workflow).toContain('if [ -z "$BODY_REVIEW" ]; then');
+    expect(workflow).toContain('if [ -z "$REVIEW_BODY" ]; then');
   });
 });
