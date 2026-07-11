@@ -1,5 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { resolveRunDir, sanitizeRunId } from "../run/paths.js";
 
 export type TraceSpan = {
   phase: string;
@@ -18,11 +19,12 @@ export function appendTraceSpan(
   runId: string,
   span: Omit<TraceSpan, "ts" | "runId">,
 ): void {
-  const dir = path.join(rootDir, ".runs", runId);
+  const safeRunId = sanitizeRunId(runId);
+  const dir = resolveRunDir(rootDir, safeRunId);
   fs.mkdirSync(dir, { recursive: true });
   const line: TraceSpan = {
     ...span,
-    runId,
+    runId: safeRunId,
     ts: new Date().toISOString(),
   };
   fs.appendFileSync(
@@ -33,7 +35,7 @@ export function appendTraceSpan(
 }
 
 export function readTraceSpans(rootDir: string, runId: string): TraceSpan[] {
-  const tracePath = path.join(rootDir, ".runs", runId, "trace.ndjson");
+  const tracePath = path.join(resolveRunDir(rootDir, runId), "trace.ndjson");
   if (!fs.existsSync(tracePath)) return [];
 
   return fs
@@ -61,6 +63,11 @@ export function readRecentFailuresByPathPrefix(
     .reverse();
 
   for (const runId of runDirs) {
+    try {
+      sanitizeRunId(runId);
+    } catch {
+      continue;
+    }
     const spans = readTraceSpans(rootDir, runId);
     for (const span of spans.reverse()) {
       if (span.passed === false && span.path?.startsWith(pathPrefix)) {

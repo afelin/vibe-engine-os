@@ -1,5 +1,10 @@
 import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
+
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../..");
+const tsxBin = join(repoRoot, "node_modules/.bin/tsx");
 
 function frameMessage(payload: unknown): Buffer {
   const body = JSON.stringify(payload);
@@ -26,9 +31,11 @@ function readFramedMessage(buffer: Buffer): { message: unknown; rest: Buffer } {
 }
 
 describe("release gate MCP stdio transport", () => {
-  it("responds to initialize over Content-Length framing", async () => {
-    const child = spawn("npx", ["tsx", "src/release-gate/mcp.ts"], {
-      cwd: process.cwd(),
+  it(
+    "responds to initialize over Content-Length framing",
+    async () => {
+    const child = spawn(tsxBin, ["src/release-gate/mcp.ts"], {
+      cwd: repoRoot,
       stdio: ["pipe", "pipe", "pipe"],
     });
 
@@ -71,5 +78,7 @@ describe("release gate MCP stdio transport", () => {
     });
 
     child.kill();
-  });
+  },
+  15_000,
+  );
 });

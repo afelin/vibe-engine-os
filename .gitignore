@@ -3,3 +3,5 @@ dist/
 coverage/
 .runs/
 repomix-output.txt
+.vibe/*
+!.vibe/.gitkeep

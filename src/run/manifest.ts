@@ -1,5 +1,11 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import {
+  parseRunManifest,
+  parseScoreboardEntry,
+} from "../constitution/parse.js";
+import { computeVowsHash } from "../constitution/vows.js";
+import { resolveRunDir, sanitizeRunId } from "./paths.js";
 
 export type RunMetrics = {
   tokensEstimate?: number;
@@ -16,8 +22,11 @@ export type RunManifest = {
   branchName: string;
   baseSha: string;
   generatedFiles: string[];
+  generatedFileDigests?: Record<string, string>;
   createdAt: string;
   approvalRequired?: boolean;
+  vowsHash?: string;
+  capsuleHash?: string;
   metrics?: RunMetrics;
 };
 
@@ -31,24 +40,56 @@ export type ScoreboardEntry = {
   metrics: RunMetrics;
 };
 
+export function readRunManifest(rootDir: string, runId: string): RunManifest | null {
+  const safeRunId = sanitizeRunId(runId);
+  const manifestPath = path.join(resolveRunDir(rootDir, safeRunId), "manifest.json");
+  if (!fs.existsSync(manifestPath)) return null;
+  return parseRunManifest(JSON.parse(fs.readFileSync(manifestPath, "utf8")));
+}
+
 export function writeRunManifest(rootDir: string, manifest: RunManifest) {
-  const dir = path.join(rootDir, ".runs", manifest.runId);
+  const withVows: RunManifest = {
+    ...manifest,
+    vowsHash: manifest.vowsHash ?? computeVowsHash(rootDir),
+  };
+  const validated = parseRunManifest(withVows);
+  const dir = resolveRunDir(rootDir, validated.runId);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(
     path.join(dir, "manifest.json"),
-    `${JSON.stringify(manifest, null, 2)}\n`,
+    `${JSON.stringify(validated, null, 2)}\n`,
   );
+}
+
+export function writeActorSnapshot(
+  rootDir: string,
+  runId: string,
+  snapshot: unknown,
+) {
+  const dir = resolveRunDir(rootDir, runId);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, "actor.snapshot.json"),
+    `${JSON.stringify(snapshot, null, 2)}\n`,
+  );
+}
+
+export function readActorSnapshot(rootDir: string, runId: string): unknown | null {
+  const snapshotPath = path.join(resolveRunDir(rootDir, runId), "actor.snapshot.json");
+  if (!fs.existsSync(snapshotPath)) return null;
+  return JSON.parse(fs.readFileSync(snapshotPath, "utf8")) as unknown;
 }
 
 export function appendScoreboardEntry(
   rootDir: string,
   entry: ScoreboardEntry,
 ): void {
+  const validated = parseScoreboardEntry(entry);
   const scoreboardDir = path.join(rootDir, ".runs");
   fs.mkdirSync(scoreboardDir, { recursive: true });
   fs.appendFileSync(
     path.join(scoreboardDir, "scoreboard.ndjson"),
-    `${JSON.stringify(entry)}\n`,
+    `${JSON.stringify(validated)}\n`,
     "utf8",
   );
 }
@@ -68,7 +109,7 @@ export function readScoreboardEntries(
 
   return lines
     .slice(-limit)
-    .map((line) => JSON.parse(line) as ScoreboardEntry)
+    .map((line) => parseScoreboardEntry(JSON.parse(line)))
     .reverse();
 }
 

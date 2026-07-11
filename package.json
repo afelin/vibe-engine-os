@@ -6,20 +6,27 @@
   "scripts": {
     "test": "vitest run",
     "check": "tsc --noEmit && vitest run",
+    "activate": "bash runs/activate.sh",
     "smoke": "bash runs/smoke.sh",
     "local-issue": "bash runs/local-issue.sh",
     "scoreboard": "bash runs/scoreboard.sh",
     "autoresearch": "bash runs/autoresearch.sh",
     "gate:resolve": "tsx src/release-gate/cli.ts",
-    "gate:mcp": "tsx src/release-gate/mcp.ts"
+    "gate:validate-capsule": "tsx src/release-gate/validate-capsule-cli.ts",
+    "promote:apply": "tsx src/promote/apply-cli.ts",
+    "gate:mcp": "tsx src/release-gate/mcp.ts",
+    "constitution:export": "tsx src/constitution/cli.ts",
+    "constitution:serve": "tsx src/cloud/verify-server.ts"
   },
   "dependencies": {
     "@xmachines/play-catalog": "latest",
+    "@xmachines/play-router": "^1.0.0",
     "@xmachines/play-signals": "latest",
     "@xmachines/play-xstate": "^1.0.0-beta.3",
     "typescript": "latest",
     "vitest": "latest",
-    "xstate": "latest"
+    "xstate": "latest",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^26.1.0",

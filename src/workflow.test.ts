@@ -17,13 +17,14 @@ describe("GitHub Actions workflow", () => {
     expect(installIndex).toBeLessThan(agentIndex);
   });
 
-  it("skips deploy and handoff for operator-only commands", () => {
+  it("skips artifact upload for operator-only commands", () => {
     const workflow = fs.readFileSync(
       path.join(process.cwd(), ".github/workflows/forever.yml"),
       "utf8",
     );
 
-    expect(workflow.match(/VIBE_OPERATOR_ONLY != '1'/g)).toHaveLength(3);
+    expect(workflow).toContain("VIBE_OPERATOR_ONLY != '1'");
+    expect(workflow).toContain("vibe-promote");
     expect(workflow).toContain("GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}");
   });
 
@@ -57,23 +58,60 @@ describe("GitHub Actions workflow", () => {
     expect(workflow).toContain('if [ -z "$REVIEW_BODY" ]; then');
   });
 
-  it("skips git push when approval is required without APPROVED_BY", () => {
+  it("gates agent runs on vibe/run label and operator commands", () => {
     const workflow = fs.readFileSync(
       path.join(process.cwd(), ".github/workflows/forever.yml"),
       "utf8",
     );
 
-    expect(workflow).toContain("VIBE_APPROVAL_REQUIRED != '1'");
-    expect(workflow).toContain("APPROVED_BY != ''");
+    expect(workflow).toContain("vibe/run");
+    expect(workflow).toContain("/vibe");
+    expect(workflow).toContain("gate-check");
+    expect(workflow).toContain("should_run");
   });
 
-  it("stages only generated files instead of git add .", () => {
+  it("uses thin promote job with artifact upload/download", () => {
     const workflow = fs.readFileSync(
       path.join(process.cwd(), ".github/workflows/forever.yml"),
       "utf8",
     );
 
-    expect(workflow).toContain("GENERATED_FILES");
+    expect(workflow).toContain("actions/upload-artifact@v4");
+    expect(workflow).toContain("actions/download-artifact@v4");
+    expect(workflow).toContain("gate:validate-capsule");
+  });
+
+  it("wires approver allowlist secret into the agent job", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/forever.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain("VIBE_APPROVERS: ${{ secrets.VIBE_APPROVERS }}");
+  });
+
+  it("promote job depends on gate-check for issue number context", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/forever.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toMatch(/vibe-promote:\s*\n\s*needs:\s*\[gate-check,\s*vibe-run\]/);
+    expect(workflow).toContain(
+      "needs.gate-check.outputs.issue_number",
+    );
+  });
+
+  it("stages only manifest-listed files in promote job", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/forever.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain("promote:apply");
+    expect(workflow).toContain("generatedFiles.forEach");
+    expect(workflow).toContain('git add "$file_path"');
+    expect(workflow).not.toContain("git add src/");
     expect(workflow).not.toContain("git add .");
   });
 

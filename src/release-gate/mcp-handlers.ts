@@ -4,6 +4,18 @@ import {
   resolveGateFromRegistry,
 } from "./registry.js";
 import { evaluateMandates, loadMandates } from "../policy/evaluate.js";
+import {
+  exportCatalogJsonSchema,
+  parseRunManifest,
+} from "../constitution/parse.js";
+import { readActorSnapshot, readRunManifest } from "../run/manifest.js";
+import { sanitizeRunId } from "../run/paths.js";
+import {
+  computeCapsuleHash,
+  readCapsuleHash,
+  readTraceTail,
+} from "../constitution/capsule.js";
+import { computeVowsHash } from "../constitution/vows.js";
 
 export const RELEASE_GATE_MCP = {
   name: "vibe-release-gates",
@@ -70,6 +82,26 @@ export const RELEASE_GATE_TOOLS = [
       required: ["proposed_files"],
     },
   },
+  {
+    name: "constitution_schemas",
+    description:
+      "Export JSON Schema for all constitution catalog artifacts (DAG, manifest, gate failures, mandates).",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "validate_capsule",
+    description:
+      "Parse a local run capsule (manifest + actor snapshot) against the constitution catalog.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        root_dir: { type: "string" },
+        run_id: { type: "string" },
+        manifest: { type: "object" },
+        snapshot: { type: "object" },
+      },
+    },
+  },
 ] as const;
 
 export function callReleaseGateTool(
@@ -100,6 +132,108 @@ export function callReleaseGateTool(
       {
         mandates: loadMandates(),
         evaluation: evaluateMandates(proposedFiles),
+      },
+      null,
+      2,
+    );
+  }
+
+  if (name === "constitution_schemas") {
+    return JSON.stringify(exportCatalogJsonSchema(), null, 2);
+  }
+
+  if (name === "validate_capsule") {
+    const rootDir = typeof args.root_dir === "string" ? args.root_dir : ".";
+    const runIdRaw = typeof args.run_id === "string" ? args.run_id : "";
+    let runId = "";
+    if (runIdRaw) {
+      try {
+        runId = sanitizeRunId(runIdRaw);
+      } catch (error: unknown) {
+        return JSON.stringify(
+          {
+            valid: false,
+            manifest: null,
+            manifestError:
+              error instanceof Error ? error.message : "Invalid run_id",
+            capsuleHash: null,
+            vowsHash: computeVowsHash(rootDir),
+            vowsCompliant: false,
+            snapshotPresent: false,
+            snapshotStatus: null,
+          },
+          null,
+          2,
+        );
+      }
+    }
+    const manifestInput =
+      args.manifest && typeof args.manifest === "object"
+        ? args.manifest
+        : null;
+    const snapshotInput =
+      args.snapshot && typeof args.snapshot === "object" ? args.snapshot : null;
+
+    const snapshot =
+      snapshotInput ??
+      (runId ? readActorSnapshot(rootDir, runId) : null);
+
+    let manifest = null;
+    let manifestError: string | null = null;
+
+    if (manifestInput) {
+      try {
+        manifest = parseRunManifest(manifestInput);
+      } catch (error: unknown) {
+        manifestError =
+          error instanceof Error ? error.message : "Invalid manifest";
+      }
+    } else if (runId) {
+      try {
+        manifest = readRunManifest(rootDir, runId);
+        if (!manifest) {
+          manifestError = `Manifest not found for run_id ${runId}`;
+        }
+      } catch (error: unknown) {
+        manifestError =
+          error instanceof Error ? error.message : "Invalid manifest on disk";
+      }
+    } else {
+      manifestError = "run_id or manifest required";
+    }
+
+    const vowsHash = computeVowsHash(rootDir);
+    let capsuleHash: string | null = null;
+    let vowsCompliant = false;
+
+    if (manifest) {
+      capsuleHash =
+        manifest.capsuleHash ??
+        readCapsuleHash(rootDir, manifest.runId) ??
+        computeCapsuleHash({
+          manifest,
+          snapshot,
+          traceTail: runId ? readTraceTail(rootDir, runId) : [],
+        });
+      vowsCompliant = manifest.vowsHash === vowsHash;
+    }
+
+    return JSON.stringify(
+      {
+        valid:
+          manifest !== null &&
+          manifestError === null &&
+          (manifest.vowsHash ? vowsCompliant : true),
+        manifest,
+        manifestError,
+        capsuleHash,
+        vowsHash,
+        vowsCompliant,
+        snapshotPresent: snapshot !== null,
+        snapshotStatus:
+          snapshot && typeof snapshot === "object" && "status" in snapshot
+            ? (snapshot as { status?: string }).status
+            : null,
       },
       null,
       2,

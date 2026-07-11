@@ -4,6 +4,9 @@ import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runOSActor } from "./run.js";
 import type { GeneratedFile } from "./events.js";
+import { createOSPlayer, getPersistedSnapshot } from "./player.js";
+import { createInitialOSContext } from "./machine.js";
+import { writeActorSnapshot } from "../run/manifest.js";
 
 describe("vibe engine OS runtime", () => {
   const tmpDirs: string[] = [];
@@ -32,6 +35,7 @@ describe("vibe engine OS runtime", () => {
     delete process.env.VIBE_CODEGEN_API_KEY;
     delete process.env.VIBE_CODEGEN_MODEL;
     delete process.env.VIBE_DEPTH;
+    delete process.env.VIBE_RUN_ID;
 
     for (const dir of tmpDirs) {
       fs.rmSync(dir, { recursive: true, force: true });
@@ -220,6 +224,79 @@ describe("vibe engine OS runtime", () => {
     expect(result.success).toBe(false);
     expect(result.feedbackMarkdown).toContain("Invalid execution DAG");
     expect(calls).toBe(1);
+  });
+
+  it("resumes past planning and skips planner when snapshot is at generating_patch", async () => {
+    const root = makeRoot(tmpDirs);
+    const runId = "resume-run-105";
+    process.env.VIBE_RUN_ID = runId;
+
+    const context = {
+      ...createInitialOSContext(),
+      issueNumber: "105",
+      issueTitle: "Resume test",
+      issueBody: "src/resume-smoke.ts",
+      vibeDepth: 3 as const,
+    };
+
+    const actor = createOSPlayer(context);
+    actor.send({ type: "preflight.completed", findings: [] });
+    actor.send({
+      type: "plan.created",
+      dag: {
+        issueNumber: "105",
+        title: "Resume test",
+        nodes: [
+          {
+            id: "edit-1",
+            title: "Edit",
+            kind: "edit" as const,
+            dependsOn: [],
+            risk: "low" as const,
+            files: ["src/resume-smoke.ts"],
+            acceptance: ["tests pass"],
+          },
+        ],
+      },
+    });
+    actor.send({ type: "risk.reviewed", risk: "low", reason: "safe" });
+    writeActorSnapshot(root, runId, getPersistedSnapshot(actor));
+
+    let llmCalls = 0;
+    let plannerCalls = 0;
+    const deps = buildStubDeps(
+      [{ path: "src/resume-smoke.ts", content: "export const ok = true;\n" }],
+    );
+    const originalCall = deps.callOpenAI;
+    deps.callOpenAI = async (...args) => {
+      llmCalls++;
+      const user = args[4];
+      if (typeof user === "string" && user.includes("execution blueprint")) {
+        plannerCalls++;
+      }
+      if (typeof user === "string" && user.includes("Execute this plan")) {
+        return JSON.stringify({
+          files: [{ path: "src/resume-smoke.ts", content: "export const ok = true;\n" }],
+        });
+      }
+      return originalCall(...args);
+    };
+
+    const result = await runOSActor(
+      {
+        issueNumber: "105",
+        issueTitle: "Resume test",
+        issueBody: "src/resume-smoke.ts",
+        rootDir: root,
+      },
+      deps,
+    );
+
+    expect(result.success).toBe(true);
+    expect(plannerCalls).toBe(0);
+    expect(llmCalls).toBeGreaterThanOrEqual(1);
+    expect(result.manifest?.vowsHash).toBeTruthy();
+    expect(result.manifest?.capsuleHash).toMatch(/^[a-f0-9]{64}$/);
   });
 
   it("runs validators before writing generated files to disk", async () => {

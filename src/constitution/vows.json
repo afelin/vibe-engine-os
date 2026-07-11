@@ -1,0 +1,71 @@
+{
+  "version": "1.0.0",
+  "vows": [
+    {
+      "id": "engine-no-promotion-without-green",
+      "category": "engine",
+      "text": "No promotion without green tsc and vitest.",
+      "enforceable_by": "machine"
+    },
+    {
+      "id": "engine-forbidden-paths",
+      "category": "engine",
+      "text": "Never write files under forbidden mandate prefixes.",
+      "enforceable_by": "catalog"
+    },
+    {
+      "id": "engine-max-attempts",
+      "category": "engine",
+      "text": "Maximum 3 ratchet attempts before quarantine.",
+      "enforceable_by": "machine"
+    },
+    {
+      "id": "engine-esm-only",
+      "category": "engine",
+      "text": "ESM-only with .js extensions in all local imports.",
+      "enforceable_by": "catalog"
+    },
+    {
+      "id": "engine-catalog-parse",
+      "category": "engine",
+      "text": "Parse all artifacts against constitution catalog before disk write.",
+      "enforceable_by": "catalog"
+    },
+    {
+      "id": "engine-dag-planning",
+      "category": "engine",
+      "text": "Planner output must match ExecutionDag schema.",
+      "enforceable_by": "catalog"
+    },
+    {
+      "id": "operator-approve-protected",
+      "category": "operator",
+      "text": "Protected paths require /approve before codegen.",
+      "enforceable_by": "mandate"
+    },
+    {
+      "id": "operator-rollback-metadata",
+      "category": "operator",
+      "text": "Every verified run records rollback metadata in .runs/<runId>/.",
+      "enforceable_by": "machine"
+    },
+    {
+      "id": "agent-evaluate-mandate",
+      "category": "agent",
+      "text": "Agents must call evaluate_mandate before proposing file paths.",
+      "enforceable_by": "mcp"
+    },
+    {
+      "id": "agent-resolve-gate",
+      "category": "agent",
+      "text": "Agents must call resolve_gate for deterministic zero-token paths.",
+      "enforceable_by": "mcp"
+    },
+    {
+      "id": "agent-constitution-schemas",
+      "category": "agent",
+      "text": "Agents must cite constitution schemas for all structured output.",
+      "enforceable_by": "mcp"
+    }
+  ]
+}

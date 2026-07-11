@@ -4,14 +4,17 @@ import {
   handleMcpRequest,
   RELEASE_GATE_TOOLS,
 } from "./mcp-handlers.js";
+import { computeVowsHash } from "../constitution/vows.js";
 
 describe("release gate MCP handlers", () => {
-  it("advertises four deterministic tools", () => {
+  it("advertises six deterministic tools", () => {
     expect(RELEASE_GATE_TOOLS.map((tool) => tool.name)).toEqual([
       "list_gates",
       "resolve_gate",
       "preview_gate",
       "evaluate_mandate",
+      "constitution_schemas",
+      "validate_capsule",
     ]);
   });
 
@@ -71,5 +74,36 @@ describe("release gate MCP handlers", () => {
     const parsed = JSON.parse(text);
     expect(parsed.evaluation.passed).toBe(false);
     expect(parsed.evaluation.violations[0].rule).toBe("forbidden");
+  });
+
+  it("exports constitution schemas", () => {
+    const text = callReleaseGateTool("constitution_schemas");
+    const parsed = JSON.parse(text) as Record<string, unknown>;
+    expect(parsed.ExecutionDag).toMatchObject({ type: "object" });
+  });
+
+  it("validates a run capsule manifest", () => {
+    const text = callReleaseGateTool("validate_capsule", {
+      manifest: {
+        runId: "run-test",
+        issueNumber: "1",
+        issueTitle: "Test",
+        branchName: "main",
+        baseSha: "abc",
+        generatedFiles: [],
+        createdAt: "2026-07-04T00:00:00.000Z",
+        vowsHash: computeVowsHash("."),
+        metrics: {
+          attempts: 1,
+          firstPassGreen: true,
+          gateIdsFailed: [],
+          durationMs: 1,
+        },
+      },
+    });
+    const parsed = JSON.parse(text);
+    expect(parsed.valid).toBe(true);
+    expect(parsed.capsuleHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(parsed.vowsHash).toBeTruthy();
   });
 });

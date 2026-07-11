@@ -66,6 +66,240 @@
           }
         }
       ]
+    },
+    {
+      "id": "add-unit-test",
+      "planLines": [
+        "Scaffold a Vitest unit test for the named module.",
+        "Gate: add-unit-test"
+      ],
+      "match": [
+        {
+          "titleOrBodyIncludesLower": ["gate:add-unit-test", "add-unit-test"]
+        }
+      ],
+      "files": [
+        {
+          "path": "src/gate-add-unit-test.ts",
+          "content": "export const addUnitTestGateStatus = \"v1-add-unit-test-ok\";\n"
+        },
+        {
+          "path": "src/gate-add-unit-test.test.ts",
+          "smokeTest": {
+            "moduleBase": "gate-add-unit-test",
+            "exportName": "addUnitTestGateStatus",
+            "token": "v1-add-unit-test-ok"
+          }
+        }
+      ]
+    },
+    {
+      "id": "fix-esm-imports",
+      "planLines": [
+        "Normalize .js extensions in listed TypeScript files.",
+        "Gate: fix-esm-imports"
+      ],
+      "match": [
+        {
+          "titleOrBodyIncludesLower": ["gate:fix-esm-imports", "fix-esm-imports"]
+        }
+      ],
+      "files": [
+        {
+          "path": "src/gate-fix-esm-imports.ts",
+          "content": "export const fixEsmImportsGateStatus = \"v1-fix-esm-imports-ok\";\n"
+        },
+        {
+          "path": "src/gate-fix-esm-imports.test.ts",
+          "smokeTest": {
+            "moduleBase": "gate-fix-esm-imports",
+            "exportName": "fixEsmImportsGateStatus",
+            "token": "v1-fix-esm-imports-ok"
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-export-barrel",
+      "planLines": [
+        "Create src/index.ts re-export barrel.",
+        "Gate: add-export-barrel"
+      ],
+      "match": [
+        {
+          "titleOrBodyIncludesLower": ["gate:add-export-barrel", "add-export-barrel"]
+        }
+      ],
+      "files": [
+        {
+          "path": "src/gate-export-barrel.ts",
+          "content": "export const addExportBarrelGateStatus = \"v1-add-export-barrel-ok\";\n"
+        },
+        {
+          "path": "src/gate-export-barrel.test.ts",
+          "smokeTest": {
+            "moduleBase": "gate-export-barrel",
+            "exportName": "addExportBarrelGateStatus",
+            "token": "v1-add-export-barrel-ok"
+          }
+        }
+      ]
+    },
+    {
+      "id": "update-readme-section",
+      "planLines": [
+        "Patch README section by heading.",
+        "Gate: update-readme-section"
+      ],
+      "match": [
+        {
+          "titleOrBodyIncludesLower": ["gate:update-readme-section", "update-readme-section"]
+        }
+      ],
+      "files": [
+        {
+          "path": "src/gate-update-readme.ts",
+          "content": "export const updateReadmeSectionGateStatus = \"v1-update-readme-section-ok\";\n"
+        },
+        {
+          "path": "src/gate-update-readme.test.ts",
+          "smokeTest": {
+            "moduleBase": "gate-update-readme",
+            "exportName": "updateReadmeSectionGateStatus",
+            "token": "v1-update-readme-section-ok"
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-env-example",
+      "planLines": [
+        "Append variable to .env.example.",
+        "Gate: add-env-example"
+      ],
+      "match": [
+        {
+          "titleOrBodyIncludesLower": ["gate:add-env-example", "add-env-example"]
+        }
+      ],
+      "files": [
+        {
+          "path": "src/gate-add-env-example.ts",
+          "content": "export const addEnvExampleGateStatus = \"v1-add-env-example-ok\";\n"
+        },
+        {
+          "path": "src/gate-add-env-example.test.ts",
+          "smokeTest": {
+            "moduleBase": "gate-add-env-example",
+            "exportName": "addEnvExampleGateStatus",
+            "token": "v1-add-env-example-ok"
+          }
+        }
+      ]
+    },
+    {
+      "id": "fix-lint-smoke",
+      "planLines": [
+        "Deterministic oxlint-safe patch template.",
+        "Gate: fix-lint-smoke"
+      ],
+      "match": [
+        {
+          "titleOrBodyIncludesLower": ["gate:fix-lint-smoke", "fix-lint-smoke"]
+        }
+      ],
+      "files": [
+        {
+          "path": "src/gate-fix-lint-smoke.ts",
+          "content": "export const fixLintSmokeGateStatus = \"v1-fix-lint-smoke-ok\";\n"
+        },
+        {
+          "path": "src/gate-fix-lint-smoke.test.ts",
+          "smokeTest": {
+            "moduleBase": "gate-fix-lint-smoke",
+            "exportName": "fixLintSmokeGateStatus",
+            "token": "v1-fix-lint-smoke-ok"
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-api-route-stub",
+      "planLines": [
+        "Handler + test stub for API route.",
+        "Gate: add-api-route-stub"
+      ],
+      "match": [
+        {
+          "titleOrBodyIncludesLower": ["gate:add-api-route-stub", "add-api-route-stub"]
+        }
+      ],
+      "files": [
+        {
+          "path": "src/gate-api-route-stub.ts",
+          "content": "export const addApiRouteStubGateStatus = \"v1-add-api-route-stub-ok\";\n"
+        },
+        {
+          "path": "src/gate-api-route-stub.test.ts",
+          "smokeTest": {
+            "moduleBase": "gate-api-route-stub",
+            "exportName": "addApiRouteStubGateStatus",
+            "token": "v1-add-api-route-stub-ok"
+          }
+        }
+      ]
+    },
+    {
+      "id": "bump-patch-version",
+      "planLines": [
+        "Bump package.json patch version.",
+        "Gate: bump-patch-version"
+      ],
+      "match": [
+        {
+          "titleOrBodyIncludesLower": ["gate:bump-patch-version", "bump-patch-version"]
+        }
+      ],
+      "files": [
+        {
+          "path": "src/gate-bump-patch-version.ts",
+          "content": "export const bumpPatchVersionGateStatus = \"v1-bump-patch-version-ok\";\n"
+        },
+        {
+          "path": "src/gate-bump-patch-version.test.ts",
+          "smokeTest": {
+            "moduleBase": "gate-bump-patch-version",
+            "exportName": "bumpPatchVersionGateStatus",
+            "token": "v1-bump-patch-version-ok"
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-mandate-safe-module",
+      "planLines": [
+        "Add src module + test under safe prefix.",
+        "Gate: add-mandate-safe-module"
+      ],
+      "match": [
+        {
+          "titleOrBodyIncludesLower": ["gate:add-mandate-safe-module", "add-mandate-safe-module"]
+        }
+      ],
+      "files": [
+        {
+          "path": "src/gate-mandate-safe-module.ts",
+          "content": "export const addMandateSafeModuleGateStatus = \"v1-add-mandate-safe-module-ok\";\n"
+        },
+        {
+          "path": "src/gate-mandate-safe-module.test.ts",
+          "smokeTest": {
+            "moduleBase": "gate-mandate-safe-module",
+            "exportName": "addMandateSafeModuleGateStatus",
+            "token": "v1-add-mandate-safe-module-ok"
+          }
+        }
+      ]
     }
   ]
 }

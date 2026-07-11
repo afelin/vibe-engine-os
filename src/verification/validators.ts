@@ -118,3 +118,35 @@ export function validateEsmImportExtensions(
             .join(", ")}`,
   };
 }
+
+const SECRET_PATTERNS: Array<{ name: string; pattern: RegExp }> = [
+  { name: "aws_access_key", pattern: /AKIA[0-9A-Z]{16}/ },
+  { name: "github_token", pattern: /ghp_[A-Za-z0-9]{20,}/ },
+  { name: "openai_key", pattern: /sk-[A-Za-z0-9]{20,}/ },
+  {
+    name: "generic_api_key",
+    pattern: /(?:api[_-]?key|secret|token)\s*[=:]\s*["']?[A-Za-z0-9_\-+/=]{20,}/i,
+  },
+];
+
+export function validateNoSecrets(files: GeneratedFile[]): ValidatorResult {
+  const offenders: string[] = [];
+
+  for (const file of files) {
+    for (const { name, pattern } of SECRET_PATTERNS) {
+      if (pattern.test(file.content)) {
+        offenders.push(`${file.path} (${name})`);
+        break;
+      }
+    }
+  }
+
+  return {
+    name: "no_secrets",
+    passed: offenders.length === 0,
+    output:
+      offenders.length === 0
+        ? "No secret-like patterns detected"
+        : `Possible secrets in: ${offenders.join(", ")}`,
+  };
+}

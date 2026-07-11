@@ -1,5 +1,6 @@
 {
   "forbidden_prefixes": ["src/auth/", ".github/workflows/"],
   "require_approval_prefixes": [".github/", "package.json"],
-  "max_attempts": 3
+  "max_attempts": 3,
+  "approved_operators": ["afelin"]
 }
