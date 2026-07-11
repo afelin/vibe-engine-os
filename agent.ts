@@ -7,7 +7,8 @@ import { routeGitHubComment } from './src/operator/github-comment-router.js';
 import { publishCockpitComment, resolveGitHubCommentTarget } from './src/publishing/github-comments.js';
 import { renderRollbackInstructions, writeRunManifest } from './src/run/manifest.js';
 import { readLatestRollbackInstructions } from './src/run/rollback.js';
-import { runGeneratedPatchValidators } from './src/verification/pipeline.js';
+import { resolveReleaseGatePatch } from './src/release-gate/resolve.js';
+import { runGeneratedPatchValidators, prepareGeneratedPatch } from './src/verification/pipeline.js';
 
 process.on("uncaughtException", (error: Error) => {
     console.error("Fatal uncaught exception:", error.message);
@@ -50,6 +51,15 @@ async function callGemini(apiKey: string, system: string, user: string) {
     return data.candidates[0].content.parts[0].text;
 }
 
+// GitHub Models (gpt-4o) rejects oversized requests with HTTP 413 "Payload Too Large".
+// The repomix codebase map grows with the repo, so cap large context blocks to keep
+// the planner request within the provider's input budget instead of crashing Phase 1.
+function capContext(text: string, maxChars: number): string {
+    if (text.length <= maxChars) return text;
+    const omitted = text.length - maxChars;
+    return `${text.slice(0, maxChars)}\n\n…[context truncated: ${omitted} chars omitted to fit model input limits]`;
+}
+
 // --- 3. THE AUTONOMOUS OS ENGINE ---
 async function runOS() {
     console.log(`\n🚀 Booting Vibe Engine OS for Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}`);
@@ -67,6 +77,8 @@ async function runOS() {
     }
 
     const vibe = `TITLE: ${ISSUE_TITLE}\nDESCRIPTION: ${ISSUE_BODY}`;
+    const releaseGate = resolveReleaseGatePatch(ISSUE_TITLE, ISSUE_BODY);
+    const deterministicPatch = releaseGate?.files ?? null;
 
     if (isOperatorCommentEvent()) {
         const route = routeGitHubComment({
@@ -98,20 +110,32 @@ async function runOS() {
     }
 
     // --- PHASE 1: SYSTEM 2 PLANNER (gpt-4o) ---
-    console.log("\n🧠 Phase 1: Planning Architecture (Reading global context)...");
-    const plan = await callOpenAIFormat(
-        "https://models.inference.ai.azure.com", GH_MODELS_TOKEN, "gpt-4o",
-        `You are a Software 3.0 Architect. Follow this constitution strictly:\n${constitution}\n\nGlobal Codebase Map:\n${repoContext}${evoMemContext}`,
-        `Create a strict execution blueprint for this request:\n${vibe}`
-    );
-    
     const planDir = '.planning/milestones';
     if (!fs.existsSync(planDir)) fs.mkdirSync(planDir, { recursive: true });
+
+    let plan: string;
+    if (releaseGate) {
+        console.log(`\n🎯 Release-gate "${releaseGate.id}" matched; skipping planner LLM.`);
+        plan = releaseGate.planLines.join("\n");
+    } else {
+        // gpt-4o via GitHub Models has a small input budget; trim the codebase map and
+        // EvoMem so the request body never trips the HTTP 413 "Payload Too Large" gate.
+        const PLANNER_MAP_BUDGET = 16000;
+        const PLANNER_EVOMEM_BUDGET = 2000;
+        console.log("\n🧠 Phase 1: Planning Architecture (Reading global context)...");
+        plan = await callOpenAIFormat(
+            "https://models.inference.ai.azure.com", GH_MODELS_TOKEN, "gpt-4o",
+            `You are a Software 3.0 Architect. Follow this constitution strictly:\n${constitution}\n\nGlobal Codebase Map:\n${capContext(repoContext, PLANNER_MAP_BUDGET)}${capContext(evoMemContext, PLANNER_EVOMEM_BUDGET)}`,
+            `Create a strict execution blueprint for this request:\n${vibe}`
+        );
+    }
+
     fs.writeFileSync(path.join(planDir, `ISSUE_${ISSUE_NUMBER}_PLAN.md`), plan);
     console.log("✔️ Blueprint saved to immutable ledger.");
 
     // --- PHASE 2: INFERENCE-TIME COMPUTE RATCHET LOOP ---
     console.log("\n⚡ Phase 2: Entering Inference-Time Compute Ratchet...");
+    const requiredPaths = [...ISSUE_BODY.matchAll(/\bsrc\/[\w.-]+\.ts\b/g)].map((match) => match[0]);
     let attempts = 0;
     const MAX_ATTEMPTS = 3;
     let finalVerifiedFiles: any[] = [];
@@ -122,35 +146,52 @@ async function runOS() {
         attempts++;
         console.log(`\n🔄 Inference Loop ${attempts}/${MAX_ATTEMPTS}...`);
         
-        let codePrompt = `Execute this plan strictly:\n${plan}\n\nOutput ONLY valid JSON matching this schema: 
+        let codePrompt = `Execute this plan strictly:\n${plan}\n\nOutput ONLY valid JSON matching this schema:
         {
           "files": [
-            {"path": "src/machine.ts", "content": "source code"},
-            {"path": "src/machine.test.ts", "content": "Vitest evaluation code"}
+            {"path": "src/example.ts", "content": "source code"},
+            {"path": "src/example.test.ts", "content": "Vitest evaluation code"}
           ]
-        }`;
-        
+        }
+
+        Hard constraints:
+        - Use only paths under src/, tests/, .planning/, or .skills/ (exact filenames from the plan).
+        - In TypeScript files, local ESM imports MUST use a .js extension (e.g. import { x } from "./example.js").
+        - Do not emit markdown fences or commentary outside the JSON object.`;
+
+        if (requiredPaths.length > 0) {
+            codePrompt += `\n\nRequired output files (use these exact paths):\n${requiredPaths.join("\n")}`;
+        }
+
         if (feedback !== "") codePrompt += `\n\n🚨 PREVIOUS ATTEMPT FAILED. Fix these exact errors:\n${feedback}`;
 
-        // 1. Code Generation (Groq / llama-3.3-70b)
-        const rawCode = await callOpenAIFormat(
-            "https://api.groq.com/openai/v1", GROQ_KEY, "llama-3.3-70b-versatile",
-            "You are an expert xmachines coder. Output strictly in JSON.", codePrompt, true
-        );
-        
         let generatedFiles;
-        try {
-            generatedFiles = JSON.parse(rawCode).files || [];
-        } catch (error: any) {
-            console.error("JSON Parsing failed this iteration:", error.message);
-            continue;
+        if (deterministicPatch && attempts === 1) {
+            console.log("🎯 Applying deterministic release-gate patch (skipping Groq codegen).");
+            generatedFiles = deterministicPatch;
+        } else {
+            const rawCode = await callOpenAIFormat(
+                "https://api.groq.com/openai/v1", GROQ_KEY, "llama-3.3-70b-versatile",
+                "You are an expert xmachines coder. Output strictly valid JSON. Follow path and ESM import constraints exactly.", codePrompt, true
+            );
+
+            try {
+                generatedFiles = JSON.parse(rawCode).files || [];
+            } catch (error: any) {
+                console.error("JSON Parsing failed this iteration:", error.message);
+                continue;
+            }
         }
+
         if (generatedFiles.length === 0) continue;
+
+        generatedFiles = prepareGeneratedPatch(generatedFiles);
 
         const validation = runGeneratedPatchValidators(generatedFiles);
         if (!validation.passed) {
             const errMsg = validation.failures.join("\n");
             console.error("❌ Generated Patch Validation Failed.");
+            console.error(errMsg);
             feedback += `Generated Patch Validation Failed:\n${errMsg}\n`;
             recordedErrors.push(errMsg);
             continue;
@@ -201,7 +242,9 @@ async function runOS() {
         }
 
         // 5. PEARL'S CAUSAL CRITIC (Gemini-1.5-Flash)
-        if (loopPassed) {
+        if (loopPassed && deterministicPatch && attempts === 1) {
+            console.log("🛡️ Skipping Causal Critic for deterministic release-gate patch.");
+        } else if (loopPassed) {
             console.log("🛡️ Running Causal Do-Calculus Verification...");
             for (const file of generatedFiles) {
                 const criticSystem = `You are a Judea Pearl Causal Critic. Codebase context:\n${repoContext}\n\nDoes this code violate xmachines invariants or break downstream logic? If safe, reply EXACTLY 'PASS'. If it fails, explain why.`;

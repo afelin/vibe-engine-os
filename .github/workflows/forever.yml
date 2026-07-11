@@ -6,7 +6,9 @@ on:
   issue_comment:
     types: [created]
   pull_request_review:
-    types: [submitted]
+    types: [submitted, edited]
+  pull_request_review_comment:
+    types: [created, edited]
 
 permissions:
   contents: write
@@ -63,11 +65,23 @@ jobs:
           if [ "${{ github.event_name }}" == "issue_comment" ]; then
             echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
             echo "ISSUE_TITLE=${{ github.event.issue.title }} (Revision)" >> $GITHUB_ENV
-            write_env_multiline "ISSUE_BODY" "$BODY_COMMENT"
-          elif [ "${{ github.event_name }}" == "pull_request_review" ]; then
+            COMMENT_CONTEXT=$(printf 'Operator comment:\n%s\n\nOriginal issue:\n%s' "$BODY_COMMENT" "$BODY_ISSUE")
+            write_env_multiline "ISSUE_BODY" "$COMMENT_CONTEXT"
+          elif [ "${{ github.event_name }}" == "pull_request_review" ] || [ "${{ github.event_name }}" == "pull_request_review_comment" ]; then
             echo "ISSUE_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
             echo "ISSUE_TITLE=${{ github.event.pull_request.title }} (PR Feedback)" >> $GITHUB_ENV
-            write_env_multiline "ISSUE_BODY" "$BODY_REVIEW"
+            PR_TITLE="${{ github.event.pull_request.title }}"
+            if [ "${{ github.event_name }}" == "pull_request_review" ]; then
+              REVIEW_BODY="$BODY_REVIEW"
+            else
+              REVIEW_BODY="$BODY_COMMENT"
+            fi
+            if [ -z "$REVIEW_BODY" ]; then
+              REVIEW_CONTEXT=$(printf 'Release gate trigger: pull_request_review\nPR title: %s\n\nRequired outputs:\n- src/pr-review-smoke.ts\n- src/pr-review-smoke.test.ts' "$PR_TITLE")
+            else
+              REVIEW_CONTEXT=$(printf 'PR review feedback:\n%s\n\nPR title: %s' "$REVIEW_BODY" "$PR_TITLE")
+            fi
+            write_env_multiline "ISSUE_BODY" "$REVIEW_CONTEXT"
           else
             echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
             echo "ISSUE_TITLE=${{ github.event.issue.title }}" >> $GITHUB_ENV

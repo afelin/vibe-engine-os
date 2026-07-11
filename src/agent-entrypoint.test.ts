@@ -59,6 +59,20 @@ describe("agent entrypoint hardening", () => {
     expect(agentSource).toContain("publishCockpitComment");
   });
 
+  it("resolves release-gate smoke specs before model inference starts", () => {
+    const agentSource = fs.readFileSync(
+      path.join(process.cwd(), "agent.ts"),
+      "utf8",
+    );
+    const gateIndex = agentSource.indexOf("resolveReleaseGatePatch");
+    const modelIndex = agentSource.indexOf("Phase 1: Planning Architecture");
+
+    expect(agentSource).toContain("./src/release-gate/resolve.js");
+    expect(gateIndex).toBeGreaterThan(-1);
+    expect(modelIndex).toBeGreaterThan(-1);
+    expect(gateIndex).toBeLessThan(modelIndex);
+  });
+
   it("routes operator comments before model inference starts", () => {
     const agentSource = fs.readFileSync(
       path.join(process.cwd(), "agent.ts"),
