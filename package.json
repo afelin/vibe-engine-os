@@ -7,7 +7,9 @@
     "test": "vitest run",
     "check": "tsc --noEmit && vitest run",
     "smoke": "bash runs/smoke.sh",
-    "local-issue": "bash runs/local-issue.sh"
+    "local-issue": "bash runs/local-issue.sh",
+    "gate:resolve": "tsx src/release-gate/cli.ts",
+    "gate:mcp": "tsx src/release-gate/mcp.ts"
   },
   "dependencies": {
     "@xmachines/play-catalog": "latest",

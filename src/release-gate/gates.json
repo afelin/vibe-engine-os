@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "gates": [
+    {
+      "id": "cloud-loop-smoke",
+      "planLines": [
+        "Deterministic V1 cloud-loop smoke patch.",
+        "Create src/cloud-loop-smoke.ts exporting cloudLoopSmokeStatus = \"v1-cloud-loop-ok\".",
+        "Create src/cloud-loop-smoke.test.ts with Vitest importing ./cloud-loop-smoke.js."
+      ],
+      "match": [
+        {
+          "allIncludes": [
+            "src/cloud-loop-smoke.ts",
+            "src/cloud-loop-smoke.test.ts"
+          ]
+        }
+      ],
+      "files": [
+        {
+          "path": "src/cloud-loop-smoke.ts",
+          "content": "export const cloudLoopSmokeStatus = \"v1-cloud-loop-ok\";\n"
+        },
+        {
+          "path": "src/cloud-loop-smoke.test.ts",
+          "smokeTest": {
+            "moduleBase": "cloud-loop-smoke",
+            "exportName": "cloudLoopSmokeStatus",
+            "token": "v1-cloud-loop-ok"
+          }
+        }
+      ]
+    },
+    {
+      "id": "pr-review-smoke",
+      "planLines": [
+        "Deterministic V1 pull_request_review smoke patch.",
+        "Create src/pr-review-smoke.ts exporting prReviewSmokeStatus = \"v1-pr-review-ok\".",
+        "Create src/pr-review-smoke.test.ts with Vitest importing ./pr-review-smoke.js."
+      ],
+      "match": [
+        {
+          "titleOrBodyIncludesLower": ["pr review workflow smoke trigger"]
+        },
+        {
+          "allIncludes": [
+            "src/pr-review-smoke.ts",
+            "src/pr-review-smoke.test.ts"
+          ]
+        },
+        {
+          "titleOrBodyIncludesLower": ["release-gate-pr-review-smoke"]
+        }
+      ],
+      "files": [
+        {
+          "path": "src/pr-review-smoke.ts",
+          "content": "export const prReviewSmokeStatus = \"v1-pr-review-ok\";\n"
+        },
+        {
+          "path": "src/pr-review-smoke.test.ts",
+          "smokeTest": {
+            "moduleBase": "pr-review-smoke",
+            "exportName": "prReviewSmokeStatus",
+            "token": "v1-pr-review-ok"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -7,6 +7,7 @@ import { routeGitHubComment } from './src/operator/github-comment-router.js';
 import { publishCockpitComment, resolveGitHubCommentTarget } from './src/publishing/github-comments.js';
 import { renderRollbackInstructions, writeRunManifest } from './src/run/manifest.js';
 import { readLatestRollbackInstructions } from './src/run/rollback.js';
+import { resolveCodegenEndpoint, resolveCriticEndpoint, resolvePlannerEndpoint } from './src/llm/router.js';
 import { resolveReleaseGatePatch } from './src/release-gate/resolve.js';
 import { runGeneratedPatchValidators, prepareGeneratedPatch } from './src/verification/pipeline.js';
 
@@ -16,10 +17,7 @@ process.on("uncaughtException", (error: Error) => {
     process.exit(1);
 });
 
-// --- 1. SETUP & SECRETS ---
-const GH_MODELS_TOKEN = process.env.GH_MODELS_TOKEN!;
-const GROQ_KEY = process.env.GROQ_API_KEY!;
-const GEMINI_KEY = process.env.GEMINI_API_KEY!;
+// --- 1. SETUP ---
 const ISSUE_NUMBER = process.env.ISSUE_NUMBER || "000";
 const ISSUE_TITLE = process.env.ISSUE_TITLE || "Vibe Request";
 const ISSUE_BODY = process.env.ISSUE_BODY || "No details provided.";
@@ -122,9 +120,14 @@ async function runOS() {
         // EvoMem so the request body never trips the HTTP 413 "Payload Too Large" gate.
         const PLANNER_MAP_BUDGET = 16000;
         const PLANNER_EVOMEM_BUDGET = 2000;
+        const planner = resolvePlannerEndpoint();
+        if (planner === "off") {
+            throw new Error("Planner provider is off and no release gate matched.");
+        }
+
         console.log("\n🧠 Phase 1: Planning Architecture (Reading global context)...");
         plan = await callOpenAIFormat(
-            "https://models.inference.ai.azure.com", GH_MODELS_TOKEN, "gpt-4o",
+            planner.baseUrl, planner.apiKey, planner.model,
             `You are a Software 3.0 Architect. Follow this constitution strictly:\n${constitution}\n\nGlobal Codebase Map:\n${capContext(repoContext, PLANNER_MAP_BUDGET)}${capContext(evoMemContext, PLANNER_EVOMEM_BUDGET)}`,
             `Create a strict execution blueprint for this request:\n${vibe}`
         );
@@ -170,9 +173,14 @@ async function runOS() {
             console.log("🎯 Applying deterministic release-gate patch (skipping Groq codegen).");
             generatedFiles = deterministicPatch;
         } else {
+            const codegen = resolveCodegenEndpoint();
+            if (codegen === "off") {
+                throw new Error("Codegen provider is off and no deterministic patch is available.");
+            }
+
             const rawCode = await callOpenAIFormat(
-                "https://api.groq.com/openai/v1", GROQ_KEY, "llama-3.3-70b-versatile",
-                "You are an expert xmachines coder. Output strictly valid JSON. Follow path and ESM import constraints exactly.", codePrompt, true
+                codegen.baseUrl, codegen.apiKey, codegen.model,
+                "You are an expert xmachines coder. Output strictly valid JSON. Follow path and ESM import constraints exactly.", codePrompt, codegen.jsonMode ?? false
             );
 
             try {
@@ -245,18 +253,28 @@ async function runOS() {
         if (loopPassed && deterministicPatch && attempts === 1) {
             console.log("🛡️ Skipping Causal Critic for deterministic release-gate patch.");
         } else if (loopPassed) {
-            console.log("🛡️ Running Causal Do-Calculus Verification...");
-            for (const file of generatedFiles) {
-                const criticSystem = `You are a Judea Pearl Causal Critic. Codebase context:\n${repoContext}\n\nDoes this code violate xmachines invariants or break downstream logic? If safe, reply EXACTLY 'PASS'. If it fails, explain why.`;
-                const criticUser = `Review this new code for ${file.path}:\n\n${file.content}`;
-                const verdict = await callGemini(GEMINI_KEY, criticSystem, criticUser);
-                
-                if (!verdict.toUpperCase().includes("PASS")) {
-                    console.error(`❌ Critic Rejected ${file.path}`);
-                    feedback += `File ${file.path} Failed: ${verdict}\n`;
-                    recordedErrors.push(verdict);
-                    loopPassed = false;
-                    break; 
+            const critic = resolveCriticEndpoint();
+            if (critic.kind === "off") {
+                console.log("🛡️ Critic provider off; skipping causal verification.");
+            } else {
+                console.log("🛡️ Running Causal Do-Calculus Verification...");
+                for (const file of generatedFiles) {
+                    const criticSystem = `You are a Judea Pearl Causal Critic. Codebase context:\n${repoContext}\n\nDoes this code violate xmachines invariants or break downstream logic? If safe, reply EXACTLY 'PASS'. If it fails, explain why.`;
+                    const criticUser = `Review this new code for ${file.path}:\n\n${file.content}`;
+                    const verdict = critic.kind === "gemini"
+                        ? await callGemini(critic.apiKey, criticSystem, criticUser)
+                        : await callOpenAIFormat(
+                            critic.endpoint.baseUrl, critic.endpoint.apiKey, critic.endpoint.model,
+                            criticSystem, criticUser
+                        );
+
+                    if (!verdict.toUpperCase().includes("PASS")) {
+                        console.error(`❌ Critic Rejected ${file.path}`);
+                        feedback += `File ${file.path} Failed: ${verdict}\n`;
+                        recordedErrors.push(verdict);
+                        loopPassed = false;
+                        break;
+                    }
                 }
             }
         }
