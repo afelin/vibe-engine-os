@@ -66,6 +66,9 @@ export type OSContext = {
   maxAttempts: number;
   risk?: RiskLevel;
   riskReason?: string;
+  approvalRequired?: boolean;
+  plan?: string;
+  releaseGateId?: string;
   findings: PreflightFinding[];
   dag?: ExecutionDag;
   generatedFiles: GeneratedFile[];

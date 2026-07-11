@@ -167,4 +167,62 @@ describe("vibe engine OS machine", () => {
 
     expect(actor.getSnapshot().value).toBe("learning");
   });
+
+  it("advances from awaiting approval to generating patch after approval", () => {
+    const actor = createActor(createOSMachine()).start();
+
+    actor.send({ type: "preflight.completed", findings: [] });
+    actor.send({
+      type: "plan.created",
+      dag: {
+        issueNumber: "5",
+        title: "Workflow edit",
+        nodes: [
+          {
+            id: "edit-workflow",
+            title: "Edit workflow",
+            kind: "edit",
+            dependsOn: [],
+            risk: "high",
+            files: [".github/workflows/forever.yml"],
+            acceptance: ["workflow parses"],
+          },
+        ],
+      },
+    });
+    actor.send({
+      type: "risk.reviewed",
+      risk: "high",
+      reason: "Protected workflow edit",
+    });
+    actor.send({ type: "approval.granted", actor: "alice" });
+
+    expect(actor.getSnapshot().value).toBe("generating_patch");
+  });
+
+  it("reaches publishing after verification passes", () => {
+    const actor = createActor(createOSMachine()).start();
+
+    actor.send({ type: "preflight.completed", findings: [] });
+    actor.send({
+      type: "plan.created",
+      dag: { issueNumber: "6", title: "Safe edit", nodes: [] },
+    });
+    actor.send({
+      type: "risk.reviewed",
+      risk: "low",
+      reason: "Generated source-only edit",
+    });
+    actor.send({
+      type: "patch.generated",
+      files: [{ path: "src/index.ts", content: "export const x = 1;" }],
+    });
+    actor.send({
+      type: "verification.passed",
+      results: [{ name: "tsc", passed: true, output: "ok" }],
+    });
+    actor.send({ type: "publish.completed" });
+
+    expect(actor.getSnapshot().value).toBe("completed");
+  });
 });

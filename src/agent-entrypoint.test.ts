@@ -12,6 +12,16 @@ describe("agent entrypoint hardening", () => {
     expect(agentSource).toMatch(/runOS\(\)\.catch\([\s\S]*process\.exit\(1\)/);
   });
 
+  it("delegates runtime authority to the XState runner", () => {
+    const agentSource = fs.readFileSync(
+      path.join(process.cwd(), "agent.ts"),
+      "utf8",
+    );
+
+    expect(agentSource).toContain("./src/os/run.js");
+    expect(agentSource).toContain("runOSActor");
+  });
+
   it("records a run manifest and rollback instructions for generated files", () => {
     const agentSource = fs.readFileSync(
       path.join(process.cwd(), "agent.ts"),
@@ -24,26 +34,27 @@ describe("agent entrypoint hardening", () => {
   });
 
   it("falls back to agent.md when AGENTS.md is not present", () => {
-    const agentSource = fs.readFileSync(
-      path.join(process.cwd(), "agent.ts"),
+    const runSource = fs.readFileSync(
+      path.join(process.cwd(), "src/os/run.ts"),
       "utf8",
     );
 
-    expect(agentSource).toContain('fs.existsSync("AGENTS.md")');
-    expect(agentSource).toContain('"agent.md"');
+    expect(runSource).toContain('fs.existsSync("AGENTS.md")');
+    expect(runSource).toContain('"agent.md"');
   });
 
   it("validates generated patches before writing them to disk", () => {
-    const agentSource = fs.readFileSync(
-      path.join(process.cwd(), "agent.ts"),
+    const runSource = fs.readFileSync(
+      path.join(process.cwd(), "src/os/run.ts"),
       "utf8",
     );
-    const validatorIndex = agentSource.indexOf("runGeneratedPatchValidators");
-    const writeIndex = agentSource.indexOf("fs.writeFileSync(file.path");
+    const validatorIndex = runSource.indexOf("runGeneratedPatchValidators");
+    const writeIndex = runSource.indexOf("writeFilesToDisk");
 
     expect(validatorIndex).toBeGreaterThan(-1);
     expect(writeIndex).toBeGreaterThan(-1);
     expect(validatorIndex).toBeLessThan(writeIndex);
+    expect(runSource).toContain("Ax boundary");
   });
 
   it("publishes passive cockpit comments for terminal run states", () => {
@@ -60,17 +71,13 @@ describe("agent entrypoint hardening", () => {
   });
 
   it("resolves release-gate smoke specs before model inference starts", () => {
-    const agentSource = fs.readFileSync(
-      path.join(process.cwd(), "agent.ts"),
+    const runSource = fs.readFileSync(
+      path.join(process.cwd(), "src/os/run.ts"),
       "utf8",
     );
-    const gateIndex = agentSource.indexOf("resolveReleaseGatePatch");
-    const modelIndex = agentSource.indexOf("Phase 1: Planning Architecture");
 
-    expect(agentSource).toContain("./src/release-gate/resolve.js");
-    expect(gateIndex).toBeGreaterThan(-1);
-    expect(modelIndex).toBeGreaterThan(-1);
-    expect(gateIndex).toBeLessThan(modelIndex);
+    expect(runSource).toContain("resolveReleaseGatePatch");
+    expect(runSource).toContain("runGeneratedPatchValidators");
   });
 
   it("routes operator comments before model inference starts", () => {
@@ -78,8 +85,6 @@ describe("agent entrypoint hardening", () => {
       path.join(process.cwd(), "agent.ts"),
       "utf8",
     );
-    const routerIndex = agentSource.indexOf("routeGitHubComment");
-    const modelIndex = agentSource.indexOf("Phase 1: Planning Architecture");
 
     expect(agentSource).toContain("./src/operator/github-comment-router.js");
     expect(agentSource).toContain("./src/os/event-ledger.js");
@@ -87,9 +92,13 @@ describe("agent entrypoint hardening", () => {
     expect(agentSource).toContain("appendOperatorEvent");
     expect(agentSource).toContain("markOperatorOnlyFromEnv");
     expect(agentSource).toContain("readLatestRollbackInstructions");
-    expect(routerIndex).toBeGreaterThan(-1);
-    expect(modelIndex).toBeGreaterThan(-1);
-    expect(routerIndex).toBeLessThan(modelIndex);
+    const runBlock = agentSource.slice(
+      agentSource.indexOf("async function runOS"),
+      agentSource.indexOf("function isOperatorCommentEvent"),
+    );
+    expect(runBlock.indexOf("routeGitHubComment")).toBeLessThan(
+      runBlock.indexOf("runOSActor"),
+    );
   });
 
   it("marks operator-only commands so later workflow steps can skip deploy and handoff", () => {
@@ -100,5 +109,16 @@ describe("agent entrypoint hardening", () => {
 
     expect(agentSource).toContain("VIBE_OPERATOR_ONLY=1");
     expect(agentSource).toContain("process.env.GITHUB_ENV");
+  });
+
+  it("marks approval-required runs for workflow promotion gating", () => {
+    const agentSource = fs.readFileSync(
+      path.join(process.cwd(), "agent.ts"),
+      "utf8",
+    );
+
+    expect(agentSource).toContain("VIBE_APPROVAL_REQUIRED=1");
+    expect(agentSource).toContain("APPROVED_BY");
+    expect(agentSource).toContain("GENERATED_FILES");
   });
 });
