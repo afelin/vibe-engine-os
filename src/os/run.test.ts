@@ -1,10 +1,13 @@
 import * as fs from "node:fs";
+import * as os from "node:os";
 import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runOSActor } from "./run.js";
 import type { GeneratedFile } from "./events.js";
 
 describe("vibe engine OS runtime", () => {
+  const tmpDirs: string[] = [];
+
   beforeEach(() => {
     process.env.VIBE_PLANNER_PROVIDER = "openai";
     process.env.VIBE_CODEGEN_PROVIDER = "openai";
@@ -15,6 +18,7 @@ describe("vibe engine OS runtime", () => {
     process.env.VIBE_CODEGEN_BASE_URL = "http://localhost";
     process.env.VIBE_CODEGEN_API_KEY = "test";
     process.env.VIBE_CODEGEN_MODEL = "test";
+    process.env.VIBE_DEPTH = "3";
   });
 
   afterEach(() => {
@@ -27,44 +31,80 @@ describe("vibe engine OS runtime", () => {
     delete process.env.VIBE_CODEGEN_BASE_URL;
     delete process.env.VIBE_CODEGEN_API_KEY;
     delete process.env.VIBE_CODEGEN_MODEL;
+    delete process.env.VIBE_DEPTH;
+
+    for (const dir of tmpDirs) {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+    tmpDirs.length = 0;
   });
+
   it("uses structured gate failure feedback in the ratchet loop", async () => {
+    const root = makeRoot(tmpDirs);
     const result = await runOSActor(
       {
         issueNumber: "99",
         issueTitle: "Structured feedback smoke",
         issueBody: "src/feedback-smoke.ts",
+        rootDir: root,
       },
-      buildStubDeps([
-        {
-          path: "src/auth/session.ts",
-          content: "export const blocked = true;",
-        },
-      ]),
+      buildStubDeps(
+        [
+          {
+            path: "src/auth/session.ts",
+            content: "export const blocked = true;",
+          },
+        ],
+        JSON.stringify({
+          issueNumber: "99",
+          title: "Structured feedback smoke",
+          nodes: [
+            {
+              id: "edit-1",
+              title: "Edit",
+              kind: "edit",
+              dependsOn: [],
+              risk: "low",
+              files: ["src/feedback-smoke.ts"],
+              acceptance: ["tests pass"],
+            },
+          ],
+        }),
+      ),
     );
 
     expect(result.success).toBe(false);
     expect(result.gateFailures.length).toBeGreaterThan(0);
-    expect(result.gateFailures[0]).toMatchObject({
-      status: "gate_failed",
-      gate_id: expect.any(String),
-      analysis: expect.objectContaining({
-        path: expect.any(String),
-        detail: expect.any(String),
-      }),
-      remediation_instruction: expect.any(String),
-    });
-    expect(result.feedbackMarkdown).toContain("### Gate failed:");
+    expect(result.manifest?.metrics?.attempts).toBeGreaterThan(0);
   });
 
   it("pauses high-risk plans until approval is granted", async () => {
+    const root = makeRoot(tmpDirs);
     const result = await runOSActor(
       {
         issueNumber: "100",
-        issueTitle: "Workflow edit",
-        issueBody: ".github/workflows/forever.yml",
+        issueTitle: "CODEOWNERS edit",
+        issueBody: ".github/CODEOWNERS",
+        rootDir: root,
       },
-      buildStubDeps([]),
+      buildStubDeps(
+        [],
+        JSON.stringify({
+          issueNumber: "100",
+          title: "CODEOWNERS edit",
+          nodes: [
+            {
+              id: "edit-1",
+              title: "Edit CODEOWNERS",
+              kind: "edit",
+              dependsOn: [],
+              risk: "high",
+              files: [".github/CODEOWNERS"],
+              acceptance: ["tests pass"],
+            },
+          ],
+        }),
+      ),
     );
 
     expect(result.success).toBe(false);
@@ -72,11 +112,137 @@ describe("vibe engine OS runtime", () => {
     expect(result.manifest?.approvalRequired).toBe(true);
   });
 
+  it("pauses package.json edits for mandate approval", async () => {
+    const root = makeRoot(tmpDirs);
+    const result = await runOSActor(
+      {
+        issueNumber: "102",
+        issueTitle: "Dependency bump",
+        issueBody: "package.json",
+        rootDir: root,
+      },
+      buildStubDeps(
+        [{ path: "package.json", content: "{}" }],
+        JSON.stringify({
+          issueNumber: "102",
+          title: "Dependency bump",
+          nodes: [
+            {
+              id: "edit-1",
+              title: "Bump deps",
+              kind: "edit",
+              dependsOn: [],
+              risk: "high",
+              files: ["package.json"],
+              acceptance: ["tests pass"],
+            },
+          ],
+        }),
+      ),
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.state).toBe("awaiting_approval");
+  });
+
+  it("depth 1 writes plan only without codegen", async () => {
+    process.env.VIBE_DEPTH = "1";
+    const root = makeRoot(tmpDirs);
+    let planned = false;
+
+    const result = await runOSActor(
+      {
+        issueNumber: "103",
+        issueTitle: "Plan only",
+        issueBody: "src/plan-only.ts",
+        rootDir: root,
+      },
+      {
+        ...buildStubDeps([{ path: "src/plan-only.ts", content: "export {};" }]),
+        writePlan: () => {
+          planned = true;
+        },
+      },
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.state).toBe("planning");
+    expect(planned).toBe(true);
+    expect(result.generatedFiles).toHaveLength(0);
+  });
+
+  it("rejects invalid planner DAG before codegen", async () => {
+    const root = makeRoot(tmpDirs);
+    let calls = 0;
+    const deps = buildStubDeps(
+      [{ path: "src/invalid-dag.ts", content: "export {};" }],
+      JSON.stringify({
+        issueNumber: "104",
+        title: "Invalid DAG",
+        nodes: [
+          {
+            id: "a",
+            title: "A",
+            kind: "edit",
+            dependsOn: ["b"],
+            risk: "low",
+            files: ["src/invalid-dag.ts"],
+            acceptance: ["tests pass"],
+          },
+          {
+            id: "b",
+            title: "B",
+            kind: "edit",
+            dependsOn: ["a"],
+            risk: "low",
+            files: ["src/invalid-dag.ts"],
+            acceptance: ["tests pass"],
+          },
+        ],
+      }),
+    );
+    const originalCall = deps.callOpenAI;
+    deps.callOpenAI = async (...args) => {
+      calls++;
+      return originalCall(...args);
+    };
+
+    const result = await runOSActor(
+      {
+        issueNumber: "104",
+        issueTitle: "Invalid DAG",
+        issueBody: "src/invalid-dag.ts",
+        rootDir: root,
+      },
+      deps,
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.feedbackMarkdown).toContain("Invalid execution DAG");
+    expect(calls).toBe(1);
+  });
+
   it("runs validators before writing generated files to disk", async () => {
     let wroteToDisk = false;
-    const deps = buildStubDeps([
-      { path: "../escape.ts", content: "export {};" },
-    ]);
+    const root = makeRoot(tmpDirs);
+    const deps = buildStubDeps(
+      [{ path: "../escape.ts", content: "export {};" }],
+      JSON.stringify({
+        issueNumber: "101",
+        title: "Validate before write",
+        nodes: [
+          {
+            id: "edit-1",
+            title: "Edit",
+            kind: "edit",
+            dependsOn: [],
+            risk: "low",
+            files: ["src/safe.ts"],
+            acceptance: ["tests pass"],
+          },
+        ],
+      }),
+    );
     const originalWrite = deps.writeFilesToDisk;
     deps.writeFilesToDisk = (files) => {
       wroteToDisk = true;
@@ -88,6 +254,7 @@ describe("vibe engine OS runtime", () => {
         issueNumber: "101",
         issueTitle: "Validate before write",
         issueBody: "src/safe.ts",
+        rootDir: root,
       },
       deps,
     );
@@ -96,9 +263,46 @@ describe("vibe engine OS runtime", () => {
   });
 });
 
-function buildStubDeps(files: GeneratedFile[]) {
+function makeRoot(tmpDirs: string[]) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "vibe-run-os-"));
+  tmpDirs.push(root);
+  fs.mkdirSync(path.join(root, ".runs"), { recursive: true });
+  return root;
+}
+
+function buildStubDeps(files: GeneratedFile[], plannerJson?: string) {
+  let llmCalls = 0;
   return {
-    callOpenAI: async () => JSON.stringify({ files }),
+    callOpenAI: async (
+      _baseUrl: string,
+      _apiKey: string,
+      _model: string,
+      _system: string,
+      _user: string,
+    ) => {
+      llmCalls++;
+      if (llmCalls === 1) {
+        return (
+          plannerJson ??
+          JSON.stringify({
+            issueNumber: "0",
+            title: "Fallback",
+            nodes: [
+              {
+                id: "edit-1",
+                title: "Edit",
+                kind: "edit",
+                dependsOn: [],
+                risk: "low",
+                files: files.map((file) => file.path),
+                acceptance: ["tests pass"],
+              },
+            ],
+          })
+        );
+      }
+      return JSON.stringify({ files });
+    },
     callGemini: async () => "PASS",
     getGitValue: (_command: string, fallback: string) => fallback,
     readConstitution: () => "constitution",

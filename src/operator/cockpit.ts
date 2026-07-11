@@ -1,11 +1,14 @@
 import type { OSContext } from "../os/events.js";
+import { getVibeDepth, renderDepthStatus, type VibeDepth } from "../os/depth.js";
 
 export function renderCockpitComment(state: string, context: OSContext) {
+  const depth = (context.vibeDepth ?? getVibeDepth()) as VibeDepth;
   return [
     "## Vibe Engine OS Cockpit",
     "",
     `**State:** ${state}`,
     `**Issue:** #${context.issueNumber} ${context.issueTitle}`,
+    renderDepthStatus(depth),
     `**Risk:** ${context.risk ?? "unreviewed"}`,
     context.riskReason ? `**Risk reason:** ${context.riskReason}` : undefined,
     `**Attempts:** ${context.attempts}/${context.maxAttempts}`,

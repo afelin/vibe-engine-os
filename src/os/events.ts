@@ -67,6 +67,7 @@ export type OSContext = {
   risk?: RiskLevel;
   riskReason?: string;
   approvalRequired?: boolean;
+  vibeDepth?: number;
   plan?: string;
   releaseGateId?: string;
   findings: PreflightFinding[];
@@ -80,7 +81,7 @@ export type OSEvent =
   | { type: "os.received"; source: "github" | "cloudflare"; payload: unknown }
   | { type: "preflight.completed"; findings: PreflightFinding[] }
   | { type: "plan.created"; dag: ExecutionDag }
-  | { type: "risk.reviewed"; risk: RiskLevel; reason: string }
+  | { type: "risk.reviewed"; risk: RiskLevel; reason: string; approvalRequired?: boolean }
   | { type: "approval.granted"; actor: string; commentId?: string }
   | { type: "patch.generated"; files: GeneratedFile[] }
   | { type: "verification.passed"; results: VerificationResult[] }
