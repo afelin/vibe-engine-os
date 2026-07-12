@@ -29,6 +29,9 @@ npm run activate
 | [Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md) | Solo founders — activate, first issue, operator commands |
 | [Plain-Language Briefing](docs/plain-language-briefing.md) | Stakeholders — capabilities, problems solved, VFA assessment |
 | [Agent Protocol](docs/agent-protocol.md) | Agents & integrators — MCP, TaskBond, schemas, gates |
+| [Nocode Quickstart](docs/nocode-quickstart.md) | Nocode users — issue → PR → receipt, no terminal |
+| [Platform Enforcement](docs/platform-enforcement.md) | Operators — deploy-from-capsule, GitHub Pro-free enforcement |
+| [Go-to-Market](docs/go-to-market.md) | Founders — tiers, outreach, competitor gap |
 | [OS Phases](docs/os-phases.md) | Promotion phase diagram (auto-derived from machine) |
 | [GitHub App](docs/github-app.md) | Enterprise — required checks, branch protection |
 
