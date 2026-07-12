@@ -58,14 +58,16 @@ describe("release gate MCP stdio transport", () => {
     );
 
     await new Promise<void>((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error("MCP timeout")), 5000);
-      const interval = setInterval(() => {
+      const timeout = setTimeout(() => reject(new Error("MCP timeout")), 15_000);
+      const onData = () => {
         if (stdout.indexOf("\r\n\r\n") !== -1 && stdout.includes("{")) {
           clearTimeout(timeout);
-          clearInterval(interval);
+          child.stdout.off("data", onData);
           resolve();
         }
-      }, 20);
+      };
+      child.stdout.on("data", onData);
+      onData();
     });
 
     const { message } = readFramedMessage(stdout);

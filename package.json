@@ -17,6 +17,7 @@
     "bond:seal": "tsx src/bond/seal-cli.ts",
     "eval:bond": "tsx src/bond/gauntlet-cli.ts",
     "bond:preflight": "tsx src/bond/preflight-cli.ts",
+    "pr:create": "node scripts/create-pr.mjs",
     "gate:mcp": "tsx src/release-gate/mcp.ts",
     "constitution:export": "tsx src/constitution/cli.ts",
     "constitution:serve": "tsx src/cloud/verify-server.ts"

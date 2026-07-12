@@ -115,49 +115,63 @@ export type RunDeps = {
   writeCriticFailed: (content: string) => void;
 };
 
-function defaultDeps(): RunDeps {
+function defaultDeps(rootDir = "."): RunDeps {
   return {
     callOpenAI: callOpenAIFormat,
     callGemini: callGeminiFormat,
     getGitValue,
     readConstitution: () => {
-      const constitutionPath = fs.existsSync("AGENTS.md") ? "AGENTS.md" : "agent.md";
+      const agentsPath = path.join(rootDir, "AGENTS.md");
+      const agentPath = path.join(rootDir, "agent.md");
+      const constitutionPath = fs.existsSync(agentsPath)
+        ? agentsPath
+        : agentPath;
       return fs.readFileSync(constitutionPath, "utf8");
     },
-    readRepoContext: () =>
-      fs.existsSync("repomix-output.txt")
-        ? fs.readFileSync("repomix-output.txt", "utf8")
-        : "Repository is currently empty.",
-    readEvoMem: () =>
-      fs.existsSync("EVOMEM.md") ? fs.readFileSync("EVOMEM.md", "utf8") : "",
+    readRepoContext: () => {
+      const repomixPath = path.join(rootDir, "repomix-output.txt");
+      return fs.existsSync(repomixPath)
+        ? fs.readFileSync(repomixPath, "utf8")
+        : "Repository is currently empty.";
+    },
+    readEvoMem: () => {
+      const evoPath = path.join(rootDir, "EVOMEM.md");
+      return fs.existsSync(evoPath) ? fs.readFileSync(evoPath, "utf8") : "";
+    },
     writePlan: (issueNumber, plan) => {
-      const planDir = ".planning/milestones";
+      const planDir = path.join(rootDir, ".planning/milestones");
       if (!fs.existsSync(planDir)) fs.mkdirSync(planDir, { recursive: true });
       fs.writeFileSync(path.join(planDir, `ISSUE_${issueNumber}_PLAN.md`), plan);
     },
-    writeFilesToDisk,
+    writeFilesToDisk: (files) => writeFilesToDisk(files, rootDir),
     restoreBackups,
     runTsc: () => {
-      if (fs.existsSync("tsconfig.json")) {
-        execSync("npx tsc --noEmit", { stdio: "pipe" });
+      const tsconfigPath = path.join(rootDir, "tsconfig.json");
+      if (fs.existsSync(tsconfigPath)) {
+        execSync("npx tsc --noEmit", { cwd: rootDir, stdio: "pipe" });
       }
     },
-    runVitest: () => execSync("npx vitest run", { stdio: "pipe" }),
+    runVitest: () => execSync("npx vitest run", { cwd: rootDir, stdio: "pipe" }),
     runVitestSubgraph: (changedPaths: string[]) => {
-      const testFiles = mapChangedFilesToVitest(changedPaths, ".");
+      const testFiles = mapChangedFilesToVitest(changedPaths, rootDir);
       const cmd = buildVitestSubgraphCommand(testFiles);
-      execSync(cmd, { stdio: "pipe" });
+      execSync(cmd, { cwd: rootDir, stdio: "pipe" });
     },
-    appendEvoMem: (content) => fs.appendFileSync("EVOMEM.md", content, "utf8"),
-    writeCriticFailed: (content) => fs.writeFileSync("CRITIC_FAILED.md", content),
+    appendEvoMem: (content) => {
+      fs.appendFileSync(path.join(rootDir, "EVOMEM.md"), content, "utf8");
+    },
+    writeCriticFailed: (content) => {
+      fs.writeFileSync(path.join(rootDir, "CRITIC_FAILED.md"), content, "utf8");
+    },
   };
 }
 
 export async function runOSActor(
   input: RunInput,
-  deps: RunDeps = defaultDeps(),
+  depsInput?: RunDeps,
 ): Promise<RunOutput> {
   const rootDir = input.rootDir ?? ".";
+  const deps = depsInput ?? defaultDeps(rootDir);
   const startedAt = Date.now();
   const depth = getVibeDepth();
   const caps = depthCapabilities(depth);
@@ -573,7 +587,7 @@ ${vibe}`;
     prepareCodegenAttempt(actor, attempts);
 
     let generatedFiles: GeneratedFile[];
-    if (deterministicPatch && attempts === 1) {
+    if (deterministicPatch) {
       generatedFiles = deterministicPatch;
     } else {
       const codegen = resolveCodegenEndpoint();
@@ -715,7 +729,7 @@ ${vibe}`;
       }
     }
 
-    if (loopPassed && deterministicPatch && attempts === 1) {
+    if (loopPassed && deterministicPatch) {
       // Deterministic release-gate patches skip causal critic.
     } else if (loopPassed && caps.allowsTests) {
       const critic = resolveCriticEndpoint();
@@ -1084,16 +1098,22 @@ function getGitValue(command: string, fallback: string) {
   }
 }
 
-function writeFilesToDisk(files: GeneratedFile[]): Map<string, string | null> {
+function writeFilesToDisk(
+  files: GeneratedFile[],
+  rootDir = ".",
+): Map<string, string | null> {
   const backups = new Map<string, string | null>();
   for (const file of files) {
-    const dir = path.dirname(file.path);
+    const filepath = path.isAbsolute(file.path)
+      ? file.path
+      : path.join(rootDir, file.path);
+    const dir = path.dirname(filepath);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     backups.set(
-      file.path,
-      fs.existsSync(file.path) ? fs.readFileSync(file.path, "utf8") : null,
+      filepath,
+      fs.existsSync(filepath) ? fs.readFileSync(filepath, "utf8") : null,
     );
-    fs.writeFileSync(file.path, file.content);
+    fs.writeFileSync(filepath, file.content);
   }
   return backups;
 }

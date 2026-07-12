@@ -48,6 +48,8 @@ echo "🧪 Running npm run check..."
 npm run check
 echo "✓ check passed"
 
+bash runs/ensure-gh.sh
+
 # 4. Zero-token gate smoke
 echo "⚡ Zero-token cloud-loop smoke..."
 ISSUE_NUMBER=3 \

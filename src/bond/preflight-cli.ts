@@ -41,6 +41,17 @@ function checkBondForIssue(): void {
     record("bond.issue_file", true, "skipped (no issue number)");
     return;
   }
+  if (runId) {
+    const manifest = readRunManifest(rootDir, runId);
+    if (manifest && !manifest.bondHash) {
+      record(
+        "bond.issue_file",
+        true,
+        "skipped (legacy manifest without bondHash)",
+      );
+      return;
+    }
+  }
   const bond = readTaskBond(rootDir, issueNumber);
   record(
     "bond.issue_file",

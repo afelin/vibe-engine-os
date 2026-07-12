@@ -80,7 +80,7 @@ Checks: gauntlet green, optional sealed bond file, optional capsule validate. Wi
 
 ### Structured verdicts
 
-MCP tools return TabDab-style envelopes: `{ ok: true, bondHash? }` or `{ ok: false, reason, path?, detail? }` on `evaluate_mandate`, `validate_bond`, and `seal_bond`.
+MCP tools return TabDab-style envelopes: `{ ok: true, bondHash?, requiresApproval? }` or `{ ok: false, reason, path?, detail? }` on `evaluate_mandate`, `validate_bond`, and `seal_bond`. Approval-gated paths (e.g. `package.json`) return **`ok: true` with `requiresApproval: true`** — pause for operator `/approve`, not a hard block.
 
 ## Vow Attestation
 
@@ -98,6 +98,9 @@ Written to `.runs/<runId>/capsule.hash`. Verifiable via MCP or HTTP.
 
 ```bash
 npm run gate:resolve -- --title "gate:add-unit-test" --body ""
+# or positional: npm run gate:resolve -- "title" "body"
+
+npm run pr:create -- --title "feat: ..." --head feat/my-branch
 ```
 
 Ten gates in `src/release-gate/gates.json`; each maps to `.skills/actors/<id>.ts`.

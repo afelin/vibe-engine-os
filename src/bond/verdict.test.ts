@@ -17,6 +17,20 @@ describe("bond verdict envelopes", () => {
     })).toEqual({ ok: true });
   });
 
+  it("formats approval-only mandate as ok:true with requiresApproval", () => {
+    const verdict = formatMandateVerdict({
+      passed: true,
+      violations: [{ path: "package.json", rule: "require_approval", prefix: "package.json" }],
+      requiresApproval: true,
+      maxAttempts: 3,
+    });
+    expect(verdict).toMatchObject({
+      ok: true,
+      requiresApproval: true,
+      approvalPaths: ["package.json"],
+    });
+  });
+
   it("formats forbidden mandate with reason", () => {
     const verdict = formatMandateVerdict({
       passed: false,

@@ -3,7 +3,13 @@ import type { TaskBondEval, TaskBondViolation } from "./evaluate.js";
 import type { SealTaskBondResult } from "./seal.js";
 
 export type Verdict =
-  | { ok: true; bondHash?: string }
+  | {
+      ok: true;
+      bondHash?: string;
+      requiresApproval?: boolean;
+      approvalPaths?: string[];
+      detail?: string;
+    }
   | { ok: false; reason: string; path?: string; detail?: string };
 
 function primaryBlockingRule(
@@ -33,6 +39,19 @@ export function formatTaskBondEvalVerdict(
   bondHash?: string,
 ): Verdict {
   if (evaluation.passed) {
+    if (evaluation.requiresApproval) {
+      const approvalPaths = evaluation.violations
+        .filter((item) => item.rule === "require_approval")
+        .map((item) => item.path)
+        .filter((item): item is string => Boolean(item));
+      return {
+        ok: true,
+        bondHash,
+        requiresApproval: true,
+        approvalPaths,
+        detail: "Operator /approve required before writing these paths.",
+      };
+    }
     return { ok: true, bondHash };
   }
   const primary = primaryBlockingRule(evaluation);
@@ -46,15 +65,12 @@ export function formatTaskBondEvalVerdict(
 
 export function formatSealVerdict(result: SealTaskBondResult): Verdict {
   if (result.ok) {
-    return { ok: true, bondHash: result.bond.bondHash };
+    return formatTaskBondEvalVerdict(result.evaluation, result.bond.bondHash);
   }
   return formatTaskBondEvalVerdict(result.evaluation);
 }
 
 export function formatMandateVerdict(evaluation: MandateEvaluation): Verdict {
-  if (evaluation.passed && !evaluation.requiresApproval) {
-    return { ok: true };
-  }
   if (!evaluation.passed) {
     const forbidden = evaluation.violations.find(
       (item) => item.rule === "forbidden",
@@ -66,12 +82,31 @@ export function formatMandateVerdict(evaluation: MandateEvaluation): Verdict {
       detail: evaluation.violations[0]?.prefix,
     };
   }
-  return { ok: false, reason: "require_approval" };
+  if (evaluation.requiresApproval) {
+    const approvalPaths = evaluation.violations
+      .filter((item) => item.rule === "require_approval")
+      .map((item) => item.path);
+    return {
+      ok: true,
+      requiresApproval: true,
+      approvalPaths,
+      detail: "Operator /approve required before writing these paths.",
+    };
+  }
+  return { ok: true };
 }
 
 export function envelopeFromVerdict(verdict: Verdict): Record<string, unknown> {
   if (verdict.ok) {
-    return { ok: true, ...(verdict.bondHash ? { bondHash: verdict.bondHash } : {}) };
+    return {
+      ok: true,
+      ...(verdict.bondHash ? { bondHash: verdict.bondHash } : {}),
+      ...(verdict.requiresApproval ? { requiresApproval: true } : {}),
+      ...(verdict.approvalPaths?.length
+        ? { approvalPaths: verdict.approvalPaths }
+        : {}),
+      ...(verdict.detail ? { detail: verdict.detail } : {}),
+    };
   }
   return {
     ok: false,

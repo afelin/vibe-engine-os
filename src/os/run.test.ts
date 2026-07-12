@@ -74,6 +74,7 @@ describe("vibe engine OS runtime", () => {
             },
           ],
         }),
+        root,
       ),
     );
 
@@ -113,6 +114,7 @@ Update CODEOWNERS for review routing
             },
           ],
         }),
+        root,
       ),
     );
 
@@ -152,6 +154,7 @@ package.json
             },
           ],
         }),
+        root,
       ),
     );
 
@@ -172,7 +175,7 @@ package.json
         rootDir: root,
       },
       {
-        ...buildStubDeps([{ path: "src/plan-only.ts", content: "export {};" }]),
+        ...buildStubDeps([{ path: "src/plan-only.ts", content: "export {};" }], undefined, root),
         writePlan: () => {
           planned = true;
         },
@@ -214,6 +217,7 @@ package.json
           },
         ],
       }),
+      root,
     );
     const originalCall = deps.callOpenAI;
     deps.callOpenAI = async (...args) => {
@@ -276,6 +280,8 @@ package.json
     let plannerCalls = 0;
     const deps = buildStubDeps(
       [{ path: "src/resume-smoke.ts", content: "export const ok = true;\n" }],
+      undefined,
+      root,
     );
     const originalCall = deps.callOpenAI;
     deps.callOpenAI = async (...args) => {
@@ -309,6 +315,38 @@ package.json
     expect(result.manifest?.capsuleHash).toMatch(/^[a-f0-9]{64}$/);
   });
 
+  it("uses zero-token release gate without calling the planner LLM", async () => {
+    const root = makeRoot(tmpDirs);
+    let llmCalls = 0;
+    const deps = buildStubDeps([], undefined, root);
+    const originalCall = deps.callOpenAI;
+    deps.callOpenAI = async (...args) => {
+      llmCalls++;
+      return originalCall(...args);
+    };
+
+    const result = await runOSActor(
+      {
+        issueNumber: "3",
+        issueTitle: "cloud loop",
+        issueBody: "src/cloud-loop-smoke.ts src/cloud-loop-smoke.test.ts",
+        rootDir: root,
+      },
+      deps,
+    );
+
+    expect(result.success).toBe(true);
+    expect(llmCalls).toBe(0);
+    expect(result.generatedFiles.map((file) => file.path)).toEqual([
+      "src/cloud-loop-smoke.ts",
+      "src/cloud-loop-smoke.test.ts",
+    ]);
+    expect(result.manifest?.bondHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(
+      fs.existsSync(path.join(root, ".runs/bonds/issue-3.bond.json")),
+    ).toBe(true);
+  });
+
   it("runs validators before writing generated files to disk", async () => {
     let wroteToDisk = false;
     const root = makeRoot(tmpDirs);
@@ -329,6 +367,7 @@ package.json
           },
         ],
       }),
+      root,
     );
     const originalWrite = deps.writeFilesToDisk;
     deps.writeFilesToDisk = (files) => {
@@ -357,7 +396,11 @@ function makeRoot(tmpDirs: string[]) {
   return root;
 }
 
-function buildStubDeps(files: GeneratedFile[], plannerJson?: string) {
+function buildStubDeps(
+  files: GeneratedFile[],
+  plannerJson?: string,
+  root = ".",
+) {
   let llmCalls = 0;
   return {
     callOpenAI: async (
@@ -399,9 +442,10 @@ function buildStubDeps(files: GeneratedFile[], plannerJson?: string) {
     writeFilesToDisk: (generated: GeneratedFile[]) => {
       const backups = new Map<string, string | null>();
       for (const file of generated) {
-        backups.set(file.path, null);
-        fs.mkdirSync(path.dirname(file.path), { recursive: true });
-        fs.writeFileSync(file.path, file.content);
+        const filepath = path.join(root, file.path);
+        backups.set(filepath, null);
+        fs.mkdirSync(path.dirname(filepath), { recursive: true });
+        fs.writeFileSync(filepath, file.content);
       }
       return backups;
     },

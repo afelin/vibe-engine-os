@@ -20,7 +20,8 @@ Operator commands (`/approve`, `/retry`, `/rollback`) override agent proposals.
 ## Examples
 
 - Issue body mentions `gate:add-unit-test` → call `resolve_gate` first; skip LLM if gate matches.
-- Proposing `src/auth/session.ts` → `evaluate_mandate` returns forbidden; stop and report.
+- Proposing `src/auth/session.ts` → `evaluate_mandate` returns `{ ok: false, reason: "forbidden_prefix" }`; stop and report.
+- Proposing `package.json` → `evaluate_mandate` returns `{ ok: true, requiresApproval: true }`; request operator `/approve` before write.
 - Planner JSON → validate against `ExecutionDag` schema before codegen.
 
 ## Performance Notes

@@ -80,6 +80,17 @@ describe("release gate MCP handlers", () => {
     expect(parsed.evaluation.violations[0].rule).toBe("forbidden");
   });
 
+  it("returns ok:true with requiresApproval for protected paths", () => {
+    const text = callReleaseGateTool("evaluate_mandate", {
+      proposed_files: ["package.json"],
+    });
+    const parsed = JSON.parse(text);
+    expect(parsed.ok).toBe(true);
+    expect(parsed.requiresApproval).toBe(true);
+    expect(parsed.approvalPaths).toContain("package.json");
+    expect(parsed.evaluation.passed).toBe(true);
+  });
+
   it("exports constitution schemas", () => {
     const text = callReleaseGateTool("constitution_schemas");
     const parsed = JSON.parse(text) as Record<string, unknown>;

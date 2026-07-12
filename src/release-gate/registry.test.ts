@@ -36,6 +36,13 @@ describe("release gate registry", () => {
 
     expect(
       resolveGateFromRegistry(
+        "cloud loop",
+        "src/cloud-loop-smoke.ts src/cloud-loop-smoke.test.ts",
+      )?.id,
+    ).toBe("cloud-loop-smoke");
+
+    expect(
+      resolveGateFromRegistry(
         "Release gate: PR review workflow smoke trigger (PR Feedback)",
         "",
       )?.id,

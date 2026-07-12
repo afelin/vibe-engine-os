@@ -30,10 +30,18 @@ function readCriticProvider(): CriticProviderName {
   return "gemini";
 }
 
-function requireEnv(name: string): string {
+function missingEnvHint(name: string, role: string): string {
+  return (
+    `Missing required env var: ${name} for ${role}. ` +
+    "Use a zero-token release gate (npm run gate:resolve), set " +
+    `VIBE_${role.toUpperCase()}_PROVIDER=off, or configure the API key.`
+  );
+}
+
+function requireEnv(name: string, hint?: string): string {
   const value = process.env[name];
   if (!value) {
-    throw new Error(`Missing required env var: ${name}`);
+    throw new Error(hint ?? `Missing required env var: ${name}`);
   }
   return value;
 }
@@ -61,7 +69,7 @@ export function resolvePlannerEndpoint(): OpenAiEndpoint | "off" {
   if (provider === "github-models") {
     return {
       baseUrl: "https://models.inference.ai.azure.com",
-      apiKey: requireEnv("GH_MODELS_TOKEN"),
+      apiKey: requireEnv("GH_MODELS_TOKEN", missingEnvHint("GH_MODELS_TOKEN", "planner")),
       model: process.env.VIBE_PLANNER_MODEL ?? "gpt-4o",
     };
   }
@@ -69,7 +77,7 @@ export function resolvePlannerEndpoint(): OpenAiEndpoint | "off" {
   if (provider === "groq") {
     return {
       baseUrl: "https://api.groq.com/openai/v1",
-      apiKey: requireEnv("GROQ_API_KEY"),
+      apiKey: requireEnv("GROQ_API_KEY", missingEnvHint("GROQ_API_KEY", "planner")),
       model: process.env.VIBE_PLANNER_MODEL ?? "llama-3.3-70b-versatile",
     };
   }
@@ -84,7 +92,7 @@ export function resolveCodegenEndpoint(): OpenAiEndpoint | "off" {
   if (provider === "groq") {
     return {
       baseUrl: "https://api.groq.com/openai/v1",
-      apiKey: requireEnv("GROQ_API_KEY"),
+      apiKey: requireEnv("GROQ_API_KEY", missingEnvHint("GROQ_API_KEY", "codegen")),
       model: process.env.VIBE_CODEGEN_MODEL ?? "llama-3.3-70b-versatile",
       jsonMode: true,
     };
@@ -93,7 +101,7 @@ export function resolveCodegenEndpoint(): OpenAiEndpoint | "off" {
   if (provider === "github-models") {
     return {
       baseUrl: "https://models.inference.ai.azure.com",
-      apiKey: requireEnv("GH_MODELS_TOKEN"),
+      apiKey: requireEnv("GH_MODELS_TOKEN", missingEnvHint("GH_MODELS_TOKEN", "codegen")),
       model: process.env.VIBE_CODEGEN_MODEL ?? "gpt-4o",
       jsonMode: true,
     };
@@ -110,5 +118,8 @@ export function resolveCriticEndpoint(): CriticEndpoint {
     return { kind: "openai", endpoint: openAiFromEnv("CRITIC") };
   }
 
-  return { kind: "gemini", apiKey: requireEnv("GEMINI_API_KEY") };
+  return {
+    kind: "gemini",
+    apiKey: requireEnv("GEMINI_API_KEY", missingEnvHint("GEMINI_API_KEY", "critic")),
+  };
 }

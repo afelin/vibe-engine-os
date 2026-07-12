@@ -75,4 +75,10 @@ describe("llm router", () => {
     process.env.VIBE_CRITIC_PROVIDER = "off";
     expect(resolveCriticEndpoint()).toEqual({ kind: "off" });
   });
+
+  it("throws actionable hints when provider keys are missing", () => {
+    delete process.env.GROQ_API_KEY;
+    process.env.VIBE_CODEGEN_PROVIDER = "groq";
+    expect(() => resolveCodegenEndpoint()).toThrow(/zero-token release gate/);
+  });
 });
