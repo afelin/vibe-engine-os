@@ -207,6 +207,8 @@ describe("GitHub Actions workflow", () => {
 
     expect(workflow).toContain("pull_request");
     expect(workflow).toContain("check_suite");
+    expect(workflow).toContain("workflow_dispatch");
+    expect(workflow).toContain("checks: read");
     expect(workflow).toContain("pr:auto-merge");
     expect(workflow).toContain("VIBE_AUTO_MERGE");
   });

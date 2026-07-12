@@ -6,10 +6,17 @@ on:
     branches: [main]
   check_suite:
     types: [completed]
+  workflow_dispatch:
+    inputs:
+      pull_number:
+        description: PR number to attempt merge
+        required: true
+        type: number
 
 permissions:
   contents: write
   pull-requests: write
+  checks: read
 
 jobs:
   auto-merge:
@@ -33,6 +40,8 @@ jobs:
           set -euo pipefail
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             npm run pr:auto-merge -- "${{ github.event.pull_request.number }}"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            npm run pr:auto-merge -- "${{ github.event.inputs.pull_number }}"
           else
             npm run pr:auto-merge -- --sha "${{ github.event.check_suite.head_sha }}"
           fi
