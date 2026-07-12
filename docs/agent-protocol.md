@@ -2,6 +2,8 @@
 
 Open specification for agents (any framework) integrating with vibe-engine-os.
 
+**Solo operators:** start with the [Solo Vibe Coder Guide](./solo-vibe-coder-guide.md). **Stakeholders:** see [Plain-Language Briefing](./plain-language-briefing.md).
+
 ## Ingress: PlayEvent
 
 Agents send typed events matching the OS machine (`src/os/machine.ts`):

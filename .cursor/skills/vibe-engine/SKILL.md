@@ -5,6 +5,8 @@ description: Vibe Engine OS agent vows — evaluate_mandate and resolve_gate bef
 
 # Vibe Engine Agent Skill
 
+Solo operator setup: [docs/solo-vibe-coder-guide.md](../../docs/solo-vibe-coder-guide.md)
+
 ## Instructions
 
 Before proposing any file edits in a vibe-engine-os repository:
