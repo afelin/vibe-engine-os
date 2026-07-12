@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vibe Engine — Receipt</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+      line-height: 1.5;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #0f1117;
+      color: #e8eaed;
+    }
+    main {
+      width: min(640px, 92vw);
+      padding: 2rem;
+      border: 1px solid #2a3142;
+      border-radius: 12px;
+      background: #161a24;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    }
+    h1 { margin: 0 0 0.25rem; font-size: 1.35rem; }
+    .subtitle { color: #9aa3b2; margin-bottom: 1.5rem; }
+    .status {
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 1.25rem;
+      font-weight: 600;
+    }
+    .status.ok { background: #12351f; color: #6ee7a0; border: 1px solid #1f6f43; }
+    .status.warn { background: #3a2a12; color: #fbbf24; border: 1px solid #92400e; }
+    .status.err { background: #3b1212; color: #fca5a5; border: 1px solid #991b1b; }
+    dl { display: grid; grid-template-columns: 7rem 1fr; gap: 0.5rem 1rem; margin: 0; }
+    dt { color: #9aa3b2; }
+    dd { margin: 0; word-break: break-all; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85rem; }
+    footer { margin-top: 1.5rem; color: #9aa3b2; font-size: 0.85rem; }
+    a { color: #7dd3fc; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Run receipt</h1>
+    <p class="subtitle">Tamper-evident capsule parameters from the promotion link.</p>
+    <div id="status" class="status warn">Waiting for receipt parameters…</div>
+    <dl id="fields"></dl>
+    <footer>
+      Params live in the URL hash — they never leave your browser until you choose to verify.
+      <span id="verify-note"></span>
+    </footer>
+  </main>
+  <script>
+    const RESERVED = new Set(["$", "@", "!"]);
+
+    function parseHashParams() {
+      const hash = location.hash;
+      if (!hash.startsWith("#?")) return null;
+      const params = new URLSearchParams(hash.slice(2));
+      const run = params.get("run");
+      const capsule = params.get("capsule");
+      const vows = params.get("vows");
+      if (!run || !capsule || !vows) return null;
+      return {
+        run,
+        capsule,
+        vows,
+        repo: params.get("repo") || undefined,
+        api: params.get("api") || undefined,
+        signature: params.get("$") || undefined,
+        publicKey: params.get("@") || undefined,
+        scope: params.get("!") || undefined,
+      };
+    }
+
+    function setStatus(kind, message) {
+      const el = document.getElementById("status");
+      el.className = "status " + kind;
+      el.textContent = message;
+    }
+
+    function renderFields(data) {
+      const dl = document.getElementById("fields");
+      dl.innerHTML = "";
+      const rows = [
+        ["Run", data.run],
+        ["Capsule", data.capsule],
+        ["Vows", data.vows],
+        ["Repo", data.repo],
+        ["Scope", data.scope],
+        ["Signature", data.signature ? "(present)" : undefined],
+        ["Public key", data.publicKey ? "(present)" : undefined],
+      ];
+      for (const [label, value] of rows) {
+        if (!value) continue;
+        const dt = document.createElement("dt");
+        dt.textContent = label;
+        const dd = document.createElement("dd");
+        dd.textContent = value;
+        dl.appendChild(dt);
+        dl.appendChild(dd);
+      }
+    }
+
+    async function optionalVerify(data) {
+      if (!data.api) return;
+      const note = document.getElementById("verify-note");
+      note.textContent = " Calling verify API…";
+      try {
+        const res = await fetch(data.api, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            runId: data.run,
+            capsuleHash: data.capsule,
+            vowsHash: data.vows,
+            repo: data.repo,
+          }),
+        });
+        const body = await res.json().catch(() => ({}));
+        if (res.ok && body.valid !== false) {
+          setStatus("ok", "Params loaded — server verify OK");
+        } else {
+          setStatus("err", "Params loaded — server verify failed");
+        }
+      } catch {
+        setStatus("warn", "Params loaded — server verify unavailable");
+      } finally {
+        note.textContent = "";
+      }
+    }
+
+    const data = parseHashParams();
+    if (!data) {
+      setStatus("warn", "No receipt in link — open from a cockpit Receipt URL");
+    } else {
+      renderFields(data);
+      setStatus("ok", "Params loaded");
+      optionalVerify(data);
+    }
+  </script>
+</body>
+</html>

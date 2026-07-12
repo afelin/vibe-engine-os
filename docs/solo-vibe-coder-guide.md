@@ -18,6 +18,8 @@ For the business case and stakeholder framing, see [Plain-Language Briefing](./p
 | Add label `vibe/auto-merge` (optional) | Squash-merges the PR when all checks are green |
 | Or merge manually when checks are green | Leaves a **capsule** (tamper-proof receipt) under `.runs/<runId>/` |
 
+After a successful run, the cockpit comment includes a **Receipt link** — click **View proof** to open a read-only page showing the run id, capsule hash, vows hash, and repo. No terminal or MCP required to inspect the receipt; use MCP `validate_capsule` only if you want full local verification.
+
 **Built-in safety nets (no extra setup):**
 
 - **Mandates** — blocks forbidden areas (auth, workflows, secrets paths)

@@ -8,6 +8,10 @@ inputs:
     description: Repository root (default .)
     required: false
     default: "."
+  deploy_after_validate:
+    description: After capsule validation, echo deploy placeholder (wire OIDC in workflow)
+    required: false
+    default: "false"
 runs:
   using: composite
   steps:
@@ -18,3 +22,12 @@ runs:
         RUN_DIR="${{ inputs.run_dir }}"
         RUN_ID="$(basename "$RUN_DIR")"
         npm run gate:validate-capsule -- "${{ inputs.root_dir }}" "$RUN_ID"
+    - name: Deploy placeholder (opt-in)
+      if: ${{ inputs.deploy_after_validate == 'true' }}
+      shell: bash
+      working-directory: ${{ inputs.root_dir }}
+      run: |
+        RUN_DIR="${{ inputs.run_dir }}"
+        RUN_ID="$(basename "$RUN_DIR")"
+        echo "Deploy would run here for validated capsule $RUN_ID (not main tip)."
+        echo "Set vars.VIBE_DEPLOY=1 in forever.yml and wire Cloudflare Pages OIDC."

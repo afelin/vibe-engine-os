@@ -1,11 +1,31 @@
+import * as fs from "node:fs";
+import * as path from "node:path";
+import {
+  buildProofHpurl,
+  DEFAULT_PROOF_BASE,
+} from "../constitution/hpurl.js";
 import type { OSContext } from "../os/events.js";
 import { getVibeDepth, renderDepthStatus, type VibeDepth } from "../os/depth.js";
 import { readScoreboardEntries } from "../run/manifest.js";
+
+export function resolvePrUrl(rootDir = "."): string | undefined {
+  const fromEnv = process.env.VIBE_PR_URL?.trim();
+  if (fromEnv) return fromEnv;
+
+  const filePath = path.join(rootDir, ".runs", "pr-url.txt");
+  if (!fs.existsSync(filePath)) return undefined;
+
+  const value = fs.readFileSync(filePath, "utf8").trim();
+  return value || undefined;
+}
 
 export type CockpitManifest = {
   runId: string;
   vowsHash?: string;
   capsuleHash?: string;
+  repository?: string;
+  proofBase?: string;
+  prUrl?: string;
   metrics?: {
     firstPassGreen?: boolean;
     gateIdsFailed?: string[];
@@ -22,9 +42,13 @@ export function renderCockpitComment(
   manifest?: CockpitManifest,
 ) {
   const depth = (context.vibeDepth ?? getVibeDepth()) as VibeDepth;
+  const prUrl = manifest?.prUrl ?? resolvePrUrl(rootDir);
+
   return [
     "## Vibe Engine OS Cockpit",
     "",
+    prUrl ? `**PR:** [Open pull request](${prUrl})` : undefined,
+    prUrl ? "" : undefined,
     `**State:** ${state}`,
     `**Issue:** #${context.issueNumber} ${context.issueTitle}`,
     renderDepthStatus(depth),
@@ -37,9 +61,7 @@ export function renderCockpitComment(
     manifest?.vowsHash
       ? `**Vows:** \`sha256:${manifest.vowsHash}\``
       : undefined,
-    manifest?.capsuleHash
-      ? `**Validate:** MCP \`validate_capsule\` with run_id \`${manifest.runId}\``
-      : undefined,
+    renderReceiptLine(manifest),
     "",
     "### Changed Files",
     renderChangedFiles(context),
@@ -83,6 +105,29 @@ export function renderScoreboardSummary(rootDir = "."): string {
     `- **Avg duration:** ${avgDuration.toFixed(0)}ms`,
     `- **Tokens saved (est.):** ~${tokensSavedEstimate} (gate vs LLM path)`,
   ].join("\n");
+}
+
+function renderReceiptLine(manifest?: CockpitManifest): string | undefined {
+  if (!manifest?.capsuleHash || !manifest.vowsHash) return undefined;
+
+  const proofBase =
+    manifest.proofBase ??
+    process.env.VIBE_PROOF_BASE ??
+    DEFAULT_PROOF_BASE;
+  const repository =
+    manifest.repository ?? process.env.GITHUB_REPOSITORY ?? undefined;
+
+  const proofUrl = buildProofHpurl(proofBase, {
+    runId: manifest.runId,
+    capsuleHash: manifest.capsuleHash,
+    vowsHash: manifest.vowsHash,
+    repo: repository,
+  });
+
+  return [
+    `**Receipt:** [View proof](${proofUrl})`,
+    `Fallback: MCP \`validate_capsule\` with run_id \`${manifest.runId}\``,
+  ].join(" — ");
 }
 
 function renderChangedFiles(context: OSContext) {

@@ -2,7 +2,7 @@
 
 Sovereign AI dev cluster with a **headless xmachines Play constitution**: one Zod catalog for all law artifacts, `definePlayer` for promotion authority, and crawl-based CI proof that the OS machine matches `gates.json`.
 
-**New to vibe coding?** Start with the [Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md) (activation + daily workflow) and the [Plain-Language Briefing](docs/plain-language-briefing.md) (what it does, problems solved, and why it matters).
+**New to vibe coding?** Start with the [Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md) (activation + daily workflow) and the [Plain-Language Briefing](docs/plain-language-briefing.md) (what it does, problems solved, and why it matters). **No terminal?** See [Nocode Quickstart](docs/nocode-quickstart.md) — issue → PR → [receipt proof](proof/index.html).
 
 ## What it is
 
