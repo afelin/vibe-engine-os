@@ -25,23 +25,24 @@ Delivery idempotency: `src/os/idempotency.ts` key `event_name:delivery_id:issue_
 1. Create GitHub App from manifest (future PR).
 2. Install on org/repo.
 3. Replace `GITHUB_TOKEN` with app installation token in workflow.
-4. Enable branch protection: required check **Vibe Promotion Gate**.
+4. Enable branch protection: required checks **Vibe Promotion Gate** and **Audit Assisted-by attribution**.
 
 ## Current State (Tier 1)
 
 `src/publishing/github-checks.ts` posts Check Runs via REST with `GITHUB_TOKEN`.
 
-`npm run promote:apply` (wired in `.github/workflows/forever.yml` **vibe-promote** job) creates or updates a check named **Vibe Promotion Gate** on `GITHUB_SHA` after capsule validation and bond preflight.
+`npm run promote:apply` (wired in `.github/workflows/forever.yml` **vibe-promote** job) creates or updates a check named **Vibe Promotion Gate** on the pushed vibe-branch head SHA (`VIBE_HEAD_SHA`, falling back to `GITHUB_SHA`) after capsule validation and bond preflight.
 
 No App certification required for initial adoption.
 
 ## Required status check (branch protection)
 
-The check name to require on `main` is exactly:
+The check names to require on `main` are exactly:
 
-**`Vibe Promotion Gate`**
+1. **`Vibe Promotion Gate`**
+2. **`Audit Assisted-by attribution`**
 
-It is registered when a vibe run promotes successfully (`src/promote/apply-cli.ts` → `createOrUpdateCheckRun`). Until at least one promotion has run on a branch, the check may not appear in the branch-protection picker.
+**Vibe Promotion Gate** is registered when a vibe run promotes successfully (`src/promote/apply-cli.ts` → `createOrUpdateCheckRun`). **Audit Assisted-by attribution** comes from `.github/workflows/tdd-attribution.yml` on every PR to `main`. Until at least one run has executed on a branch, a check may not appear in the branch-protection picker.
 
 ### Manual setup for `afelin/vibe-engine-os` (GitHub UI)
 
@@ -49,7 +50,7 @@ Repo admin access is required; the REST API cannot set required checks without a
 
 1. Open **Settings → Branches** → **Branch protection rules** → **Add rule** (or edit existing rule for `main`).
 2. Enable **Require status checks to pass before merging**.
-3. Search for **`Vibe Promotion Gate`** and select it.
+3. Search for **`Vibe Promotion Gate`** and **`Audit Assisted-by attribution`**, and select both.
 4. Enable **Require branches to be up to date before merging** (recommended).
 5. Save the rule.
 
@@ -59,7 +60,7 @@ After the first successful `vibe-promote` run on a PR, the check appears on the 
 
 ```bash
 npm run gate:validate-capsule -- . <run_id>
-npm run promote:apply -- . <run_id>   # posts check when GITHUB_TOKEN + GITHUB_REPOSITORY + GITHUB_SHA are set
+npm run promote:apply -- . <run_id>   # posts check when GITHUB_TOKEN + GITHUB_REPOSITORY + VIBE_HEAD_SHA (or GITHUB_SHA) are set
 ```
 
 ## Ship-work nudge (no auto-run)

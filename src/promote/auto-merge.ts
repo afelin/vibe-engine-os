@@ -1,4 +1,5 @@
 import {
+  ATTRIBUTION_CHECK_NAME,
   PROMOTION_CHECK_NAME,
   parseRepository,
 } from "../publishing/github-checks.js";
@@ -63,6 +64,7 @@ export function requireAutoMergeLabel(
 export function evaluateMergeReadiness(
   pr: PullRequestSnapshot,
   promotionCheck: CheckRunSnapshot | null,
+  attributionCheck: CheckRunSnapshot | null,
 ): AutoMergeVerdict {
   if (pr.mergeable === false) {
     return {
@@ -92,6 +94,18 @@ export function evaluateMergeReadiness(
       prNumber: pr.number,
     };
   }
+  if (
+    !attributionCheck ||
+    attributionCheck.status !== "completed" ||
+    attributionCheck.conclusion !== "success"
+  ) {
+    return {
+      ok: false,
+      reason: "attribution_gate_not_green",
+      prUrl: pr.html_url,
+      prNumber: pr.number,
+    };
+  }
   return {
     ok: true,
     reason: "ready_to_merge",
@@ -104,6 +118,16 @@ export function pickPromotionCheck(
   checks: CheckRunSnapshot[],
 ): CheckRunSnapshot | null {
   return checks.find((check) => check.name === PROMOTION_CHECK_NAME) ?? null;
+}
+
+export function pickAttributionCheck(
+  checks: CheckRunSnapshot[],
+): CheckRunSnapshot | null {
+  return (
+    checks.find((check) => check.name === ATTRIBUTION_CHECK_NAME) ??
+    checks.find((check) => check.name === "attribution-audit") ??
+    null
+  );
 }
 
 type FetchFn = typeof fetch;
@@ -267,7 +291,11 @@ export async function attemptAutoMerge(
     parsed.repo,
     pr.head.sha,
   );
-  const readiness = evaluateMergeReadiness(pr, pickPromotionCheck(checks));
+  const readiness = evaluateMergeReadiness(
+    pr,
+    pickPromotionCheck(checks),
+    pickAttributionCheck(checks),
+  );
   if (!readiness.ok) return readiness;
 
   if (options.dryRun) {

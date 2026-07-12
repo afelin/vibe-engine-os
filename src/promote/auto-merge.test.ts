@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   AUTO_MERGE_LABEL,
   evaluateMergeReadiness,
+  pickAttributionCheck,
   pickPromotionCheck,
   requireAutoMergeLabel,
   type CheckRunSnapshot,
@@ -28,6 +29,12 @@ const greenPromotion: CheckRunSnapshot = {
   conclusion: "success",
 };
 
+const greenAttribution: CheckRunSnapshot = {
+  name: "Audit Assisted-by attribution",
+  status: "completed",
+  conclusion: "success",
+};
+
 describe("auto-merge policy", () => {
   it("requires the vibe/auto-merge label by default", () => {
     const verdict = requireAutoMergeLabel(samplePr({ labels: [] }), true);
@@ -50,17 +57,27 @@ describe("auto-merge policy", () => {
     const verdict = evaluateMergeReadiness(
       samplePr({ mergeable_state: "blocked" }),
       greenPromotion,
+      greenAttribution,
     );
     expect(verdict.reason).toBe("mergeable_state_blocked");
   });
 
   it("blocks when Vibe Promotion Gate is missing or not green", () => {
-    const verdict = evaluateMergeReadiness(samplePr(), null);
+    const verdict = evaluateMergeReadiness(samplePr(), null, greenAttribution);
     expect(verdict.reason).toBe("promotion_gate_not_green");
   });
 
-  it("allows merge when branch is clean and promotion gate succeeded", () => {
-    const verdict = evaluateMergeReadiness(samplePr(), greenPromotion);
+  it("blocks when attribution audit is missing or not green", () => {
+    const verdict = evaluateMergeReadiness(samplePr(), greenPromotion, null);
+    expect(verdict.reason).toBe("attribution_gate_not_green");
+  });
+
+  it("allows merge when branch is clean and both gates succeeded", () => {
+    const verdict = evaluateMergeReadiness(
+      samplePr(),
+      greenPromotion,
+      greenAttribution,
+    );
     expect(verdict).toMatchObject({ ok: true, reason: "ready_to_merge" });
   });
 
@@ -70,6 +87,21 @@ describe("auto-merge policy", () => {
       greenPromotion,
     ]);
     expect(picked?.name).toBe("Vibe Promotion Gate");
+  });
+
+  it("selects the attribution audit check by name", () => {
+    const picked = pickAttributionCheck([
+      { name: "lint", status: "completed", conclusion: "success" },
+      greenAttribution,
+    ]);
+    expect(picked?.name).toBe("Audit Assisted-by attribution");
+  });
+
+  it("falls back to legacy attribution-audit job name", () => {
+    const picked = pickAttributionCheck([
+      { name: "attribution-audit", status: "completed", conclusion: "success" },
+    ]);
+    expect(picked?.name).toBe("attribution-audit");
   });
 });
 
@@ -82,7 +114,7 @@ describe("attemptAutoMerge integration", () => {
         return Response.json(samplePr({ number: 42 }));
       }
       if (url.includes("/check-runs")) {
-        return Response.json({ check_runs: [greenPromotion] });
+        return Response.json({ check_runs: [greenPromotion, greenAttribution] });
       }
       if (url.endsWith("/merge")) {
         throw new Error("should not merge in dry run");

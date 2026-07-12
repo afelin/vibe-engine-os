@@ -3,6 +3,31 @@ import * as path from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("GitHub Actions workflow", () => {
+  it("reads run id from artifact metadata instead of ls", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/forever.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain(".runs/run-id.txt");
+    expect(workflow).not.toContain("grep -v idempotency");
+  });
+
+  it("posts promotion gate on pushed branch head sha", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/forever.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain("Post promotion gate on branch head");
+    expect(workflow).toContain("VIBE_HEAD_SHA=$(git rev-parse HEAD)");
+    expect(workflow).toContain("VIBE_SKIP_CHECK");
+    expect(workflow).toContain("VIBE_CHECK_ONLY");
+    expect(workflow.indexOf("git rev-parse HEAD")).toBeLessThan(
+      workflow.indexOf("Post promotion gate on branch head"),
+    );
+  });
+
   it("installs project dependencies before running the agent", () => {
     const workflow = fs.readFileSync(
       path.join(process.cwd(), ".github/workflows/forever.yml"),
@@ -162,6 +187,7 @@ describe("GitHub Actions workflow", () => {
     expect(workflow).toContain("branches: [main]");
     expect(workflow).toContain("scripts/audit-attribution.mjs");
     expect(workflow).toContain("fetch-depth: 0");
+    expect(workflow).toContain("name: Audit Assisted-by attribution");
   });
 
   it("self-attributes engine-generated promotion commits", () => {

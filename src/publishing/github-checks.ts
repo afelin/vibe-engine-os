@@ -23,6 +23,7 @@ export type CheckRunResult = {
 };
 
 export const PROMOTION_CHECK_NAME = "Vibe Promotion Gate";
+export const ATTRIBUTION_CHECK_NAME = "Audit Assisted-by attribution";
 
 const DEFAULT_NAME = PROMOTION_CHECK_NAME;
 

@@ -120,7 +120,7 @@ Opt-in autonomous squash merge when CI is green:
 - **Label:** `vibe/auto-merge` on the PR (default — per-PR opt-in)
 - **Repo variable:** `VIBE_AUTO_MERGE=1` skips the label requirement
 - **Workflow:** `.github/workflows/vibe-auto-merge.yml` (triggers on PR updates + `check_suite: completed`)
-- **Gate:** requires `mergeable_state: clean` and successful **Vibe Promotion Gate** on the PR head SHA
+- **Gate:** requires `mergeable_state: clean`, successful **Vibe Promotion Gate**, and **Audit Assisted-by attribution** on the PR head SHA
 - **CLI:** `npm run pr:auto-merge -- <pr_number> [--dry-run]` or `--sha <commit>`
 
 Cursor skill: `.cursor/skills/vibe-auto-merge`

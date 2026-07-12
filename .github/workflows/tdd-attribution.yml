@@ -9,6 +9,7 @@ permissions:
 
 jobs:
   attribution-audit:
+    name: Audit Assisted-by attribution
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
