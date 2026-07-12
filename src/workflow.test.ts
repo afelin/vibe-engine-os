@@ -127,6 +127,17 @@ describe("GitHub Actions workflow", () => {
     );
   });
 
+  it("defaults subgraph vitest for depth >= 3 in CI", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/forever.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain("VIBE_TEST_MODE=subgraph");
+    expect(workflow).toContain('if [ "$DEPTH" -ge 3 ]');
+    expect(workflow).toContain("vibe:ship");
+  });
+
   it("uses structured gate failure feedback in the runtime ratchet", () => {
     const runSource = fs.readFileSync(
       path.join(process.cwd(), "src/os/run.ts"),

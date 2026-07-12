@@ -76,7 +76,7 @@ Set `VIBE_DEPTH` in the environment before `npm run local-issue` or GitHub Actio
 
 ## MCP in Cursor
 
-Add `mcp.json` to Cursor settings (already in repo root):
+Repo root ships `mcp.json`. For project-scoped MCP in Cursor, copy or symlink to `.cursor/mcp.json` (already committed in this repo):
 
 ```json
 {
@@ -89,7 +89,35 @@ Add `mcp.json` to Cursor settings (already in repo root):
 }
 ```
 
+**Enable in Cursor:** Settings → MCP → ensure `vibe-release-gates` is on. Run from repo root so `npx tsx src/release-gate/mcp.ts` resolves.
+
 Use `constitution_schemas` for HPURL-ready JSON Schema and `validate_capsule` to verify a local run bundle.
+
+## Solo autopilot checklist
+
+1. `npm run activate` on `main`
+2. Enable MCP (`mcp.json` / `.cursor/mcp.json`) + `.cursor/skills/vibe-engine`
+3. Open a [Vibe Request](.github/ISSUE_TEMPLATE/vibe-request.yml) issue with **2–4 bound file paths**, intent, and outcome
+4. Add label `vibe/run` (and `vibe:ship` for deploy depth)
+5. Watch **Sovereign OS Event Bus** workflow; green **Vibe Promotion Gate** on the PR
+6. Operator: `/status`, `/approve` (protected paths), `/retry`, `/rollback` via issue comments
+
+Daily local runs at depth ≥ 3 default to `VIBE_TEST_MODE=subgraph` (changed-file vitest). Override with `VIBE_TEST_MODE=full` for full-suite parity.
+
+## TabDab / Lovable profile
+
+For [tabdab-link-proof](https://github.com/afelin/tabdab-link-proof) or other Lovable apps:
+
+```bash
+# In target repo after install:
+cp .env.example .env   # set VIBE_PROJECT_PROFILE=tabdab
+
+# Or install vibe-engine-os layer into an existing repo:
+bash runs/install-into-repo.sh /path/to/tabdab-link-proof
+cd /path/to/tabdab-link-proof && npm install && npm run activate
+```
+
+`VIBE_PROJECT_PROFILE=tabdab` merges allowed prefixes from `src/policy/profiles/tabdab.json`.
 
 ## Run capsule layout
 

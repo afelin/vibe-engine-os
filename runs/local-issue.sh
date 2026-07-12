@@ -8,6 +8,21 @@ export ISSUE_BODY="${ISSUE_BODY:-Run local Vibe Engine smoke path.}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+# Default subgraph vitest for depth ≥ 3 daily runs (override with VIBE_TEST_MODE=full)
+if [ -z "${VIBE_TEST_MODE:-}" ]; then
+  LABELS_LOWER=$(echo "${VIBE_LABELS:-}" | tr '[:upper:]' '[:lower:]')
+  DEPTH="${VIBE_DEPTH:-3}"
+  if echo "$LABELS_LOWER" | grep -q "vibe:plan-only"; then DEPTH=1; fi
+  if echo "$LABELS_LOWER" | grep -q "vibe:safe"; then DEPTH=2; fi
+  if echo "$LABELS_LOWER" | grep -q "vibe:ship"; then DEPTH=4; fi
+  if [ "$DEPTH" -ge 3 ] 2>/dev/null; then
+    export VIBE_TEST_MODE=subgraph
+  else
+    export VIBE_TEST_MODE=full
+  fi
+  echo "⚡ VIBE_TEST_MODE=$VIBE_TEST_MODE (depth=$DEPTH)"
+fi
+
 if npx tsx <<'TS'
 import { resolveReleaseGatePatch } from "./src/release-gate/resolve.js";
 

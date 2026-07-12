@@ -101,7 +101,17 @@ jobs:
           echo "GITHUB_SHA=${{ github.sha }}" >> "$GITHUB_ENV"
           echo "GITHUB_RUN_ID=${{ github.run_id }}" >> "$GITHUB_ENV"
           echo "GITHUB_DELIVERY_ID=${{ github.event.delivery_id || github.run_id }}" >> "$GITHUB_ENV"
-          echo "VIBE_TEST_MODE=full" >> "$GITHUB_ENV"
+
+          LABELS_LOWER=$(echo "$ISSUE_LABELS" | tr '[:upper:]' '[:lower:]')
+          DEPTH="${VIBE_DEPTH:-3}"
+          if echo "$LABELS_LOWER" | grep -q "vibe:plan-only"; then DEPTH=1; fi
+          if echo "$LABELS_LOWER" | grep -q "vibe:safe"; then DEPTH=2; fi
+          if echo "$LABELS_LOWER" | grep -q "vibe:ship"; then DEPTH=4; fi
+          if [ "$DEPTH" -ge 3 ] 2>/dev/null; then
+            echo "VIBE_TEST_MODE=subgraph" >> "$GITHUB_ENV"
+          else
+            echo "VIBE_TEST_MODE=full" >> "$GITHUB_ENV"
+          fi
 
           if [ "${{ github.event_name }}" == "issue_comment" ]; then
             echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV

@@ -52,6 +52,9 @@ async function runOS() {
       commentId: GITHUB_COMMENT_ID,
       state: "operator_command",
       rootDir: ".",
+      labels: process.env.VIBE_LABELS,
+      repository: process.env.GITHUB_REPOSITORY,
+      hasBond: fs.existsSync(path.join(".runs", "bonds", `issue-${ISSUE_NUMBER}.bond.json`)),
       context: {
         issueNumber: ISSUE_NUMBER,
         issueTitle: ISSUE_TITLE,

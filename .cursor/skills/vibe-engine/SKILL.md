@@ -23,6 +23,7 @@ Operator commands (`/approve`, `/retry`, `/rollback`) override agent proposals.
 - Proposing `src/auth/session.ts` → `evaluate_mandate` returns `{ ok: false, reason: "forbidden_prefix" }`; stop and report.
 - Proposing `package.json` → `evaluate_mandate` returns `{ ok: true, requiresApproval: true }`; request operator `/approve` before write.
 - Planner JSON → validate against `ExecutionDag` schema before codegen.
+- Chat or PR comment with 2+ `src/` paths and ship verbs → engine nudges a Vibe Request issue; does not auto-run without `vibe/run`.
 
 ## Performance Notes
 

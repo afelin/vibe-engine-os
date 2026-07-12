@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "vibe-release-gates": {
+      "command": "npx",
+      "args": ["tsx", "src/release-gate/mcp.ts"]
+    }
+  }
+}
