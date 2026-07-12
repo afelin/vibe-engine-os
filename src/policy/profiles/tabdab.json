@@ -1,0 +1,40 @@
+{
+  "name": "tabdab",
+  "description": "Lovable React app (TabDab) — synced from afelin/tabdab-link-proof",
+  "repo_url": "https://github.com/afelin/tabdab-link-proof",
+  "allowed_file_prefixes": [
+    "src/",
+    "tests/",
+    "src/components/",
+    "src/pages/",
+    "src/hooks/",
+    "src/lib/",
+    "src/integrations/",
+    "src/services/",
+    "src/contexts/",
+    "src/types/",
+    "src/data/",
+    "src/themes/",
+    "src/test/",
+    "supabase/",
+    "supabase/functions/",
+    "supabase/migrations/",
+    "scripts/",
+    "evals/",
+    "packages/",
+    "packages/tabdab-agent/",
+    "vite-plugins/"
+  ],
+  "suggested_bound_prefixes": [
+    "src/components/",
+    "src/pages/",
+    "src/hooks/",
+    "src/lib/mandate/",
+    "src/lib/copilot/",
+    "supabase/functions/",
+    "supabase/migrations/"
+  ],
+  "require_approval_prefixes_extra": [
+    "supabase/functions/_shared/agentGuard.ts"
+  ]
+}

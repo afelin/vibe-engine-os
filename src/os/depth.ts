@@ -21,12 +21,31 @@ const DEPTH_LABELS: Record<VibeDepth, string> = {
 };
 
 export function getVibeDepth(env: NodeJS.ProcessEnv = process.env): VibeDepth {
+  const fromLabels = resolveDepthFromLabels(env.VIBE_LABELS);
+  if (fromLabels !== null) return fromLabels;
+
   const raw = env.VIBE_DEPTH ?? "3";
   const parsed = Number(raw);
   if (Number.isInteger(parsed) && parsed >= 0 && parsed <= 5) {
     return parsed as VibeDepth;
   }
   return 3;
+}
+
+export function resolveDepthFromLabels(
+  labelsRaw?: string,
+): VibeDepth | null {
+  if (!labelsRaw?.trim()) return null;
+
+  const labels = labelsRaw
+    .split(",")
+    .map((label) => label.trim().toLowerCase())
+    .filter(Boolean);
+
+  if (labels.includes("vibe:plan-only")) return 1;
+  if (labels.includes("vibe:safe")) return 2;
+  if (labels.includes("vibe:ship")) return 4;
+  return null;
 }
 
 export function depthCapabilities(depth: VibeDepth): DepthCapabilities {

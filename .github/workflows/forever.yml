@@ -14,42 +14,77 @@ permissions:
   contents: write
   issues: write
   pull-requests: write
+  checks: write
 
 concurrency:
   group: os-thread-${{ github.event.issue.number || github.event.pull_request.number }}
   cancel-in-progress: false
 
 jobs:
-  run-os:
+  gate-check:
     runs-on: ubuntu-latest
     if: ${{ !github.event.sender.bot }}
-    
+    outputs:
+      should_run: ${{ steps.label_gate.outputs.should_run }}
+      issue_number: ${{ steps.context.outputs.issue_number }}
     steps:
-      - name: 📥 Checkout Codebase
+      - name: Label gate
+        id: label_gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ISSUE_LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          REVIEW_BODY: ${{ github.event.review.body }}
+        run: |
+          SHOULD_RUN=0
+          LABELS_LOWER=$(echo "$ISSUE_LABELS" | tr '[:upper:]' '[:lower:]')
+          BODY="$ISSUE_BODY"
+          if [ "$EVENT_NAME" = "issue_comment" ]; then BODY="$COMMENT_BODY"; fi
+          if [ "$EVENT_NAME" = "pull_request_review" ] || [ "$EVENT_NAME" = "pull_request_review_comment" ]; then
+            BODY="${REVIEW_BODY:-$BODY}"
+          fi
+          if echo "$LABELS_LOWER" | grep -q "vibe/run"; then SHOULD_RUN=1; fi
+          if echo "$BODY" | grep -q "/vibe"; then SHOULD_RUN=1; fi
+          if echo "$BODY" | grep -Eq '^/(plan|approve|retry|rollback|status|deploy)'; then SHOULD_RUN=1; fi
+          if [ "$EVENT_NAME" = "pull_request_review" ] || [ "$EVENT_NAME" = "pull_request_review_comment" ]; then SHOULD_RUN=1; fi
+          echo "should_run=$SHOULD_RUN" >> "$GITHUB_OUTPUT"
+
+      - name: Context outputs
+        id: context
+        run: |
+          echo "issue_number=${{ github.event.issue.number || github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+
+  vibe-run:
+    needs: gate-check
+    if: ${{ needs.gate-check.outputs.should_run == '1' && !github.event.sender.bot }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: ⚡ Ultra-Fast Runtime (Bun)
+      - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
 
-      - name: 📦 Install Project Dependencies
+      - name: Install dependencies
         run: bun install
 
-      - name: 📦 Install System Utilities (Cached)
+      - name: Install utilities
         run: bun install -g repomix typescript vitest wrangler
 
-      - name: 🗺️ Map Global State
+      - name: Repomix
         run: repomix --output repomix-output.txt
 
-      - name: 🔀 Route Event Context (Multi-line Safe)
-        id: context
+      - name: Route event context
         env:
           BODY_ISSUE: ${{ github.event.issue.body }}
           BODY_COMMENT: ${{ github.event.comment.body }}
           BODY_REVIEW: ${{ github.event.review.body }}
+          ISSUE_LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}
         run: |
           write_env_multiline() {
             local name="$1"
@@ -61,6 +96,12 @@ jobs:
               echo "${delimiter}"
             } >> "$GITHUB_ENV"
           }
+
+          echo "VIBE_LABELS=$ISSUE_LABELS" >> "$GITHUB_ENV"
+          echo "GITHUB_SHA=${{ github.sha }}" >> "$GITHUB_ENV"
+          echo "GITHUB_RUN_ID=${{ github.run_id }}" >> "$GITHUB_ENV"
+          echo "GITHUB_DELIVERY_ID=${{ github.event.delivery_id || github.run_id }}" >> "$GITHUB_ENV"
+          echo "VIBE_TEST_MODE=full" >> "$GITHUB_ENV"
 
           if [ "${{ github.event_name }}" == "issue_comment" ]; then
             echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
@@ -88,78 +129,95 @@ jobs:
             write_env_multiline "ISSUE_BODY" "$BODY_ISSUE"
           fi
 
-      - name: 🧠 Fire AI Inference Ratchet (agent.ts)
+      - name: Run agent
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_COMMENT_ID: ${{ github.event.comment.id || github.event.review.id || github.run_id }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           GH_MODELS_TOKEN: ${{ secrets.GH_MODELS_TOKEN }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          VIBE_APPROVERS: ${{ secrets.VIBE_APPROVERS }}
         run: bun run agent.ts
 
-      - name: 🧹 Hardware-Accelerated Formatting (oxlint & oxfmt)
+      - name: Upload run artifact
         if: ${{ env.VIBE_OPERATOR_ONLY != '1' }}
-        continue-on-error: true
-        run: |
-          bunx oxlint@latest --fix
-          bunx oxfmt@latest -w .
+        uses: actions/upload-artifact@v4
+        with:
+          name: vibe-runs-${{ github.run_id }}
+          path: .runs/
+          if-no-files-found: ignore
 
-      - name: 🚀 Deploy Vibe Blueprint to Cloudflare Edge
-        if: ${{ env.VIBE_OPERATOR_ONLY != '1' && (env.VIBE_APPROVAL_REQUIRED != '1' || env.APPROVED_BY != '') }}
-        id: deploy
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+  vibe-promote:
+    needs: [gate-check, vibe-run]
+    if: ${{ needs.vibe-run.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Download run artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: vibe-runs-${{ github.run_id }}
+          path: .runs/
+
+      - name: Validate capsule
         run: |
-          # Safe Edge deployment execution block via Wrangler CLI
-          if [ ! -z "$CLOUDFLARE_API_TOKEN" ]; then
-            # We add '|| true' so a Cloudflare failure doesn't crash the PR handoff
-            OUTPUT=$(bunx wrangler pages deploy . --project-name="vibe-engine-os" --branch="vibe/issue-${{ env.ISSUE_NUMBER }}" 2>&1) || true
-            
-            # Extract the preview URL safely
-            PREVIEW_URL=$(echo "$OUTPUT" | grep -oE "https://[a-zA-Z0-9.-]+\.pages\.dev" | head -1)
-            
-            if [ -z "$PREVIEW_URL" ]; then
-              echo "PREVIEW_URL=cloudflare-failed.local" >> $GITHUB_ENV
-              echo "⚠️ Cloudflare deploy failed. Ensure the project 'vibe-engine-os' is created in your CF Dashboard."
-            else
-              echo "PREVIEW_URL=$PREVIEW_URL" >> $GITHUB_ENV
-            fi
+          RUN_ID=$(ls .runs 2>/dev/null | grep -v idempotency | grep -v scoreboard | grep -v research | grep -v approvals | grep -v bonds | grep -v gauntlet | head -1 || true)
+          if [ -n "$RUN_ID" ] && [ -f ".runs/$RUN_ID/manifest.json" ]; then
+            npm run gate:validate-capsule -- . "$RUN_ID"
+            echo "RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
           else
-            echo "PREVIEW_URL=https://cloudflare-preview-not-configured.local" >> $GITHUB_ENV
+            echo "No run capsule to validate"
           fi
 
-      - name: 🔄 Smart Git Sync & PR Handoff
-        if: ${{ env.VIBE_OPERATOR_ONLY != '1' && (env.VIBE_APPROVAL_REQUIRED != '1' || env.APPROVED_BY != '') }}
+      - name: Bond preflight
+        if: ${{ env.RUN_ID != '' }}
+        env:
+          ISSUE_NUMBER: ${{ needs.gate-check.outputs.issue_number }}
+          RUN_ID: ${{ env.RUN_ID }}
+        run: npm run bond:preflight -- . "$ISSUE_NUMBER" "$RUN_ID"
+
+      - name: Apply promotion bundle
+        if: ${{ env.RUN_ID != '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: npm run promote:apply -- . "$RUN_ID"
+
+      - name: Format
+        continue-on-error: true
+        run: |
+          bunx oxlint@latest --fix || true
+          bunx oxfmt@latest -w . || true
+
+      - name: Git sync and PR
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --global user.name "Vibe Engine OS"
           git config --global user.email "ai@vibe-engine.local"
-          
-          BRANCH_NAME="vibe/issue-${{ env.ISSUE_NUMBER }}"
-          git checkout $BRANCH_NAME || git checkout -b $BRANCH_NAME
-
-          if [ -n "${GENERATED_FILES:-}" ]; then
-            while IFS= read -r file; do
-              [ -n "$file" ] && git add "$file"
-            done <<< "$GENERATED_FILES"
-          else
-            git add src/ tests/ .planning/ .skills/
+          BRANCH_NAME="vibe/issue-${{ needs.gate-check.outputs.issue_number }}"
+          git checkout "$BRANCH_NAME" || git checkout -b "$BRANCH_NAME"
+          if [ -n "${RUN_ID:-}" ] && [ -f ".runs/$RUN_ID/manifest.json" ]; then
+            while IFS= read -r file_path; do
+              if [ -n "$file_path" ] && [ -f "$file_path" ]; then
+                git add "$file_path"
+              fi
+            done < <(node -e "JSON.parse(require('fs').readFileSync('.runs/$RUN_ID/manifest.json','utf8')).generatedFiles.forEach(f=>console.log(f))")
           fi
-
-          git commit -m "feat(ai): causal compilation & edge deployment for #${{ env.ISSUE_NUMBER }}" || echo "No changes to commit"
-          git push origin $BRANCH_NAME || git push --set-upstream origin $BRANCH_NAME
-          
-          gh pr create \
-            --title "🚀 Vibe Compilation: ${{ env.ISSUE_TITLE }}" \
-            --body "Autonomous xmachines compilation complete. Evaluated via Vitest. Formatted via Oxlint.
-            
-            🌐 **Live Edge Preview URL:** ${{ env.PREVIEW_URL }}
-            
-            Closes #${{ env.ISSUE_NUMBER }}" \
-            --base main \
-            --head $BRANCH_NAME || echo "PR already exists, updated in place."
+          git commit -m "feat(ai): promotion for #${{ needs.gate-check.outputs.issue_number }}" || echo "No changes"
+          git push origin "$BRANCH_NAME" || git push --set-upstream origin "$BRANCH_NAME" || true

@@ -4,6 +4,7 @@ import {
   validateEsmImportExtensions,
   validateFilePolicy,
   validateNoPathTraversal,
+  validateNoSecrets,
   validateProtectedFiles,
 } from "./validators.js";
 
@@ -79,5 +80,22 @@ describe("deterministic validators", () => {
     ]);
 
     expect(normalized[0]?.content).toContain('./main.js"');
+  });
+
+  it("flags secret-like patterns in generated files", () => {
+    const result = validateNoSecrets([
+      { path: "src/config.ts", content: 'export const key = "ghp_1234567890123456789012345678901234";' },
+    ]);
+
+    expect(result.passed).toBe(false);
+    expect(result.output).toContain("github_token");
+  });
+
+  it("passes clean generated files through secret scan", () => {
+    const result = validateNoSecrets([
+      { path: "src/index.ts", content: "export const ok = true;\n" },
+    ]);
+
+    expect(result.passed).toBe(true);
   });
 });

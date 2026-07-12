@@ -18,21 +18,62 @@ const context: OSContext = {
 
 describe("GitHub comment router", () => {
   it("routes /approve into an approval event and acknowledgement", () => {
-    const result = routeGitHubComment({
-      body: "/approve",
-      actor: "alice",
-      commentId: "comment-1",
-      state: "awaiting_approval",
-      context,
-      readRollback: () => ({ found: false, body: "missing" }),
-    });
+    const previous = process.env.GITHUB_ACTIONS;
+    const previousApprovers = process.env.VIBE_APPROVERS;
+    delete process.env.GITHUB_ACTIONS;
+    delete process.env.VIBE_APPROVERS;
 
-    expect(result.event).toEqual({
-      type: "approval.granted",
-      actor: "alice",
-      commentId: "comment-1",
-    });
-    expect(result.responseBody).toContain("Approval received");
+    try {
+      const result = routeGitHubComment({
+        body: "/approve",
+        actor: "afelin",
+        commentId: "comment-1",
+        state: "awaiting_approval",
+        rootDir: ".",
+        context,
+        readRollback: () => ({ found: false, body: "missing" }),
+      });
+
+      expect(result.event).toEqual({
+        type: "approval.granted",
+        actor: "afelin",
+        commentId: "comment-1",
+      });
+      expect(result.responseBody).toContain("Approval received");
+    } finally {
+      if (previous === undefined) delete process.env.GITHUB_ACTIONS;
+      else process.env.GITHUB_ACTIONS = previous;
+      if (previousApprovers === undefined) delete process.env.VIBE_APPROVERS;
+      else process.env.VIBE_APPROVERS = previousApprovers;
+    }
+  });
+
+  it("denies /approve from actors outside the allowlist in CI", () => {
+    const previous = process.env.GITHUB_ACTIONS;
+    const previousApprovers = process.env.VIBE_APPROVERS;
+    process.env.GITHUB_ACTIONS = "true";
+    process.env.VIBE_APPROVERS = "trusted-operator";
+
+    try {
+      const result = routeGitHubComment({
+        body: "/approve",
+        actor: "alice",
+        commentId: "comment-deny",
+        state: "awaiting_approval",
+        rootDir: ".",
+        context,
+        readRollback: () => ({ found: false, body: "missing" }),
+      });
+
+      expect(result.handled).toBe(true);
+      expect(result.event).toBeNull();
+      expect(result.responseBody).toContain("Approval denied");
+    } finally {
+      if (previous === undefined) delete process.env.GITHUB_ACTIONS;
+      else process.env.GITHUB_ACTIONS = previous;
+      if (previousApprovers === undefined) delete process.env.VIBE_APPROVERS;
+      else process.env.VIBE_APPROVERS = previousApprovers;
+    }
   });
 
   it("routes /status to a cockpit projection", () => {

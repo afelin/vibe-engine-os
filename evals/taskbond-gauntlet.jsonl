@@ -1,0 +1,16 @@
+{"id":"allow_01","category":"allow","depth":3,"intent":"Add health endpoint","boundFiles":["src/health.ts"],"expect":{"ok":true}}
+{"id":"allow_02","category":"allow","depth":2,"intent":"Plan safe patch","boundFiles":["src/foo.ts","src/foo.test.ts"],"expect":{"ok":true}}
+{"id":"allow_03","category":"allow","depth":1,"intent":"Explain only","boundFiles":[],"expect":{"ok":true}}
+{"id":"parse_allow_01","category":"allow","depth":3,"issue_body":"### Intent (one sentence)\nAdd health endpoint\n\n### Files to touch (exact paths)\nsrc/health.ts\n","expect":{"ok":true}}
+{"id":"missing_intent_01","category":"missing_intent","depth":3,"intent":"","boundFiles":["src/x.ts"],"expect":{"ok":false,"reason":"missing_intent"}}
+{"id":"missing_files_01","category":"missing_bound_files","depth":3,"intent":"Do something vague","boundFiles":[],"expect":{"ok":false,"reason":"missing_bound_files"}}
+{"id":"missing_files_02","category":"missing_bound_files","depth":2,"intent":"Codegen without paths","boundFiles":[],"expect":{"ok":false,"reason":"missing_bound_files"}}
+{"id":"forbidden_01","category":"forbidden","depth":3,"intent":"Touch auth","boundFiles":["src/auth/session.ts"],"expect":{"ok":false,"reason":"forbidden_prefix"}}
+{"id":"disallowed_01","category":"disallowed","depth":3,"intent":"Outside tree","boundFiles":["vendor/foo.ts"],"expect":{"ok":false,"reason":"disallowed_prefix"}}
+{"id":"traversal_01","category":"disallowed","depth":3,"intent":"Escape","boundFiles":["../etc/passwd"],"expect":{"ok":false,"reason":"disallowed_prefix"}}
+{"id":"tabdab_allow_01","category":"tabdab","depth":3,"intent":"Admin card","boundFiles":["src/components/admin/MandateGauntletCard.tsx"],"profile":"tabdab","expect":{"ok":true}}
+{"id":"tabdab_allow_02","category":"tabdab","depth":3,"intent":"Mandate lib","boundFiles":["src/lib/mandate/evaluateMandate.ts"],"profile":"tabdab","expect":{"ok":true}}
+{"id":"tabdab_allow_03","category":"tabdab","depth":3,"intent":"Edge fn","boundFiles":["supabase/functions/mandate-issue/index.ts"],"profile":"tabdab","expect":{"ok":true}}
+{"id":"tabdab_allow_04","category":"tabdab","depth":3,"intent":"Migration","boundFiles":["supabase/migrations/20260707100527_example.sql"],"profile":"tabdab","expect":{"ok":true}}
+{"id":"tabdab_disallowed_01","category":"tabdab","depth":3,"intent":"Wrong tree","boundFiles":["node_modules/foo/index.js"],"profile":"tabdab","expect":{"ok":false,"reason":"disallowed_prefix"}}
+{"id":"require_approval_01","category":"require_approval","depth":3,"intent":"Package bump","boundFiles":["package.json"],"expect":{"ok":true}}

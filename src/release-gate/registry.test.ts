@@ -8,11 +8,11 @@ import {
 
 describe("release gate registry", () => {
   it("loads the built-in smoke gates from gates.json", () => {
-    expect(listReleaseGateIds()).toEqual([
-      "cloud-loop-smoke",
-      "pr-review-smoke",
-    ]);
-    expect(loadReleaseGates()).toHaveLength(2);
+    const ids = listReleaseGateIds();
+    expect(ids).toContain("cloud-loop-smoke");
+    expect(ids).toContain("pr-review-smoke");
+    expect(ids).toContain("add-unit-test");
+    expect(loadReleaseGates().length).toBeGreaterThanOrEqual(10);
   });
 
   it("expands smokeTest file specs into vitest modules", () => {
@@ -31,6 +31,13 @@ describe("release gate registry", () => {
       resolveGateFromRegistry(
         "Release gate: V1 cloud loop smoke primitive",
         "Create src/cloud-loop-smoke.ts and src/cloud-loop-smoke.test.ts",
+      )?.id,
+    ).toBe("cloud-loop-smoke");
+
+    expect(
+      resolveGateFromRegistry(
+        "cloud loop",
+        "src/cloud-loop-smoke.ts src/cloud-loop-smoke.test.ts",
       )?.id,
     ).toBe("cloud-loop-smoke");
 

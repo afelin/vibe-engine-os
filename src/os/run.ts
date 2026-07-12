@@ -1,13 +1,13 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { execSync } from "node:child_process";
-import { createActor } from "xstate";
 import {
   collectPlannedFiles,
   parsePlannerDag,
   resolveRiskReview,
   riskForFiles,
   topologicalSort,
+  validateAndParseDag,
   validateDag,
 } from "../planning/dag.js";
 import { evaluateMandates, loadMandates } from "../policy/evaluate.js";
@@ -22,7 +22,14 @@ import {
   prepareGeneratedPatch,
   runGeneratedPatchValidators,
 } from "../verification/pipeline.js";
-import { createInitialOSContext, createOSMachine } from "./machine.js";
+import { createInitialOSContext } from "./machine.js";
+import {
+  createOSPlayer,
+  getPersistedSnapshot,
+  isTerminalSnapshot,
+  type OSPlayer,
+  type OSPlayerSnapshot,
+} from "./player.js";
 import { depthCapabilities, getVibeDepth } from "./depth.js";
 import {
   appendTraceSpan,
@@ -38,9 +45,27 @@ import type {
 } from "./events.js";
 import {
   appendScoreboardEntry,
+  readActorSnapshot,
   type RunManifest,
   type RunMetrics,
+  writeActorSnapshot,
 } from "../run/manifest.js";
+import { buildScopedRepomix } from "../context/scoped-repomix.js";
+import {
+  buildVitestSubgraphCommand,
+  mapChangedFilesToVitest,
+} from "../verification/subgraph.js";
+import { computeVowsHash } from "../constitution/vows.js";
+import {
+  computeCapsuleHash,
+  readTraceTail,
+  writeCapsuleHash,
+} from "../constitution/capsule.js";
+import { readPersistedApproval } from "./approval-store.js";
+import { sanitizeRunId } from "../run/paths.js";
+import { sha256Content } from "../run/promotion.js";
+import { sealTaskBond, type TaskBond } from "../bond/seal.js";
+import { readTaskBond, writeTaskBond } from "../bond/store.js";
 
 export type RunInput = {
   issueNumber: string;
@@ -85,53 +110,78 @@ export type RunDeps = {
   restoreBackups: (backups: Map<string, string | null>) => void;
   runTsc: () => void;
   runVitest: () => void;
+  runVitestSubgraph?: (changedPaths: string[]) => void;
   appendEvoMem: (content: string) => void;
   writeCriticFailed: (content: string) => void;
 };
 
-function defaultDeps(): RunDeps {
+function defaultDeps(rootDir = "."): RunDeps {
   return {
     callOpenAI: callOpenAIFormat,
     callGemini: callGeminiFormat,
     getGitValue,
     readConstitution: () => {
-      const constitutionPath = fs.existsSync("AGENTS.md") ? "AGENTS.md" : "agent.md";
+      const agentsPath = path.join(rootDir, "AGENTS.md");
+      const agentPath = path.join(rootDir, "agent.md");
+      const constitutionPath = fs.existsSync(agentsPath)
+        ? agentsPath
+        : agentPath;
       return fs.readFileSync(constitutionPath, "utf8");
     },
-    readRepoContext: () =>
-      fs.existsSync("repomix-output.txt")
-        ? fs.readFileSync("repomix-output.txt", "utf8")
-        : "Repository is currently empty.",
-    readEvoMem: () =>
-      fs.existsSync("EVOMEM.md") ? fs.readFileSync("EVOMEM.md", "utf8") : "",
+    readRepoContext: () => {
+      const repomixPath = path.join(rootDir, "repomix-output.txt");
+      return fs.existsSync(repomixPath)
+        ? fs.readFileSync(repomixPath, "utf8")
+        : "Repository is currently empty.";
+    },
+    readEvoMem: () => {
+      const evoPath = path.join(rootDir, "EVOMEM.md");
+      return fs.existsSync(evoPath) ? fs.readFileSync(evoPath, "utf8") : "";
+    },
     writePlan: (issueNumber, plan) => {
-      const planDir = ".planning/milestones";
+      const planDir = path.join(rootDir, ".planning/milestones");
       if (!fs.existsSync(planDir)) fs.mkdirSync(planDir, { recursive: true });
       fs.writeFileSync(path.join(planDir, `ISSUE_${issueNumber}_PLAN.md`), plan);
     },
-    writeFilesToDisk,
+    writeFilesToDisk: (files) => writeFilesToDisk(files, rootDir),
     restoreBackups,
     runTsc: () => {
-      if (fs.existsSync("tsconfig.json")) {
-        execSync("npx tsc --noEmit", { stdio: "pipe" });
+      const tsconfigPath = path.join(rootDir, "tsconfig.json");
+      if (fs.existsSync(tsconfigPath)) {
+        execSync("npx tsc --noEmit", { cwd: rootDir, stdio: "pipe" });
       }
     },
-    runVitest: () => execSync("npx vitest run", { stdio: "pipe" }),
-    appendEvoMem: (content) => fs.appendFileSync("EVOMEM.md", content, "utf8"),
-    writeCriticFailed: (content) => fs.writeFileSync("CRITIC_FAILED.md", content),
+    runVitest: () => execSync("npx vitest run", { cwd: rootDir, stdio: "pipe" }),
+    runVitestSubgraph: (changedPaths: string[]) => {
+      const testFiles = mapChangedFilesToVitest(changedPaths, rootDir);
+      const cmd = buildVitestSubgraphCommand(testFiles);
+      execSync(cmd, { cwd: rootDir, stdio: "pipe" });
+    },
+    appendEvoMem: (content) => {
+      fs.appendFileSync(path.join(rootDir, "EVOMEM.md"), content, "utf8");
+    },
+    writeCriticFailed: (content) => {
+      fs.writeFileSync(path.join(rootDir, "CRITIC_FAILED.md"), content, "utf8");
+    },
   };
 }
 
 export async function runOSActor(
   input: RunInput,
-  deps: RunDeps = defaultDeps(),
+  depsInput?: RunDeps,
 ): Promise<RunOutput> {
   const rootDir = input.rootDir ?? ".";
+  const deps = depsInput ?? defaultDeps(rootDir);
   const startedAt = Date.now();
   const depth = getVibeDepth();
   const caps = depthCapabilities(depth);
   const mandates = loadMandates(rootDir);
-  const runId = `issue-${input.issueNumber}-${new Date().toISOString().replace(/[:.]/g, "-")}`;
+  const runId = resolveRunId(input.issueNumber, rootDir);
+  const persistedApproval = readPersistedApproval(rootDir, input.issueNumber);
+  const approvedBy =
+    input.approvedBy ?? persistedApproval?.approvedBy ?? undefined;
+  const resumeSnapshot = loadResumeSnapshot(rootDir, runId, input.issueNumber);
+  const pastPlanning = isPastPlanning(resumeSnapshot);
 
   const initialContext: OSContext = {
     ...createInitialOSContext(),
@@ -140,21 +190,85 @@ export async function runOSActor(
     issueBody: input.issueBody,
     maxAttempts: mandates.max_attempts,
     vibeDepth: depth,
+    ...(resumeSnapshot ? resumeSnapshot.context : {}),
   };
 
-  const actor = createActor(createOSMachine(initialContext)).start();
+  const actor = createOSPlayer(
+    initialContext,
+    resumeSnapshot ? { snapshot: resumeSnapshot } : undefined,
+  );
   const releaseGate = resolveReleaseGatePatch(input.issueTitle, input.issueBody);
   const deterministicPatch = releaseGate?.files ?? null;
   const constitution = deps.readConstitution();
   const repoContext = deps.readRepoContext();
   const evoMemContext = deps.readEvoMem();
   const vibe = `TITLE: ${input.issueTitle}\nDESCRIPTION: ${input.issueBody}`;
-  const requiredPaths = extractRequiredPaths(input.issueBody);
 
   appendTraceSpan(rootDir, runId, { phase: "preflight" });
-  actor.send({ type: "preflight.completed", findings: [] });
+  if (!pastPlanning) {
+    actor.send({ type: "preflight.completed", findings: [] });
+  }
 
-  const failureRecall = requiredPaths
+  const gateBoundFiles = releaseGate?.files.map((file) => file.path) ?? [];
+  let taskBond: TaskBond | null =
+    pastPlanning ? readTaskBond(rootDir, input.issueNumber) : null;
+
+  if (!taskBond) {
+    const sealed = sealTaskBond({
+      issueNumber: input.issueNumber,
+      issueTitle: input.issueTitle,
+      issueBody: input.issueBody,
+      depth,
+      rootDir,
+      extraBoundFiles: gateBoundFiles,
+    });
+
+    appendTraceSpan(rootDir, runId, {
+      phase: "bond_seal",
+      passed: sealed.ok,
+      detail: sealed.ok ? sealed.bond.bondHash : sealed.errors.join("; "),
+    });
+
+    if (!sealed.ok && depth >= 2) {
+      const remediation = [
+        "## TaskBond seal failed",
+        "",
+        "Fix the issue body and re-run. Required at this depth:",
+        "- **Intent** (one sentence)",
+        "- **Files to touch** (exact paths under allowed prefixes)",
+        "",
+        ...sealed.errors.map((error) => `- ${error}`),
+      ].join("\n");
+
+      return finishRun({
+        input,
+        deps,
+        rootDir,
+        runId,
+        startedAt,
+        actor,
+        success: false,
+        state: "failed",
+        generatedFiles: [],
+        feedbackMarkdown: remediation,
+        gateFailures: [],
+        recordedErrors: sealed.errors,
+        attempts: 0,
+        gateIdsFailed: [],
+        firstPassGreen: false,
+        approvalRequired: false,
+      });
+    }
+
+    if (sealed.ok) {
+      taskBond = sealed.bond;
+      writeTaskBond(rootDir, taskBond);
+    }
+  }
+
+  const boundFiles = taskBond?.boundFiles ?? gateBoundFiles;
+
+  const failureRecall = boundFiles
     .flatMap((filePath) => readRecentFailuresByPathPrefix(rootDir, filePath, 3))
     .slice(0, 3);
   const recalledFailures = formatFailureRecall(failureRecall);
@@ -162,7 +276,10 @@ export async function runOSActor(
   let plan: string;
   let dag: ExecutionDag;
 
-  if (releaseGate) {
+  if (pastPlanning && resumeSnapshot?.context.dag) {
+    dag = resumeSnapshot.context.dag;
+    plan = `Resumed from snapshot at ${String(resumeSnapshot.value)}`;
+  } else if (releaseGate) {
     plan = releaseGate.planLines.join("\n");
     dag = {
       issueNumber: input.issueNumber,
@@ -193,16 +310,24 @@ export async function runOSActor(
           title: "Generated patch",
           kind: "edit",
           dependsOn: [],
-          risk: riskForFiles(requiredPaths, mandates),
-          files: requiredPaths,
+          risk: riskForFiles(boundFiles, mandates),
+          files: boundFiles,
           acceptance: ["tests pass"],
         },
       ],
     };
 
+    const scopedContext = buildScopedRepomix(rootDir, fallbackDag);
+    const contextBlob =
+      boundFiles.length > 0
+        ? scopedContext
+        : depth < 2
+          ? capContext(repoContext, 16000)
+          : scopedContext;
+
     const plannerSystem = depth === 0
       ? `You are a Software 3.0 Architect. Explain the request without proposing file edits.\n${constitution}`
-      : `You are a Software 3.0 Architect. Follow this constitution strictly:\n${constitution}\n\nGlobal Codebase Map:\n${capContext(repoContext, 16000)}${capContext(evoMemContext ? `\n\n⚠️ HISTORICAL RUNTIME ERRORS TO AVOID:\n${evoMemContext}` : "", 2000)}${recalledFailures ? `\n\n⚠️ RECENT STRUCTURED FAILURES FOR THESE PATHS:\n${recalledFailures}` : ""}`;
+      : `You are a Software 3.0 Architect. Follow this constitution strictly:\n${constitution}\n\nGlobal Codebase Map:\n${contextBlob}${capContext(evoMemContext ? `\n\n⚠️ HISTORICAL RUNTIME ERRORS TO AVOID:\n${evoMemContext}` : "", 2000)}${recalledFailures ? `\n\n⚠️ RECENT STRUCTURED FAILURES FOR THESE PATHS:\n${recalledFailures}` : ""}`;
 
     const plannerUser =
       depth === 0
@@ -317,14 +442,42 @@ ${vibe}`;
     });
   }
 
+  try {
+    dag = validateAndParseDag(dag);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return finishRun({
+      input,
+      deps,
+      rootDir,
+      runId,
+      startedAt,
+      actor,
+      success: false,
+      state: "failed",
+      generatedFiles: [],
+      feedbackMarkdown: `Invalid execution DAG schema:\n- ${message}`,
+      gateFailures: [],
+      recordedErrors: [message],
+      attempts: 0,
+      gateIdsFailed: ["invalid_dag"],
+      firstPassGreen: false,
+      approvalRequired: false,
+    });
+  }
+
   topologicalSort(dag.nodes);
   appendTraceSpan(rootDir, runId, { phase: "dag_validation", passed: true });
+
+  const resumeState = resumeSnapshot ? String(resumeSnapshot.value) : null;
+  const skipToCodegen =
+    resumeState === "generating_patch" || resumeState === "learning";
 
   const plannedFiles =
     collectPlannedFiles(dag).length > 0
       ? collectPlannedFiles(dag)
       : releaseGate?.files.map((file) => file.path) ??
-        (requiredPaths.length > 0 ? requiredPaths : ["src/generated.ts"]);
+        (boundFiles.length > 0 ? boundFiles : ["src/generated.ts"]);
 
   const mandateEval = evaluateMandates(plannedFiles, mandates);
   if (!mandateEval.passed) {
@@ -356,40 +509,48 @@ ${vibe}`;
     riskReview.approvalRequired &&
     (caps.enforcesProtectedApproval || riskReview.risk === "high");
 
-  actor.send({
-    type: "risk.reviewed",
-    risk: riskReview.risk,
-    reason: riskReview.reason,
-    approvalRequired,
-  });
+  if (!skipToCodegen) {
+    actor.send({
+      type: "risk.reviewed",
+      risk: riskReview.risk,
+      reason: riskReview.reason,
+      approvalRequired,
+    });
 
-  if (actor.getSnapshot().value === "awaiting_approval") {
-    if (input.approvedBy) {
-      actor.send({
-        type: "approval.granted",
-        actor: input.approvedBy,
-        commentId: "env-approval",
-      });
-    } else {
-      return finishRun({
-        input,
-        deps,
-        rootDir,
-        runId,
-        startedAt,
-        actor,
-        success: false,
-        state: String(actor.getSnapshot().value),
-        generatedFiles: [],
-        feedbackMarkdown: "High-risk change requires /approve before patch generation.",
-        gateFailures: [],
-        recordedErrors: [],
-        attempts: 0,
-        gateIdsFailed: [],
-        firstPassGreen: false,
-        approvalRequired: true,
-      });
+    if (actor.getSnapshot().value === "awaiting_approval") {
+      if (approvedBy) {
+        actor.send({
+          type: "approval.granted",
+          actor: approvedBy,
+          commentId: "env-approval",
+        });
+      } else {
+        return finishRun({
+          input,
+          deps,
+          rootDir,
+          runId,
+          startedAt,
+          actor,
+          success: false,
+          state: String(actor.getSnapshot().value),
+          generatedFiles: [],
+          feedbackMarkdown: "High-risk change requires /approve before patch generation.",
+          gateFailures: [],
+          recordedErrors: [],
+          attempts: 0,
+          gateIdsFailed: [],
+          firstPassGreen: false,
+          approvalRequired: true,
+        });
+      }
     }
+  } else if (approvedBy) {
+    actor.send({
+      type: "approval.granted",
+      actor: approvedBy,
+      commentId: "env-approval",
+    });
   }
 
   if (!caps.allowsCodegen) {
@@ -423,10 +584,10 @@ ${vibe}`;
 
   while (attempts < mandates.max_attempts) {
     attempts++;
-    actor.getSnapshot().context.attempts = attempts;
+    prepareCodegenAttempt(actor, attempts);
 
     let generatedFiles: GeneratedFile[];
-    if (deterministicPatch && attempts === 1) {
+    if (deterministicPatch) {
       generatedFiles = deterministicPatch;
     } else {
       const codegen = resolveCodegenEndpoint();
@@ -479,6 +640,7 @@ ${vibe}`;
         type: "verification.failed",
         failure: toClassifiedFailure("model_output", "Generated patch validation failed", feedbackMarkdown),
       });
+      if (!prepareCodegenRetry(actor)) break;
       continue;
     }
 
@@ -527,7 +689,15 @@ ${vibe}`;
 
       if (loopPassed) {
         try {
-          deps.runVitest();
+          const changedPaths = generatedFiles.map((file) => file.path);
+          if (
+            process.env.VIBE_TEST_MODE === "subgraph" &&
+            deps.runVitestSubgraph
+          ) {
+            deps.runVitestSubgraph(changedPaths);
+          } else {
+            deps.runVitest();
+          }
           verificationResults.push({
             name: "vitest",
             passed: true,
@@ -559,7 +729,7 @@ ${vibe}`;
       }
     }
 
-    if (loopPassed && deterministicPatch && attempts === 1) {
+    if (loopPassed && deterministicPatch) {
       // Deterministic release-gate patches skip causal critic.
     } else if (loopPassed && caps.allowsTests) {
       const critic = resolveCriticEndpoint();
@@ -631,6 +801,7 @@ ${vibe}`;
         feedbackMarkdown,
       ),
     });
+    if (!prepareCodegenRetry(actor)) break;
   }
 
   if (finalVerifiedFiles.length === 0) {
@@ -685,7 +856,7 @@ type FinishRunInput = {
   rootDir: string;
   runId: string;
   startedAt: number;
-  actor: ReturnType<typeof createActor<ReturnType<typeof createOSMachine>>>;
+  actor: OSPlayer;
   success: boolean;
   state: string;
   generatedFiles: GeneratedFile[];
@@ -697,6 +868,7 @@ type FinishRunInput = {
   firstPassGreen: boolean;
   tokensEstimate?: number;
   approvalRequired: boolean;
+  bondHash?: string;
 };
 
 function finishRun(args: FinishRunInput): RunOutput {
@@ -708,14 +880,29 @@ function finishRun(args: FinishRunInput): RunOutput {
     tokensEstimate: args.tokensEstimate,
   };
 
+  const bondHash =
+    args.bondHash ??
+    readTaskBond(args.rootDir, args.input.issueNumber)?.bondHash;
+
   const manifest = buildManifest(
     args.input,
-    args.generatedFiles.map((file) => file.path),
+    args.generatedFiles,
     args.approvalRequired,
     args.deps,
     args.runId,
     metrics,
+    args.rootDir,
+    bondHash,
   );
+
+  const snapshot = getPersistedSnapshot(args.actor);
+  const capsuleHash = computeCapsuleHash({
+    manifest,
+    snapshot,
+    traceTail: readTraceTail(args.rootDir, args.runId),
+  });
+  manifest.capsuleHash = capsuleHash;
+  writeCapsuleHash(args.rootDir, args.runId, capsuleHash);
 
   appendScoreboardEntry(args.rootDir, {
     runId: manifest.runId,
@@ -734,6 +921,8 @@ function finishRun(args: FinishRunInput): RunOutput {
     tokensEstimate: metrics.tokensEstimate,
   });
 
+  writeActorSnapshot(args.rootDir, args.runId, getPersistedSnapshot(args.actor));
+
   return {
     success: args.success,
     state: args.state,
@@ -746,23 +935,92 @@ function finishRun(args: FinishRunInput): RunOutput {
   };
 }
 
+function resolveRunId(issueNumber: string, _rootDir: string): string {
+  const envRunId = process.env.VIBE_RUN_ID?.trim();
+  if (envRunId) return sanitizeRunId(envRunId);
+  return sanitizeRunId(
+    `issue-${issueNumber}-${new Date().toISOString().replace(/[:.]/g, "-")}`,
+  );
+}
+
+function loadResumeSnapshot(
+  rootDir: string,
+  runId: string,
+  issueNumber: string,
+): OSPlayerSnapshot | null {
+  if (!process.env.VIBE_RUN_ID?.trim()) return null;
+
+  const raw = readActorSnapshot(rootDir, runId);
+  if (!raw || typeof raw !== "object") return null;
+
+  const snapshot = raw as OSPlayerSnapshot;
+  if (isTerminalSnapshot(snapshot)) return null;
+  if (snapshot.context?.issueNumber !== issueNumber) return null;
+  return snapshot;
+}
+
+function prepareCodegenAttempt(actor: OSPlayer, attempt: number) {
+  const state = String(actor.getSnapshot().value);
+  if (state === "learning") {
+    actor.send({ type: "codegen.retry" });
+  }
+  actor.send({ type: "attempt.started", attempt });
+}
+
+function prepareCodegenRetry(actor: OSPlayer): boolean {
+  const snapshot = actor.getSnapshot();
+  if (snapshot.context.attempts >= snapshot.context.maxAttempts) {
+    return false;
+  }
+  actor.send({ type: "codegen.retry" });
+  return String(actor.getSnapshot().value) === "generating_patch";
+}
+
+function isPastPlanning(snapshot: OSPlayerSnapshot | null): boolean {
+  if (!snapshot) return false;
+  const state = String(snapshot.value);
+  const pastStates = new Set([
+    "planning",
+    "risk_review",
+    "awaiting_approval",
+    "generating_patch",
+    "verifying",
+    "learning",
+    "publishing",
+  ]);
+  return pastStates.has(state) && Boolean(snapshot.context?.dag);
+}
+
 function buildManifest(
   input: RunInput,
-  generatedFiles: string[],
+  generatedFiles: GeneratedFile[],
   approvalRequired: boolean,
   deps: RunDeps,
   runId: string,
   metrics: RunMetrics,
+  rootDir: string,
+  bondHash?: string,
 ): RunManifest {
+  const paths = generatedFiles.map((file) => file.path);
+  const generatedFileDigests =
+    generatedFiles.length > 0
+      ? Object.fromEntries(
+          generatedFiles.map((file) => [file.path, sha256Content(file.content)]),
+        )
+      : undefined;
+
   return {
     runId,
     issueNumber: input.issueNumber,
     issueTitle: input.issueTitle,
     branchName: deps.getGitValue("git branch --show-current", "unknown-branch"),
     baseSha: deps.getGitValue("git rev-parse HEAD", "unknown-sha"),
-    generatedFiles,
+    generatedFiles: paths,
+    generatedFileDigests,
     createdAt: new Date().toISOString(),
     approvalRequired: approvalRequired || undefined,
+    vowsHash: computeVowsHash(rootDir),
+    bondHash,
     metrics,
   };
 }
@@ -840,16 +1098,22 @@ function getGitValue(command: string, fallback: string) {
   }
 }
 
-function writeFilesToDisk(files: GeneratedFile[]): Map<string, string | null> {
+function writeFilesToDisk(
+  files: GeneratedFile[],
+  rootDir = ".",
+): Map<string, string | null> {
   const backups = new Map<string, string | null>();
   for (const file of files) {
-    const dir = path.dirname(file.path);
+    const filepath = path.isAbsolute(file.path)
+      ? file.path
+      : path.join(rootDir, file.path);
+    const dir = path.dirname(filepath);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     backups.set(
-      file.path,
-      fs.existsSync(file.path) ? fs.readFileSync(file.path, "utf8") : null,
+      filepath,
+      fs.existsSync(filepath) ? fs.readFileSync(filepath, "utf8") : null,
     );
-    fs.writeFileSync(file.path, file.content);
+    fs.writeFileSync(filepath, file.content);
   }
   return backups;
 }
@@ -898,7 +1162,8 @@ async function callOpenAIFormat(
 }
 
 async function callGeminiFormat(apiKey: string, system: string, user: string) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  const url =
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
   const payload = {
     system_instruction: { parts: { text: system } },
     contents: [{ parts: [{ text: user }] }],
@@ -906,7 +1171,10 @@ async function callGeminiFormat(apiKey: string, system: string, user: string) {
 
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": apiKey,
+    },
     body: JSON.stringify(payload),
   });
   const data = (await res.json()) as {

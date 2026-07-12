@@ -1,3 +1,5 @@
+import { parseGateFailure, parseGateFailures } from "../constitution/parse.js";
+
 export type GateFailure = {
   status: "gate_failed";
   gate_id: string;
@@ -11,13 +13,15 @@ export function createGateFailure(
   detail: string,
   remediationInstruction: string,
 ): GateFailure {
-  return {
+  return parseGateFailure({
     status: "gate_failed",
     gate_id: gateId,
     analysis: { path, detail },
     remediation_instruction: remediationInstruction,
-  };
+  });
 }
+
+export { parseGateFailures };
 
 export function formatGateFailureMarkdown(failure: GateFailure): string {
   return [

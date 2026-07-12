@@ -1,5 +1,12 @@
 {
   "forbidden_prefixes": ["src/auth/", ".github/workflows/"],
   "require_approval_prefixes": [".github/", "package.json"],
-  "max_attempts": 3
+  "max_attempts": 3,
+  "approved_operators": ["afelin"],
+  "bond": {
+    "require_bound_files_min_depth": 2,
+    "max_bound_files": 16,
+    "max_intent_chars": 500,
+    "allowed_file_prefixes": ["src/", "tests/", ".planning/", ".skills/"]
+  }
 }

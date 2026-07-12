@@ -3,6 +3,7 @@ import {
   depthCapabilities,
   getVibeDepth,
   renderDepthStatus,
+  resolveDepthFromLabels,
 } from "./depth.js";
 
 describe("vibe depth dial", () => {
@@ -42,6 +43,17 @@ describe("vibe depth dial", () => {
   it("depth 5 enforces protected approval", () => {
     expect(depthCapabilities(5).enforcesProtectedApproval).toBe(true);
     expect(depthCapabilities(3).enforcesProtectedApproval).toBe(false);
+  });
+
+  it("resolves depth from issue labels", () => {
+    expect(resolveDepthFromLabels("vibe:plan-only,vibe/run")).toBe(1);
+    expect(resolveDepthFromLabels("vibe:safe")).toBe(2);
+    expect(resolveDepthFromLabels("vibe:ship")).toBe(4);
+    expect(resolveDepthFromLabels("other")).toBeNull();
+  });
+
+  it("label depth overrides VIBE_DEPTH env", () => {
+    expect(getVibeDepth({ VIBE_DEPTH: "3", VIBE_LABELS: "vibe:plan-only" })).toBe(1);
   });
 
   it("renders depth status for cockpit", () => {

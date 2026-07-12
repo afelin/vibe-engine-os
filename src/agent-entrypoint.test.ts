@@ -39,8 +39,9 @@ describe("agent entrypoint hardening", () => {
       "utf8",
     );
 
-    expect(runSource).toContain('fs.existsSync("AGENTS.md")');
+    expect(runSource).toContain('"AGENTS.md"');
     expect(runSource).toContain('"agent.md"');
+    expect(runSource).toContain("readConstitution");
   });
 
   it("validates generated patches before writing them to disk", () => {

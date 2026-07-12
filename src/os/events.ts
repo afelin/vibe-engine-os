@@ -77,16 +77,27 @@ export type OSContext = {
   failures: ClassifiedFailure[];
 };
 
+/**
+ * OSEvent follows the xmachines PlayEvent contract: every event has a `type`
+ * string plus a typed payload. External ingress (GitHub webhooks, MCP tools,
+ * operator commands) should normalize into these shapes before send().
+ */
+export type PlayCompatibleEvent = {
+  type: string;
+} & Record<string, unknown>;
+
 export type OSEvent =
   | { type: "os.received"; source: "github" | "cloudflare"; payload: unknown }
   | { type: "preflight.completed"; findings: PreflightFinding[] }
   | { type: "plan.created"; dag: ExecutionDag }
   | { type: "risk.reviewed"; risk: RiskLevel; reason: string; approvalRequired?: boolean }
   | { type: "approval.granted"; actor: string; commentId?: string }
+  | { type: "attempt.started"; attempt: number }
   | { type: "patch.generated"; files: GeneratedFile[] }
   | { type: "verification.passed"; results: VerificationResult[] }
   | { type: "verification.failed"; failure: ClassifiedFailure }
   | { type: "learning.recorded"; lessonIds: string[] }
+  | { type: "codegen.retry" }
   | { type: "publish.completed"; prUrl?: string; previewUrl?: string }
   | {
       type:
@@ -99,3 +110,14 @@ export type OSEvent =
       actor: string;
       commentId: string;
     };
+
+export function normalizeOsReceivedEvent(input: {
+  source: "github" | "cloudflare";
+  payload: unknown;
+}): Extract<OSEvent, { type: "os.received" }> {
+  return {
+    type: "os.received",
+    source: input.source,
+    payload: input.payload,
+  };
+}

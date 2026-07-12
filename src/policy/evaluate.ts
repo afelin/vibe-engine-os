@@ -1,11 +1,21 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseMandates } from "../constitution/parse.js";
+
+export type BondPolicy = {
+  require_bound_files_min_depth: number;
+  max_bound_files: number;
+  max_intent_chars: number;
+  allowed_file_prefixes: string[];
+};
 
 export type Mandates = {
   forbidden_prefixes: string[];
   require_approval_prefixes: string[];
   max_attempts: number;
+  approved_operators?: string[];
+  bond?: BondPolicy;
 };
 
 export type MandateViolation = {
@@ -25,6 +35,7 @@ const defaultMandates: Mandates = {
   forbidden_prefixes: ["src/auth/", ".github/workflows/"],
   require_approval_prefixes: [".github/", "package.json"],
   max_attempts: 3,
+  approved_operators: [],
 };
 
 export function loadMandates(rootDir = "."): Mandates {
@@ -36,7 +47,8 @@ export function loadMandates(rootDir = "."): Mandates {
   const source = fs.existsSync(local) ? local : bundled;
 
   try {
-    return { ...defaultMandates, ...JSON.parse(fs.readFileSync(source, "utf8")) };
+    const raw = JSON.parse(fs.readFileSync(source, "utf8"));
+    return parseMandates({ ...defaultMandates, ...raw });
   } catch {
     return defaultMandates;
   }

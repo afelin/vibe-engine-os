@@ -9,6 +9,7 @@ import {
   validateEsmImportExtensions,
   validateFilePolicy,
   validateNoPathTraversal,
+  validateNoSecrets,
   validateProtectedFiles,
   type ValidatorResult,
 } from "./validators.js";
@@ -50,6 +51,8 @@ function remediationForValidator(name: string): string {
       return "Remove protected paths or request /approve before changing them.";
     case "esm_import_extensions":
       return "Add .js extensions to local ESM imports in TypeScript files.";
+    case "no_secrets":
+      return "Remove secret-like values from generated files before retrying.";
     case "agent_mandate":
       return "Remove forbidden paths or request /approve for protected prefixes.";
     default:
@@ -81,6 +84,7 @@ export function runGeneratedPatchValidators(
     validateFilePolicy("generated_patch", files),
     validateProtectedFiles(files),
     validateAgentMandates(files),
+    validateNoSecrets(files),
     validateEsmImportExtensions(files),
   ];
   const failed = results.filter((result) => !result.passed);

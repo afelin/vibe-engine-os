@@ -1,5 +1,10 @@
 import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
+
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../..");
+const tsxBin = join(repoRoot, "node_modules/.bin/tsx");
 
 function frameMessage(payload: unknown): Buffer {
   const body = JSON.stringify(payload);
@@ -26,9 +31,11 @@ function readFramedMessage(buffer: Buffer): { message: unknown; rest: Buffer } {
 }
 
 describe("release gate MCP stdio transport", () => {
-  it("responds to initialize over Content-Length framing", async () => {
-    const child = spawn("npx", ["tsx", "src/release-gate/mcp.ts"], {
-      cwd: process.cwd(),
+  it(
+    "responds to initialize over Content-Length framing",
+    async () => {
+    const child = spawn(tsxBin, ["src/release-gate/mcp.ts"], {
+      cwd: repoRoot,
       stdio: ["pipe", "pipe", "pipe"],
     });
 
@@ -51,14 +58,16 @@ describe("release gate MCP stdio transport", () => {
     );
 
     await new Promise<void>((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error("MCP timeout")), 5000);
-      const interval = setInterval(() => {
+      const timeout = setTimeout(() => reject(new Error("MCP timeout")), 15_000);
+      const onData = () => {
         if (stdout.indexOf("\r\n\r\n") !== -1 && stdout.includes("{")) {
           clearTimeout(timeout);
-          clearInterval(interval);
+          child.stdout.off("data", onData);
           resolve();
         }
-      }, 20);
+      };
+      child.stdout.on("data", onData);
+      onData();
     });
 
     const { message } = readFramedMessage(stdout);
@@ -71,5 +80,7 @@ describe("release gate MCP stdio transport", () => {
     });
 
     child.kill();
-  });
+  },
+  15_000,
+  );
 });

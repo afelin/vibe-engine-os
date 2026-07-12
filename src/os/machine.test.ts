@@ -1,10 +1,10 @@
-import { createActor } from "xstate";
 import { describe, expect, it } from "vitest";
-import { createOSMachine } from "./machine.js";
+import { createOSPlayer } from "./player.js";
+import { createInitialOSContext } from "./machine.js";
 
 describe("vibe engine OS machine", () => {
   it("pauses for approval when risk review marks a change high risk", () => {
-    const actor = createActor(createOSMachine()).start();
+    const actor = createOSPlayer(createInitialOSContext());
 
     actor.send({ type: "preflight.completed", findings: [] });
     actor.send({
@@ -36,7 +36,7 @@ describe("vibe engine OS machine", () => {
   });
 
   it("continues to patch generation when risk is low", () => {
-    const actor = createActor(createOSMachine()).start();
+    const actor = createOSPlayer(createInitialOSContext());
 
     actor.send({ type: "preflight.completed", findings: [] });
     actor.send({
@@ -67,7 +67,7 @@ describe("vibe engine OS machine", () => {
   });
 
   it("ignores approval unless the actor is awaiting approval", () => {
-    const actor = createActor(createOSMachine()).start();
+    const actor = createOSPlayer(createInitialOSContext());
 
     actor.send({ type: "approval.granted", actor: "alice" });
 
@@ -75,12 +75,26 @@ describe("vibe engine OS machine", () => {
   });
 
   it("records verification failure and moves into learning", () => {
-    const actor = createActor(createOSMachine()).start();
+    const actor = createOSPlayer(createInitialOSContext());
 
     actor.send({ type: "preflight.completed", findings: [] });
     actor.send({
       type: "plan.created",
-      dag: { issueNumber: "3", title: "Compile fix", nodes: [] },
+      dag: {
+        issueNumber: "3",
+        title: "Compile fix",
+        nodes: [
+          {
+            id: "edit-1",
+            title: "Edit",
+            kind: "edit",
+            dependsOn: [],
+            risk: "low",
+            files: ["src/index.ts"],
+            acceptance: ["tests pass"],
+          },
+        ],
+      },
     });
     actor.send({
       type: "risk.reviewed",
@@ -105,12 +119,26 @@ describe("vibe engine OS machine", () => {
   });
 
   it("allows retry requests from learning to return to preflight", () => {
-    const actor = createActor(createOSMachine()).start();
+    const actor = createOSPlayer(createInitialOSContext());
 
     actor.send({ type: "preflight.completed", findings: [] });
     actor.send({
       type: "plan.created",
-      dag: { issueNumber: "3", title: "Compile fix", nodes: [] },
+      dag: {
+        issueNumber: "3",
+        title: "Compile fix",
+        nodes: [
+          {
+            id: "edit-1",
+            title: "Edit",
+            kind: "edit",
+            dependsOn: [],
+            risk: "low",
+            files: ["src/index.ts"],
+            acceptance: ["tests pass"],
+          },
+        ],
+      },
     });
     actor.send({
       type: "risk.reviewed",
@@ -137,12 +165,26 @@ describe("vibe engine OS machine", () => {
   });
 
   it("keeps rollback requests passive in learning state", () => {
-    const actor = createActor(createOSMachine()).start();
+    const actor = createOSPlayer(createInitialOSContext());
 
     actor.send({ type: "preflight.completed", findings: [] });
     actor.send({
       type: "plan.created",
-      dag: { issueNumber: "4", title: "Rollback", nodes: [] },
+      dag: {
+        issueNumber: "4",
+        title: "Rollback",
+        nodes: [
+          {
+            id: "edit-1",
+            title: "Edit",
+            kind: "edit",
+            dependsOn: [],
+            risk: "low",
+            files: ["src/index.ts"],
+            acceptance: ["tests pass"],
+          },
+        ],
+      },
     });
     actor.send({
       type: "risk.reviewed",
@@ -169,7 +211,7 @@ describe("vibe engine OS machine", () => {
   });
 
   it("advances from awaiting approval to generating patch after approval", () => {
-    const actor = createActor(createOSMachine()).start();
+    const actor = createOSPlayer(createInitialOSContext());
 
     actor.send({ type: "preflight.completed", findings: [] });
     actor.send({
@@ -201,12 +243,26 @@ describe("vibe engine OS machine", () => {
   });
 
   it("reaches publishing after verification passes", () => {
-    const actor = createActor(createOSMachine()).start();
+    const actor = createOSPlayer(createInitialOSContext());
 
     actor.send({ type: "preflight.completed", findings: [] });
     actor.send({
       type: "plan.created",
-      dag: { issueNumber: "6", title: "Safe edit", nodes: [] },
+      dag: {
+        issueNumber: "6",
+        title: "Safe edit",
+        nodes: [
+          {
+            id: "edit-1",
+            title: "Edit",
+            kind: "edit",
+            dependsOn: [],
+            risk: "low",
+            files: ["src/index.ts"],
+            acceptance: ["tests pass"],
+          },
+        ],
+      },
     });
     actor.send({
       type: "risk.reviewed",
@@ -224,5 +280,48 @@ describe("vibe engine OS machine", () => {
     actor.send({ type: "publish.completed" });
 
     expect(actor.getSnapshot().value).toBe("completed");
+  });
+
+  it("blocks deploy preview publish when depth is below 4", () => {
+    const actor = createOSPlayer({
+      ...createInitialOSContext(),
+      vibeDepth: 3,
+    });
+
+    actor.send({ type: "preflight.completed", findings: [] });
+    actor.send({
+      type: "plan.created",
+      dag: {
+        issueNumber: "7",
+        title: "Safe edit",
+        nodes: [
+          {
+            id: "edit-1",
+            title: "Edit",
+            kind: "edit",
+            dependsOn: [],
+            risk: "low",
+            files: ["src/index.ts"],
+            acceptance: ["tests pass"],
+          },
+        ],
+      },
+    });
+    actor.send({
+      type: "risk.reviewed",
+      risk: "low",
+      reason: "Generated source-only edit",
+    });
+    actor.send({
+      type: "patch.generated",
+      files: [{ path: "src/index.ts", content: "export const x = 1;" }],
+    });
+    actor.send({
+      type: "verification.passed",
+      results: [{ name: "tsc", passed: true, output: "ok" }],
+    });
+    actor.send({ type: "publish.completed", previewUrl: "preview://local" });
+
+    expect(actor.getSnapshot().value).toBe("publishing");
   });
 });

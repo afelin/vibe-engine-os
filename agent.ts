@@ -1,12 +1,20 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { appendOperatorEvent } from "./src/os/event-ledger.js";
+import { readPersistedApproval, persistApproval } from "./src/os/approval-store.js";
 import { runOSActor } from "./src/os/run.js";
 import { renderCockpitComment } from "./src/operator/cockpit.js";
 import { routeGitHubComment } from "./src/operator/github-comment-router.js";
 import { publishCockpitComment, resolveGitHubCommentTarget } from "./src/publishing/github-comments.js";
+import {
+  buildIdempotencyKey,
+  hasProcessedDelivery,
+  writeIdempotencyRecord,
+} from "./src/os/idempotency.js";
 import { renderRollbackInstructions, writeRunManifest } from "./src/run/manifest.js";
+import { writePromotionBundle } from "./src/run/promotion.js";
 import { readLatestRollbackInstructions } from "./src/run/rollback.js";
+import type { GeneratedFile } from "./src/os/events.js";
 
 process.on("uncaughtException", (error: Error) => {
   console.error("Fatal uncaught exception:", error.message);
@@ -23,12 +31,27 @@ const GITHUB_COMMENT_ID = process.env.GITHUB_COMMENT_ID || process.env.GITHUB_RU
 async function runOS() {
   console.log(`\n🚀 Booting Vibe Engine OS for Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}`);
 
+  const idempotencyKey = buildIdempotencyKey(
+    process.env.GITHUB_EVENT_NAME ?? "local",
+    process.env.GITHUB_DELIVERY_ID ?? process.env.GITHUB_RUN_ID ?? "local",
+    ISSUE_NUMBER,
+  );
+
+  if (
+    process.env.GITHUB_EVENT_NAME &&
+    hasProcessedDelivery(".", idempotencyKey)
+  ) {
+    console.log(`⏭️ Duplicate delivery skipped (idempotency key: ${idempotencyKey})`);
+    return;
+  }
+
   if (isOperatorCommentEvent()) {
     const route = routeGitHubComment({
       body: ISSUE_BODY,
       actor: GITHUB_ACTOR,
       commentId: GITHUB_COMMENT_ID,
       state: "operator_command",
+      rootDir: ".",
       context: {
         issueNumber: ISSUE_NUMBER,
         issueTitle: ISSUE_TITLE,
@@ -44,31 +67,53 @@ async function runOS() {
     });
 
     if (route.handled) {
-      console.log(`🧭 Operator command routed as typed event: ${route.event.type}`);
-      appendOperatorEvent(".", route.event);
-      markOperatorOnlyFromEnv();
-      if (route.event.type === "approval.granted") {
-        markApprovedBy(route.event.actor);
+      if (route.event) {
+        console.log(`🧭 Operator command routed as typed event: ${route.event.type}`);
+        appendOperatorEvent(".", route.event);
+        if (route.event.type === "approval.granted") {
+          persistApproval(".", ISSUE_NUMBER, route.event.actor);
+          markApprovedBy(route.event.actor);
+        }
+      } else {
+        console.log("🧭 Operator command denied.");
       }
+      markOperatorOnlyFromEnv();
       await publishCommentBodyFromEnv(route.responseBody);
       return;
     }
   }
+
+  const persistedApproval = readPersistedApproval(".", ISSUE_NUMBER);
+  const approvedBy = process.env.APPROVED_BY ?? persistedApproval?.approvedBy;
 
   const result = await runOSActor({
     issueNumber: ISSUE_NUMBER,
     issueTitle: ISSUE_TITLE,
     issueBody: ISSUE_BODY,
     githubActor: GITHUB_ACTOR,
-    approvedBy: process.env.APPROVED_BY,
+    approvedBy,
   });
 
-  if (result.manifest?.approvalRequired && !process.env.APPROVED_BY) {
-    writeRunManifest(".", result.manifest);
+  if (result.manifest?.capsuleHash && process.env.GITHUB_EVENT_NAME) {
+    writeIdempotencyRecord(".", {
+      key: idempotencyKey,
+      capsuleHash: result.manifest.capsuleHash,
+      runId: result.manifest.runId,
+      recordedAt: new Date().toISOString(),
+    });
+  }
+
+  const needsApproval =
+    result.manifest?.approvalRequired &&
+    !approvedBy;
+
+  if (needsApproval) {
+    writeRunManifest(".", result.manifest!);
     fs.writeFileSync(
-      path.join(".runs", result.manifest.runId, "ROLLBACK.md"),
-      renderRollbackInstructions(result.manifest),
+      path.join(".runs", result.manifest!.runId, "ROLLBACK.md"),
+      renderRollbackInstructions(result.manifest!),
     );
+    writePromotionBundleIfPresent(result.manifest!.runId, result.generatedFiles);
     markApprovalRequiredFromEnv();
     console.log("⏸️ High-risk change paused for /approve before promotion.");
     await publishCockpitFromEnv("awaiting_approval", {
@@ -100,7 +145,9 @@ async function runOS() {
       path.join(".runs", result.manifest.runId, "ROLLBACK.md"),
       renderRollbackInstructions(result.manifest),
     );
+    writePromotionBundleIfPresent(result.manifest.runId, result.generatedFiles);
     console.log(`🧭 Run manifest recorded: .runs/${result.manifest.runId}/manifest.json`);
+    console.log(`🧭 Actor snapshot recorded: .runs/${result.manifest.runId}/actor.snapshot.json`);
     writeGeneratedFilesListFromEnv(result.manifest.generatedFiles);
   }
 
@@ -109,19 +156,17 @@ async function runOS() {
     failures: [],
     attempts: result.context.attempts,
     maxAttempts: result.context.maxAttempts,
-  });
-
-  for (const file of result.generatedFiles) {
-    if (file.path.includes("src/") && !file.path.includes(".test.ts")) {
-      const skillDir = ".skills/actors";
-      if (!fs.existsSync(skillDir)) fs.mkdirSync(skillDir, { recursive: true });
-      const skillName = path.basename(file.path);
-      fs.writeFileSync(path.join(skillDir, skillName), file.content);
-      console.log(`⚡ Skill Extracted: ${skillName}`);
-    }
-  }
+  }, result.manifest);
 
   console.log("🎯 Handoff Complete. Engine spinning down.");
+}
+
+function writePromotionBundleIfPresent(runId: string, generatedFiles: GeneratedFile[]) {
+  if (generatedFiles.length === 0) return;
+  const withContent = generatedFiles.filter((file) => file.content.length > 0);
+  if (withContent.length === 0) return;
+  writePromotionBundle(".", runId, withContent);
+  console.log(`🧭 Promotion bundle recorded: .runs/${runId}/promotion/`);
 }
 
 function isOperatorCommentEvent() {
@@ -187,6 +232,15 @@ async function publishCockpitFromEnv(
     attempts: number;
     maxAttempts: number;
   },
+  manifest?: {
+    runId: string;
+    vowsHash?: string;
+    capsuleHash?: string;
+    metrics?: {
+      firstPassGreen?: boolean;
+      gateIdsFailed?: string[];
+    };
+  },
 ) {
   const target = resolveGitHubCommentTarget(process.env);
   if (!target.enabled) {
@@ -204,7 +258,7 @@ async function publishCockpitFromEnv(
     generatedFiles: runState.generatedFiles,
     verificationResults: [],
     failures: runState.failures,
-  });
+  }, ".", manifest);
 
   try {
     const result = await publishCockpitComment({

@@ -1,5 +1,6 @@
 import type { OSContext, OSEvent } from "../os/events.js";
 import type { RollbackInstructions } from "../run/rollback.js";
+import { isApproverAllowed } from "../policy/approvers.js";
 import { parseOperatorCommand } from "./commands.js";
 import { mapCommandToEvent } from "./events.js";
 import { renderCockpitComment } from "./cockpit.js";
@@ -9,6 +10,7 @@ export type GitHubCommentRouteInput = {
   actor: string;
   commentId: string;
   state: string;
+  rootDir?: string;
   context: OSContext;
   readRollback: () => RollbackInstructions;
 };
@@ -17,6 +19,11 @@ export type GitHubCommentRouteResult =
   | {
       handled: true;
       event: OSEvent;
+      responseBody: string;
+    }
+  | {
+      handled: true;
+      event: null;
       responseBody: string;
     }
   | {
@@ -31,6 +38,22 @@ export function routeGitHubComment(
   const command = parseOperatorCommand(input.body);
   if (command.type === "unknown") {
     return { handled: false, event: null, responseBody: null };
+  }
+
+  if (command.type === "approve") {
+    const rootDir = input.rootDir ?? ".";
+    if (!isApproverAllowed(input.actor, rootDir)) {
+      return {
+        handled: true,
+        event: null,
+        responseBody: [
+          "## Approval denied",
+          "",
+          `\`${input.actor}\` is not on the approver allowlist.`,
+          "Configure `approved_operators` in `src/policy/mandates.json` or set `VIBE_APPROVERS`.",
+        ].join("\n"),
+      };
+    }
   }
 
   const event = mapCommandToEvent(command, {

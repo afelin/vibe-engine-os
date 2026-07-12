@@ -1,4 +1,5 @@
 import type { ExecutionDag, ExecutionDagNode, RiskLevel } from "../os/events.js";
+import { parseExecutionDag } from "../constitution/parse.js";
 import {
   evaluateMandates,
   loadMandates,
@@ -22,6 +23,14 @@ export function validateDag(dag: ExecutionDag): string[] {
   }
 
   return errors;
+}
+
+export function validateAndParseDag(dag: ExecutionDag): ExecutionDag {
+  const errors = validateDag(dag);
+  if (errors.length > 0) {
+    throw new Error(errors.join("; "));
+  }
+  return parseExecutionDag(dag);
 }
 
 export function topologicalSort(nodes: ExecutionDagNode[]) {

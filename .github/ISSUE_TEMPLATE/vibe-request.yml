@@ -1,0 +1,83 @@
+name: Vibe Request
+description: Structured task for vibe-engine-os — intent, outcome, and file paths
+title: "[vibe] "
+labels:
+  - vibe/run
+  - vibe:safe
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **How this works:** Fill the fields below, submit the issue, and vibe-engine runs from the issue body — not from Cursor chat history.
+
+        **Depth labels** (change after submit if needed):
+        - `vibe:safe` — small/safe codegen (default on this template)
+        - `vibe:plan-only` — plan only, no code
+        - `vibe:ship` — tests + implementation + ship-oriented depth
+
+        **Operator commands** (issue comments): `/status` · `/approve` · `/retry` · `/rollback`
+
+  - type: textarea
+    id: intent
+    attributes:
+      label: Intent (one sentence)
+      description: What should change, in plain language?
+      placeholder: "Add a health-check endpoint so deploys can verify the app is alive."
+    validations:
+      required: true
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome (how we know it's done)
+      description: Checklist or acceptance criteria. Keep it testable.
+      placeholder: |
+        - GET /health returns { "ok": true }
+        - Unit test covers the happy path
+    validations:
+      required: true
+
+  - type: textarea
+    id: files
+    attributes:
+      label: Files to touch (exact paths)
+      description: Strongly recommended — reduces context rot by scoping the engine to the right files.
+      placeholder: |
+        src/health.ts
+        src/health.test.ts
+    validations:
+      required: false
+
+  - type: dropdown
+    id: depth
+    attributes:
+      label: Depth
+      description: Matches issue labels. After submit, edit labels if this dropdown differs from the defaults.
+      options:
+        - vibe:safe — safe generated files (default)
+        - vibe:plan-only — plan only, no codegen
+        - vibe:ship — ship-oriented (tests + broader scope)
+    validations:
+      required: true
+
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints (optional)
+      description: Protected paths, things to avoid, or scope limits.
+      placeholder: |
+        Do not change package.json
+        No auth / protected paths
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Extra context (optional)
+      description: Links or 2–3 bullets max. Avoid pasting long chat logs.
+      placeholder: |
+        Related issue #12
+        Must match existing patterns in src/cloud/
+    validations:
+      required: false

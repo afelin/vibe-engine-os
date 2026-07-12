@@ -2,4 +2,7 @@ node_modules/
 dist/
 coverage/
 .runs/
+CRITIC_FAILED.md
 repomix-output.txt
+.vibe/*
+!.vibe/.gitkeep

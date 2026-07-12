@@ -1,0 +1,20 @@
+name: vibe-validate
+description: Validate a Vibe Engine run capsule (manifest + vows hash) without LLM
+inputs:
+  run_dir:
+    description: Path to .runs/<runId> directory
+    required: true
+  root_dir:
+    description: Repository root (default .)
+    required: false
+    default: "."
+runs:
+  using: composite
+  steps:
+    - name: Validate capsule
+      shell: bash
+      working-directory: ${{ inputs.root_dir }}
+      run: |
+        RUN_DIR="${{ inputs.run_dir }}"
+        RUN_ID="$(basename "$RUN_DIR")"
+        npm run gate:validate-capsule -- "${{ inputs.root_dir }}" "$RUN_ID"

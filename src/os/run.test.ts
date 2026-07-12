@@ -4,6 +4,9 @@ import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runOSActor } from "./run.js";
 import type { GeneratedFile } from "./events.js";
+import { createOSPlayer, getPersistedSnapshot } from "./player.js";
+import { createInitialOSContext } from "./machine.js";
+import { writeActorSnapshot } from "../run/manifest.js";
 
 describe("vibe engine OS runtime", () => {
   const tmpDirs: string[] = [];
@@ -32,6 +35,7 @@ describe("vibe engine OS runtime", () => {
     delete process.env.VIBE_CODEGEN_API_KEY;
     delete process.env.VIBE_CODEGEN_MODEL;
     delete process.env.VIBE_DEPTH;
+    delete process.env.VIBE_RUN_ID;
 
     for (const dir of tmpDirs) {
       fs.rmSync(dir, { recursive: true, force: true });
@@ -70,6 +74,7 @@ describe("vibe engine OS runtime", () => {
             },
           ],
         }),
+        root,
       ),
     );
 
@@ -84,7 +89,12 @@ describe("vibe engine OS runtime", () => {
       {
         issueNumber: "100",
         issueTitle: "CODEOWNERS edit",
-        issueBody: ".github/CODEOWNERS",
+        issueBody: `### Intent (one sentence)
+Update CODEOWNERS for review routing
+
+### Files to touch (exact paths)
+.github/CODEOWNERS
+`,
         rootDir: root,
       },
       buildStubDeps(
@@ -104,6 +114,7 @@ describe("vibe engine OS runtime", () => {
             },
           ],
         }),
+        root,
       ),
     );
 
@@ -118,7 +129,12 @@ describe("vibe engine OS runtime", () => {
       {
         issueNumber: "102",
         issueTitle: "Dependency bump",
-        issueBody: "package.json",
+        issueBody: `### Intent (one sentence)
+Bump dependency version
+
+### Files to touch (exact paths)
+package.json
+`,
         rootDir: root,
       },
       buildStubDeps(
@@ -138,6 +154,7 @@ describe("vibe engine OS runtime", () => {
             },
           ],
         }),
+        root,
       ),
     );
 
@@ -158,7 +175,7 @@ describe("vibe engine OS runtime", () => {
         rootDir: root,
       },
       {
-        ...buildStubDeps([{ path: "src/plan-only.ts", content: "export {};" }]),
+        ...buildStubDeps([{ path: "src/plan-only.ts", content: "export {};" }], undefined, root),
         writePlan: () => {
           planned = true;
         },
@@ -200,6 +217,7 @@ describe("vibe engine OS runtime", () => {
           },
         ],
       }),
+      root,
     );
     const originalCall = deps.callOpenAI;
     deps.callOpenAI = async (...args) => {
@@ -222,6 +240,113 @@ describe("vibe engine OS runtime", () => {
     expect(calls).toBe(1);
   });
 
+  it("resumes past planning and skips planner when snapshot is at generating_patch", async () => {
+    const root = makeRoot(tmpDirs);
+    const runId = "resume-run-105";
+    process.env.VIBE_RUN_ID = runId;
+
+    const context = {
+      ...createInitialOSContext(),
+      issueNumber: "105",
+      issueTitle: "Resume test",
+      issueBody: "src/resume-smoke.ts",
+      vibeDepth: 3 as const,
+    };
+
+    const actor = createOSPlayer(context);
+    actor.send({ type: "preflight.completed", findings: [] });
+    actor.send({
+      type: "plan.created",
+      dag: {
+        issueNumber: "105",
+        title: "Resume test",
+        nodes: [
+          {
+            id: "edit-1",
+            title: "Edit",
+            kind: "edit" as const,
+            dependsOn: [],
+            risk: "low" as const,
+            files: ["src/resume-smoke.ts"],
+            acceptance: ["tests pass"],
+          },
+        ],
+      },
+    });
+    actor.send({ type: "risk.reviewed", risk: "low", reason: "safe" });
+    writeActorSnapshot(root, runId, getPersistedSnapshot(actor));
+
+    let llmCalls = 0;
+    let plannerCalls = 0;
+    const deps = buildStubDeps(
+      [{ path: "src/resume-smoke.ts", content: "export const ok = true;\n" }],
+      undefined,
+      root,
+    );
+    const originalCall = deps.callOpenAI;
+    deps.callOpenAI = async (...args) => {
+      llmCalls++;
+      const user = args[4];
+      if (typeof user === "string" && user.includes("execution blueprint")) {
+        plannerCalls++;
+      }
+      if (typeof user === "string" && user.includes("Execute this plan")) {
+        return JSON.stringify({
+          files: [{ path: "src/resume-smoke.ts", content: "export const ok = true;\n" }],
+        });
+      }
+      return originalCall(...args);
+    };
+
+    const result = await runOSActor(
+      {
+        issueNumber: "105",
+        issueTitle: "Resume test",
+        issueBody: "src/resume-smoke.ts",
+        rootDir: root,
+      },
+      deps,
+    );
+
+    expect(result.success).toBe(true);
+    expect(plannerCalls).toBe(0);
+    expect(llmCalls).toBeGreaterThanOrEqual(1);
+    expect(result.manifest?.vowsHash).toBeTruthy();
+    expect(result.manifest?.capsuleHash).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it("uses zero-token release gate without calling the planner LLM", async () => {
+    const root = makeRoot(tmpDirs);
+    let llmCalls = 0;
+    const deps = buildStubDeps([], undefined, root);
+    const originalCall = deps.callOpenAI;
+    deps.callOpenAI = async (...args) => {
+      llmCalls++;
+      return originalCall(...args);
+    };
+
+    const result = await runOSActor(
+      {
+        issueNumber: "3",
+        issueTitle: "cloud loop",
+        issueBody: "src/cloud-loop-smoke.ts src/cloud-loop-smoke.test.ts",
+        rootDir: root,
+      },
+      deps,
+    );
+
+    expect(result.success).toBe(true);
+    expect(llmCalls).toBe(0);
+    expect(result.generatedFiles.map((file) => file.path)).toEqual([
+      "src/cloud-loop-smoke.ts",
+      "src/cloud-loop-smoke.test.ts",
+    ]);
+    expect(result.manifest?.bondHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(
+      fs.existsSync(path.join(root, ".runs/bonds/issue-3.bond.json")),
+    ).toBe(true);
+  });
+
   it("runs validators before writing generated files to disk", async () => {
     let wroteToDisk = false;
     const root = makeRoot(tmpDirs);
@@ -242,6 +367,7 @@ describe("vibe engine OS runtime", () => {
           },
         ],
       }),
+      root,
     );
     const originalWrite = deps.writeFilesToDisk;
     deps.writeFilesToDisk = (files) => {
@@ -270,7 +396,11 @@ function makeRoot(tmpDirs: string[]) {
   return root;
 }
 
-function buildStubDeps(files: GeneratedFile[], plannerJson?: string) {
+function buildStubDeps(
+  files: GeneratedFile[],
+  plannerJson?: string,
+  root = ".",
+) {
   let llmCalls = 0;
   return {
     callOpenAI: async (
@@ -312,9 +442,10 @@ function buildStubDeps(files: GeneratedFile[], plannerJson?: string) {
     writeFilesToDisk: (generated: GeneratedFile[]) => {
       const backups = new Map<string, string | null>();
       for (const file of generated) {
-        backups.set(file.path, null);
-        fs.mkdirSync(path.dirname(file.path), { recursive: true });
-        fs.writeFileSync(file.path, file.content);
+        const filepath = path.join(root, file.path);
+        backups.set(filepath, null);
+        fs.mkdirSync(path.dirname(filepath), { recursive: true });
+        fs.writeFileSync(filepath, file.content);
       }
       return backups;
     },
