@@ -1,8 +1,9 @@
 #!/usr/bin/env tsx
-import * as fs from "node:fs";
-import * as path from "node:path";
 import { execSync } from "node:child_process";
 import { readRunManifest } from "../run/manifest.js";
+import { hasEventLedger, replayRun } from "../os/replay.js";
+import { sanitizeRunId } from "../run/paths.js";
+import { callReleaseGateTool } from "../release-gate/mcp-handlers.js";
 import { readTaskBond } from "./store.js";
 
 const rootDir = process.argv[2] ?? ".";
@@ -90,26 +91,67 @@ function checkCapsule(runIdValue: string): void {
     record("capsule.validate", true, "skipped (no run id)");
     return;
   }
+  let safeRunId: string;
   try {
-    execSync(`npm run gate:validate-capsule -- "${rootDir}" "${runIdValue}"`, {
-      cwd: rootDir,
-      stdio: "pipe",
-      encoding: "utf8",
-    });
-    record("capsule.validate", true, runIdValue);
+    safeRunId = sanitizeRunId(runIdValue);
   } catch (error: unknown) {
-    const message =
-      error && typeof error === "object" && "stderr" in error
-        ? String((error as { stderr?: string }).stderr ?? "")
-        : "validate-capsule failed";
+    const message = error instanceof Error ? error.message : "invalid run id";
+    record("capsule.validate", false, message);
+    return;
+  }
+  try {
+    const text = callReleaseGateTool("validate_capsule", {
+      root_dir: rootDir,
+      run_id: safeRunId,
+    });
+    const parsed = JSON.parse(text) as { valid: boolean; manifestError?: string };
+    record(
+      "capsule.validate",
+      parsed.valid === true,
+      parsed.valid ? safeRunId : (parsed.manifestError ?? "validate-capsule failed"),
+    );
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "validate-capsule failed";
     record("capsule.validate", false, message.slice(0, 200));
   }
+}
+
+function checkReplayDeterministic(runIdValue: string): void {
+  if (!runIdValue) {
+    record("replay.deterministic", true, "skipped (no run id)");
+    return;
+  }
+  let safeRunId: string;
+  try {
+    safeRunId = sanitizeRunId(runIdValue);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "invalid run id";
+    record("replay.deterministic", false, message);
+    return;
+  }
+  if (!hasEventLedger(rootDir, safeRunId)) {
+    record(
+      "replay.deterministic",
+      true,
+      "skipped (legacy run without events.ndjson)",
+    );
+    return;
+  }
+  const result = replayRun(rootDir, safeRunId);
+  record(
+    "replay.deterministic",
+    result.ok,
+    result.ok
+      ? result.replayedHash
+      : (result.reason ?? "replayed snapshot mismatch"),
+  );
 }
 
 runGauntlet();
 checkBondForIssue();
 checkManifestBond(runId);
 checkCapsule(runId);
+checkReplayDeterministic(runId);
 
 const failed = checks.filter((c) => !c.ok);
 for (const check of checks) {

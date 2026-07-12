@@ -101,7 +101,17 @@ jobs:
           echo "GITHUB_SHA=${{ github.sha }}" >> "$GITHUB_ENV"
           echo "GITHUB_RUN_ID=${{ github.run_id }}" >> "$GITHUB_ENV"
           echo "GITHUB_DELIVERY_ID=${{ github.event.delivery_id || github.run_id }}" >> "$GITHUB_ENV"
-          echo "VIBE_TEST_MODE=full" >> "$GITHUB_ENV"
+
+          LABELS_LOWER=$(echo "$ISSUE_LABELS" | tr '[:upper:]' '[:lower:]')
+          DEPTH="${VIBE_DEPTH:-3}"
+          if echo "$LABELS_LOWER" | grep -q "vibe:plan-only"; then DEPTH=1; fi
+          if echo "$LABELS_LOWER" | grep -q "vibe:safe"; then DEPTH=2; fi
+          if echo "$LABELS_LOWER" | grep -q "vibe:ship"; then DEPTH=4; fi
+          if [ "$DEPTH" -ge 3 ] 2>/dev/null; then
+            echo "VIBE_TEST_MODE=subgraph" >> "$GITHUB_ENV"
+          else
+            echo "VIBE_TEST_MODE=full" >> "$GITHUB_ENV"
+          fi
 
           if [ "${{ github.event_name }}" == "issue_comment" ]; then
             echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
@@ -174,7 +184,10 @@ jobs:
 
       - name: Validate capsule
         run: |
-          RUN_ID=$(ls .runs 2>/dev/null | grep -v idempotency | grep -v scoreboard | grep -v research | grep -v approvals | grep -v bonds | grep -v gauntlet | head -1 || true)
+          RUN_ID=""
+          if [ -f ".runs/run-id.txt" ]; then
+            RUN_ID="$(tr -d '[:space:]' < .runs/run-id.txt)"
+          fi
           if [ -n "$RUN_ID" ] && [ -f ".runs/$RUN_ID/manifest.json" ]; then
             npm run gate:validate-capsule -- . "$RUN_ID"
             echo "RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
@@ -189,12 +202,23 @@ jobs:
           RUN_ID: ${{ env.RUN_ID }}
         run: npm run bond:preflight -- . "$ISSUE_NUMBER" "$RUN_ID"
 
+      - name: Replay determinism gate
+        if: ${{ env.RUN_ID != '' }}
+        env:
+          RUN_ID: ${{ env.RUN_ID }}
+        run: |
+          if [ -f ".runs/$RUN_ID/events.ndjson" ]; then
+            npm run replay -- . "$RUN_ID"
+          else
+            echo "No event ledger to replay (legacy run without events.ndjson)"
+          fi
+
       - name: Apply promotion bundle
         if: ${{ env.RUN_ID != '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_SHA: ${{ github.sha }}
+          VIBE_SKIP_CHECK: "1"
         run: npm run promote:apply -- . "$RUN_ID"
 
       - name: Format
@@ -219,5 +243,16 @@ jobs:
               fi
             done < <(node -e "JSON.parse(require('fs').readFileSync('.runs/$RUN_ID/manifest.json','utf8')).generatedFiles.forEach(f=>console.log(f))")
           fi
-          git commit -m "feat(ai): promotion for #${{ needs.gate-check.outputs.issue_number }}" || echo "No changes"
+          git commit -m "feat(ai): promotion for #${{ needs.gate-check.outputs.issue_number }}" -m "Assisted-by: vibe-engine-os" || echo "No changes"
           git push origin "$BRANCH_NAME" || git push --set-upstream origin "$BRANCH_NAME" || true
+          echo "VIBE_HEAD_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Post promotion gate on branch head
+        if: ${{ env.RUN_ID != '' && env.VIBE_HEAD_SHA != '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          VIBE_HEAD_SHA: ${{ env.VIBE_HEAD_SHA }}
+          VIBE_CHECK_ONLY: "1"
+          RUN_ID: ${{ env.RUN_ID }}
+        run: npm run promote:apply -- . "$RUN_ID"

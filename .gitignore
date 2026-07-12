@@ -2,6 +2,7 @@ node_modules/
 dist/
 coverage/
 .runs/
+.env
 CRITIC_FAILED.md
 repomix-output.txt
 .vibe/*

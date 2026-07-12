@@ -15,6 +15,8 @@ body:
         - `vibe:plan-only` — plan only, no code
         - `vibe:ship` — tests + implementation + ship-oriented depth
 
+        **Bound files:** list **2–4 exact paths** under Files to touch — enough to scope codegen, not so many that context rots.
+
         **Operator commands** (issue comments): `/status` · `/approve` · `/retry` · `/rollback`
 
   - type: textarea
@@ -41,10 +43,11 @@ body:
     id: files
     attributes:
       label: Files to touch (exact paths)
-      description: Strongly recommended — reduces context rot by scoping the engine to the right files.
+      description: List 2–4 paths (required at depth ≥ 2). Scopes codegen and TaskBond — fewer paths, less context rot.
       placeholder: |
         src/health.ts
         src/health.test.ts
+        src/routes/health-route.ts
     validations:
       required: false
 

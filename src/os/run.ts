@@ -41,8 +41,10 @@ import type {
   ExecutionDag,
   GeneratedFile,
   OSContext,
+  OSEvent,
   VerificationResult,
 } from "./events.js";
+import { appendOsEvent, initializeEventLedger } from "./replay.js";
 import {
   appendScoreboardEntry,
   readActorSnapshot,
@@ -197,6 +199,19 @@ export async function runOSActor(
     initialContext,
     resumeSnapshot ? { snapshot: resumeSnapshot } : undefined,
   );
+  // Event ledger for deterministic replay (npm run replay). Legacy resumed
+  // runs without a ledger cannot be replayed from an initial context, so
+  // recording is disabled for them.
+  const recordEvents = initializeEventLedger(
+    rootDir,
+    runId,
+    initialContext,
+    Boolean(resumeSnapshot),
+  );
+  const send = (event: OSEvent): void => {
+    if (recordEvents) appendOsEvent(rootDir, runId, event);
+    actor.send(event);
+  };
   const releaseGate = resolveReleaseGatePatch(input.issueTitle, input.issueBody);
   const deterministicPatch = releaseGate?.files ?? null;
   const constitution = deps.readConstitution();
@@ -206,7 +221,7 @@ export async function runOSActor(
 
   appendTraceSpan(rootDir, runId, { phase: "preflight" });
   if (!pastPlanning) {
-    actor.send({ type: "preflight.completed", findings: [] });
+    send({ type: "preflight.completed", findings: [] });
   }
 
   const gateBoundFiles = releaseGate?.files.map((file) => file.path) ?? [];
@@ -294,7 +309,7 @@ export async function runOSActor(
         acceptance: ["release gate satisfied"],
       })),
     };
-    actor.send({ type: "plan.created", dag });
+    send({ type: "plan.created", dag });
   } else {
     const planner = resolvePlannerEndpoint();
     if (planner === "off") {
@@ -327,7 +342,7 @@ export async function runOSActor(
 
     const plannerSystem = depth === 0
       ? `You are a Software 3.0 Architect. Explain the request without proposing file edits.\n${constitution}`
-      : `You are a Software 3.0 Architect. Follow this constitution strictly:\n${constitution}\n\nGlobal Codebase Map:\n${contextBlob}${capContext(evoMemContext ? `\n\n⚠️ HISTORICAL RUNTIME ERRORS TO AVOID:\n${evoMemContext}` : "", 2000)}${recalledFailures ? `\n\n⚠️ RECENT STRUCTURED FAILURES FOR THESE PATHS:\n${recalledFailures}` : ""}`;
+      : `You are a Software 3.0 Architect. Follow this constitution strictly:\n${constitution}\n\nGlobal Codebase Map:\n${contextBlob}${formatEvoMemForPlanner(evoMemContext)}${recalledFailures ? `\n\n⚠️ RECENT STRUCTURED FAILURES FOR THESE PATHS:\n${recalledFailures}` : ""}`;
 
     const plannerUser =
       depth === 0
@@ -365,7 +380,7 @@ ${vibe}`;
 
     plan = depth >= 2 ? rawPlan : rawPlan;
     dag = depth >= 2 ? parsePlannerDag(rawPlan, fallbackDag) : fallbackDag;
-    actor.send({ type: "plan.created", dag });
+    send({ type: "plan.created", dag });
     appendTraceSpan(rootDir, runId, { phase: "planner", detail: plan.slice(0, 200) });
   }
 
@@ -510,7 +525,7 @@ ${vibe}`;
     (caps.enforcesProtectedApproval || riskReview.risk === "high");
 
   if (!skipToCodegen) {
-    actor.send({
+    send({
       type: "risk.reviewed",
       risk: riskReview.risk,
       reason: riskReview.reason,
@@ -519,7 +534,7 @@ ${vibe}`;
 
     if (actor.getSnapshot().value === "awaiting_approval") {
       if (approvedBy) {
-        actor.send({
+        send({
           type: "approval.granted",
           actor: approvedBy,
           commentId: "env-approval",
@@ -546,7 +561,7 @@ ${vibe}`;
       }
     }
   } else if (approvedBy) {
-    actor.send({
+    send({
       type: "approval.granted",
       actor: approvedBy,
       commentId: "env-approval",
@@ -584,7 +599,7 @@ ${vibe}`;
 
   while (attempts < mandates.max_attempts) {
     attempts++;
-    prepareCodegenAttempt(actor, attempts);
+    prepareCodegenAttempt(actor, send, attempts);
 
     let generatedFiles: GeneratedFile[];
     if (deterministicPatch) {
@@ -636,11 +651,11 @@ ${vibe}`;
       feedbackMarkdown = formatGateFailuresMarkdown(gateFailures);
       recordedErrors.push(feedbackMarkdown);
       gateIdsFailed.push(...gateFailures.map((item) => item.gate_id));
-      actor.send({
+      send({
         type: "verification.failed",
         failure: toClassifiedFailure("model_output", "Generated patch validation failed", feedbackMarkdown),
       });
-      if (!prepareCodegenRetry(actor)) break;
+      if (!prepareCodegenRetry(actor, send)) break;
       continue;
     }
 
@@ -776,12 +791,12 @@ ${vibe}`;
 
     if (loopPassed) {
       finalVerifiedFiles = generatedFiles;
-      actor.send({ type: "patch.generated", files: generatedFiles });
-      actor.send({ type: "verification.passed", results: verificationResults });
+      send({ type: "patch.generated", files: generatedFiles });
+      send({ type: "verification.passed", results: verificationResults });
       if (caps.allowsDeploy) {
-        actor.send({ type: "publish.completed", previewUrl: "preview://local" });
+        send({ type: "publish.completed", previewUrl: "preview://local" });
       } else {
-        actor.send({ type: "publish.completed" });
+        send({ type: "publish.completed" });
       }
 
       if (attempts > 1 && recordedErrors.length > 0) {
@@ -793,7 +808,7 @@ ${vibe}`;
     }
 
     deps.restoreBackups(backups);
-    actor.send({
+    send({
       type: "verification.failed",
       failure: toClassifiedFailure(
         gateFailures[0]?.gate_id === "vitest" ? "test" : "compile",
@@ -801,7 +816,7 @@ ${vibe}`;
         feedbackMarkdown,
       ),
     });
-    if (!prepareCodegenRetry(actor)) break;
+    if (!prepareCodegenRetry(actor, send)) break;
   }
 
   if (finalVerifiedFiles.length === 0) {
@@ -959,20 +974,27 @@ function loadResumeSnapshot(
   return snapshot;
 }
 
-function prepareCodegenAttempt(actor: OSPlayer, attempt: number) {
+function prepareCodegenAttempt(
+  actor: OSPlayer,
+  send: (event: OSEvent) => void,
+  attempt: number,
+) {
   const state = String(actor.getSnapshot().value);
   if (state === "learning") {
-    actor.send({ type: "codegen.retry" });
+    send({ type: "codegen.retry" });
   }
-  actor.send({ type: "attempt.started", attempt });
+  send({ type: "attempt.started", attempt });
 }
 
-function prepareCodegenRetry(actor: OSPlayer): boolean {
+function prepareCodegenRetry(
+  actor: OSPlayer,
+  send: (event: OSEvent) => void,
+): boolean {
   const snapshot = actor.getSnapshot();
   if (snapshot.context.attempts >= snapshot.context.maxAttempts) {
     return false;
   }
-  actor.send({ type: "codegen.retry" });
+  send({ type: "codegen.retry" });
   return String(actor.getSnapshot().value) === "generating_patch";
 }
 
@@ -1084,10 +1106,41 @@ function extractExecError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function capContext(text: string, maxChars: number): string {
+export function dedupeLines(text: string): string {
+  const lines = text.split("\n");
+  const kept = new Set<string>();
+  const result: string[] = [];
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const line = lines[i]!;
+    if (!kept.has(line)) {
+      kept.add(line);
+      result.unshift(line);
+    }
+  }
+  return result.join("\n");
+}
+
+export function capContext(
+  text: string,
+  maxChars: number,
+  from: "head" | "tail" = "head",
+): string {
   if (text.length <= maxChars) return text;
   const omitted = text.length - maxChars;
+  if (from === "tail") {
+    return `…[context truncated: ${omitted} chars omitted from start to fit model input limits]\n\n${text.slice(-maxChars)}`;
+  }
   return `${text.slice(0, maxChars)}\n\n…[context truncated: ${omitted} chars omitted to fit model input limits]`;
+}
+
+function formatEvoMemForPlanner(evoMem: string): string {
+  if (!evoMem) return "";
+  const deduped = dedupeLines(evoMem);
+  return capContext(
+    `\n\n⚠️ HISTORICAL RUNTIME ERRORS TO AVOID:\n${deduped}`,
+    2000,
+    "tail",
+  );
 }
 
 function getGitValue(command: string, fallback: string) {

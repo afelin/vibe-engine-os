@@ -126,4 +126,21 @@ describe("GitHub comment router", () => {
       responseBody: null,
     });
   });
+
+  it("nudges Vibe Request when comment looks like ship work", () => {
+    const result = routeGitHubComment({
+      body: "Please implement src/foo.ts and add tests in src/foo.test.ts",
+      actor: "alice",
+      commentId: "comment-ship",
+      state: "learning",
+      repository: "afelin/vibe-engine-os",
+      context,
+      readRollback: () => ({ found: false, body: "missing" }),
+    });
+
+    expect(result.handled).toBe(true);
+    expect(result.event).toBeNull();
+    expect(result.responseBody).toContain("This looks like ship work");
+    expect(result.responseBody).toContain("vibe-request.yml");
+  });
 });

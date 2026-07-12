@@ -18,8 +18,16 @@ if (!runIdArg) {
 
 async function main() {
   const runId = sanitizeRunId(runIdArg);
-  const { applied } = applyPromotionBundle(rootDir, runId);
-  console.log(`Applied ${applied.length} file(s) from promotion bundle.`);
+  const checkOnly = process.env.VIBE_CHECK_ONLY === "1";
+  let appliedCount = 0;
+
+  if (!checkOnly) {
+    const { applied } = applyPromotionBundle(rootDir, runId);
+    appliedCount = applied.length;
+    console.log(`Applied ${appliedCount} file(s) from promotion bundle.`);
+  }
+
+  if (process.env.VIBE_SKIP_CHECK === "1") return;
 
   const manifest = readRunManifest(rootDir, runId);
   if (!manifest) {
@@ -27,7 +35,7 @@ async function main() {
     process.exit(1);
   }
 
-  await postPromotionCheck(rootDir, runId, manifest, applied.length > 0);
+  await postPromotionCheck(rootDir, runId, manifest, checkOnly || appliedCount > 0);
 }
 
 async function postPromotionCheck(
@@ -38,7 +46,7 @@ async function postPromotionCheck(
 ) {
   const token = process.env.GITHUB_TOKEN;
   const repository = process.env.GITHUB_REPOSITORY;
-  const headSha = process.env.GITHUB_SHA;
+  const headSha = process.env.VIBE_HEAD_SHA ?? process.env.GITHUB_SHA;
 
   if (!token || !repository || !headSha) return;
 

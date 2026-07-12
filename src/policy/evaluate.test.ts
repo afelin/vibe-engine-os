@@ -33,4 +33,17 @@ describe("agent mandate evaluation", () => {
     expect(result.passed).toBe(true);
     expect(result.requiresApproval).toBe(false);
   });
+
+  it("blocks obfuscated forbidden paths after normalization", () => {
+    const result = evaluateMandates(["src/./auth/session.ts"]);
+    expect(result.passed).toBe(false);
+    expect(result.violations[0]?.rule).toBe("forbidden");
+    expect(result.violations[0]?.prefix).toBe("src/auth/");
+  });
+
+  it("blocks traversal paths before prefix checks", () => {
+    const result = evaluateMandates(["../../../.github/workflows/deploy.yml"]);
+    expect(result.passed).toBe(false);
+    expect(result.violations[0]?.prefix).toBe("unsafe_path");
+  });
 });

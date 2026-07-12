@@ -3,6 +3,31 @@ import * as path from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("GitHub Actions workflow", () => {
+  it("reads run id from artifact metadata instead of ls", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/forever.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain(".runs/run-id.txt");
+    expect(workflow).not.toContain("grep -v idempotency");
+  });
+
+  it("posts promotion gate on pushed branch head sha", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/forever.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain("Post promotion gate on branch head");
+    expect(workflow).toContain("VIBE_HEAD_SHA=$(git rev-parse HEAD)");
+    expect(workflow).toContain("VIBE_SKIP_CHECK");
+    expect(workflow).toContain("VIBE_CHECK_ONLY");
+    expect(workflow.indexOf("git rev-parse HEAD")).toBeLessThan(
+      workflow.indexOf("Post promotion gate on branch head"),
+    );
+  });
+
   it("installs project dependencies before running the agent", () => {
     const workflow = fs.readFileSync(
       path.join(process.cwd(), ".github/workflows/forever.yml"),
@@ -115,6 +140,20 @@ describe("GitHub Actions workflow", () => {
     expect(workflow).not.toContain("git add .");
   });
 
+  it("runs the replay determinism gate before promotion apply", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/forever.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain("Replay determinism gate");
+    expect(workflow).toContain("npm run replay");
+    expect(workflow).toContain("events.ndjson");
+    expect(workflow.indexOf("npm run replay")).toBeLessThan(
+      workflow.indexOf("promote:apply"),
+    );
+  });
+
   it("runs bond preflight before promotion apply", () => {
     const workflow = fs.readFileSync(
       path.join(process.cwd(), ".github/workflows/forever.yml"),
@@ -125,6 +164,51 @@ describe("GitHub Actions workflow", () => {
     expect(workflow.indexOf("bond:preflight")).toBeLessThan(
       workflow.indexOf("promote:apply"),
     );
+  });
+
+  it("defaults subgraph vitest for depth >= 3 in CI", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/forever.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain("VIBE_TEST_MODE=subgraph");
+    expect(workflow).toContain('if [ "$DEPTH" -ge 3 ]');
+    expect(workflow).toContain("vibe:ship");
+  });
+
+  it("audits Assisted-by attribution on pull requests to main", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/tdd-attribution.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain("pull_request");
+    expect(workflow).toContain("branches: [main]");
+    expect(workflow).toContain("scripts/audit-attribution.mjs");
+    expect(workflow).toContain("fetch-depth: 0");
+    expect(workflow).toContain("name: Audit Assisted-by attribution");
+  });
+
+  it("self-attributes engine-generated promotion commits", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/forever.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain("Assisted-by: vibe-engine-os");
+  });
+
+  it("wires optional auto-merge when CI is green", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/vibe-auto-merge.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain("pull_request");
+    expect(workflow).toContain("check_suite");
+    expect(workflow).toContain("pr:auto-merge");
+    expect(workflow).toContain("VIBE_AUTO_MERGE");
   });
 
   it("uses structured gate failure feedback in the runtime ratchet", () => {

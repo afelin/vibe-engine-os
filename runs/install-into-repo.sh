@@ -36,10 +36,12 @@ copy_if_exists "$SOURCE/.github/workflows/forever.yml" "$TARGET/.github/workflow
 copy_if_exists "$SOURCE/.cursor/skills/vibe-engine/SKILL.md" "$TARGET/.cursor/skills/vibe-engine/SKILL.md"
 copy_if_exists "$SOURCE/runs/activate.sh" "$TARGET/runs/activate.sh"
 copy_if_exists "$SOURCE/runs/local-issue.sh" "$TARGET/runs/local-issue.sh"
+copy_if_exists "$SOURCE/.env.example" "$TARGET/.env.example"
 copy_if_exists "$SOURCE/action.yml" "$TARGET/action.yml"
 copy_if_exists "$SOURCE/.vibe/.gitkeep" "$TARGET/.vibe/.gitkeep"
 
 echo ""
 echo "Done. Next steps in target repo:"
 echo "  npm install"
+echo "  cp .env.example .env   # optional: VIBE_PROJECT_PROFILE=tabdab for Lovable apps"
 echo "  npm run activate"

@@ -2,6 +2,8 @@
 
 Open specification for agents (any framework) integrating with vibe-engine-os.
 
+**Solo operators:** start with the [Solo Vibe Coder Guide](./solo-vibe-coder-guide.md). **Stakeholders:** see [Plain-Language Briefing](./plain-language-briefing.md).
+
 ## Ingress: PlayEvent
 
 Agents send typed events matching the OS machine (`src/os/machine.ts`):
@@ -53,7 +55,7 @@ Before planning at depth ≥ 2, the runtime **seals a TaskBond** from the issue 
 - **boundFiles** (exact paths — **required** at depth ≥ 2)
 - **bondHash** on manifest and `.runs/bonds/issue-<N>.bond.json`
 
-Bond evaluation uses **agent mandates** (`evaluate_mandates`) plus bond policy in `src/policy/mandates.json`. Scoped context uses **boundFiles only** — no repomix fallback when paths are bound.
+Bond evaluation uses **agent mandates** (`evaluate_mandates`) plus bond policy in `src/policy/mandates.json`. Proposed paths are normalized before prefix checks (blocks obfuscated paths like `src/./auth/…`). Scoped context uses **boundFiles only** — no repomix fallback when paths are bound.
 
 ```bash
 npm run bond:seal -- . 42 "Title" "### Intent...\n### Files...\nsrc/foo.ts"
@@ -93,6 +95,35 @@ Activation attestation: `.vibe/activated.json`
 Canonical SHA-256 over `{ manifest, snapshot, traceTail, vowsHash }`.
 
 Written to `.runs/<runId>/capsule.hash`. Verifiable via MCP or HTTP.
+
+## Replay Determinism Gate
+
+Every run appends its OS events to `.runs/<runId>/events.ndjson` (first line records the initial context). Replay rebuilds a fresh player from that ledger and compares the SHA-256 of the replayed snapshot against the stored `actor.snapshot.json`:
+
+```bash
+npm run replay -- . <runId>   # prints { ok, replayedHash, storedHash }, exits 1 on mismatch
+```
+
+Enforced twice before promotion:
+
+- `bond:preflight` check `replay.deterministic` — **skip-ok** for legacy runs without `events.ndjson`
+- CI `Replay determinism gate` step in `forever.yml`, before `promote:apply`
+
+## Attribution
+
+PRs to `main` must carry an `Assisted-by:` trailer on any commit whose message mentions AI tooling (cursor, claude, gpt, copilot, gemini, groq). Enforced by `.github/workflows/tdd-attribution.yml` running `scripts/audit-attribution.mjs` (fail-open on git errors). The engine holds itself to the rule: promotion commits from `forever.yml` append `Assisted-by: vibe-engine-os`.
+
+## Auto-merge (optional)
+
+Opt-in autonomous squash merge when CI is green:
+
+- **Label:** `vibe/auto-merge` on the PR (default — per-PR opt-in)
+- **Repo variable:** `VIBE_AUTO_MERGE=1` skips the label requirement
+- **Workflow:** `.github/workflows/vibe-auto-merge.yml` (triggers on PR updates + `check_suite: completed`)
+- **Gate:** requires `mergeable_state: clean`, successful **Vibe Promotion Gate**, and **Audit Assisted-by attribution** on the PR head SHA
+- **CLI:** `npm run pr:auto-merge -- <pr_number> [--dry-run]` or `--sha <commit>`
+
+Cursor skill: `.cursor/skills/vibe-auto-merge`
 
 ## Gate Resolution
 

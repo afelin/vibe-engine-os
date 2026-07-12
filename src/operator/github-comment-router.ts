@@ -4,6 +4,7 @@ import { isApproverAllowed } from "../policy/approvers.js";
 import { parseOperatorCommand } from "./commands.js";
 import { mapCommandToEvent } from "./events.js";
 import { renderCockpitComment } from "./cockpit.js";
+import { detectShipWork } from "./ship-heuristic.js";
 
 export type GitHubCommentRouteInput = {
   body: string;
@@ -12,6 +13,9 @@ export type GitHubCommentRouteInput = {
   state: string;
   rootDir?: string;
   context: OSContext;
+  labels?: string;
+  repository?: string;
+  hasBond?: boolean;
   readRollback: () => RollbackInstructions;
 };
 
@@ -37,6 +41,19 @@ export function routeGitHubComment(
 ): GitHubCommentRouteResult {
   const command = parseOperatorCommand(input.body);
   if (command.type === "unknown") {
+    const ship = detectShipWork({
+      body: input.body,
+      labels: input.labels,
+      hasBond: input.hasBond,
+      repository: input.repository,
+    });
+    if (ship.looksLikeShipWork && ship.nudge) {
+      return {
+        handled: true,
+        event: null,
+        responseBody: ship.nudge,
+      };
+    }
     return { handled: false, event: null, responseBody: null };
   }
 

@@ -3,6 +3,21 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseMandates } from "../constitution/parse.js";
 
+/** Normalize agent-proposed paths before prefix checks (blocks `src/./auth/` bypasses). */
+export function normalizeProposedPath(filePath: string): string {
+  return path.posix.normalize(filePath.replace(/\\/g, "/"));
+}
+
+export function isUnsafeProposedPath(filePath: string): boolean {
+  const normalized = normalizeProposedPath(filePath);
+  return (
+    normalized.includes("..") ||
+    path.posix.isAbsolute(normalized) ||
+    normalized.startsWith("~") ||
+    filePath.includes("\0")
+  );
+}
+
 export type BondPolicy = {
   require_bound_files_min_depth: number;
   max_bound_files: number;
@@ -60,15 +75,21 @@ export function evaluateMandates(
 ): MandateEvaluation {
   const violations: MandateViolation[] = [];
 
-  for (const filePath of proposedFiles) {
+  for (const rawPath of proposedFiles) {
+    if (isUnsafeProposedPath(rawPath)) {
+      violations.push({ path: rawPath, rule: "forbidden", prefix: "unsafe_path" });
+      continue;
+    }
+
+    const filePath = normalizeProposedPath(rawPath);
     for (const prefix of mandates.forbidden_prefixes) {
       if (filePath.startsWith(prefix) || filePath === prefix.replace(/\/$/, "")) {
-        violations.push({ path: filePath, rule: "forbidden", prefix });
+        violations.push({ path: rawPath, rule: "forbidden", prefix });
       }
     }
     for (const prefix of mandates.require_approval_prefixes) {
       if (filePath.startsWith(prefix) || filePath === prefix) {
-        violations.push({ path: filePath, rule: "require_approval", prefix });
+        violations.push({ path: rawPath, rule: "require_approval", prefix });
       }
     }
   }

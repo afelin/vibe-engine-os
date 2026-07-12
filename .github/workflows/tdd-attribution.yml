@@ -1,0 +1,21 @@
+name: TDD Attribution Audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  attribution-audit:
+    name: Audit Assisted-by attribution
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Audit Assisted-by attribution
+        run: node scripts/audit-attribution.mjs origin/${{ github.base_ref }}

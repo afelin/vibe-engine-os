@@ -34,12 +34,13 @@ describe("vitest subgraph", () => {
     expect(cmd).toContain("src/a.test.ts");
   });
 
-  it("completes subgraph mapping quickly on this repo", () => {
+  it("completes subgraph mapping quickly on a small fixture", () => {
+    const root = makeFixture(tmpDirs);
     const started = Date.now();
-    const tests = mapChangedFilesToVitest(["src/index.ts"], ".");
+    const tests = mapChangedFilesToVitest(["src/foo.ts"], root);
     const elapsed = Date.now() - started;
-    expect(tests.length).toBeGreaterThanOrEqual(0);
-    expect(elapsed).toBeLessThan(30_000);
+    expect(tests).toContain("src/foo.test.ts");
+    expect(elapsed).toBeLessThan(1_000);
   });
 });
 

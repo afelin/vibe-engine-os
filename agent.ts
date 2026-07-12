@@ -52,6 +52,9 @@ async function runOS() {
       commentId: GITHUB_COMMENT_ID,
       state: "operator_command",
       rootDir: ".",
+      labels: process.env.VIBE_LABELS,
+      repository: process.env.GITHUB_REPOSITORY,
+      hasBond: fs.existsSync(path.join(".runs", "bonds", `issue-${ISSUE_NUMBER}.bond.json`)),
       context: {
         issueNumber: ISSUE_NUMBER,
         issueTitle: ISSUE_TITLE,
@@ -146,6 +149,11 @@ async function runOS() {
       renderRollbackInstructions(result.manifest),
     );
     writePromotionBundleIfPresent(result.manifest.runId, result.generatedFiles);
+    fs.writeFileSync(
+      path.join(".runs", "run-id.txt"),
+      `${result.manifest.runId}\n`,
+      "utf8",
+    );
     console.log(`🧭 Run manifest recorded: .runs/${result.manifest.runId}/manifest.json`);
     console.log(`🧭 Actor snapshot recorded: .runs/${result.manifest.runId}/actor.snapshot.json`);
     writeGeneratedFilesListFromEnv(result.manifest.generatedFiles);

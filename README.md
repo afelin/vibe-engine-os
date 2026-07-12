@@ -2,9 +2,13 @@
 
 Sovereign AI dev cluster with a **headless xmachines Play constitution**: one Zod catalog for all law artifacts, `definePlayer` for promotion authority, and crawl-based CI proof that the OS machine matches `gates.json`.
 
+**New to vibe coding?** Start with the [Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md) (activation + daily workflow) and the [Plain-Language Briefing](docs/plain-language-briefing.md) (what it does, problems solved, and why it matters).
+
 ## What it is
 
 vibe-engine-os is a **promotion gate**, not a codegen toy. Models propose JSON-shaped artifacts; the constitution catalog and OS machine guards reject bad input before disk write. Only verified snapshots promote to Git.
+
+Truth-driven gates (TDD): **deterministic replay** from `events.ndjson`, **Assisted-by** attribution on PRs, and an **adversarial gauntlet** that proves guardrails block forbidden changes.
 
 ## One-step activation
 
@@ -18,11 +22,21 @@ npm run activate
 
 `npm run activate` auto-runs `nvm install` / `nvm use` when nvm is available and your shell is below v22. It then runs `npm run check`, zero-token cloud-loop smoke, MCP gate smoke, exports schemas to `.vibe/schemas.json`, and writes `.vibe/activated.json` with vows attestation.
 
+## Documentation
+
+| Doc | Audience |
+| --- | --- |
+| [Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md) | Solo founders — activate, first issue, operator commands |
+| [Plain-Language Briefing](docs/plain-language-briefing.md) | Stakeholders — capabilities, problems solved, VFA assessment |
+| [Agent Protocol](docs/agent-protocol.md) | Agents & integrators — MCP, TaskBond, schemas, gates |
+| [OS Phases](docs/os-phases.md) | Promotion phase diagram (auto-derived from machine) |
+| [GitHub App](docs/github-app.md) | Enterprise — required checks, branch protection |
+
 ## Persona matrix
 
 | Persona | One step | Daily use |
 | --- | --- | --- |
-| **Lone AI engineer** | `npm run activate` | Issue + `vibe/run` label or `/vibe` in body |
+| **Solo vibe coder** | [Solo guide](docs/solo-vibe-coder-guide.md) → `npm run activate` | Vibe Request issue + `vibe/run` label |
 | **Agentic engineer** | activate + enable MCP in Cursor | `.cursor/skills/vibe-engine` enforces vows |
 | **Agents** | `docs/agent-protocol.md` + schemas URL | `evaluate_mandate`, `resolve_gate`, catalog JSON |
 | **Enterprise** | Install App doc + required check branch rule | Green **Vibe Promotion Gate** + capsule hash on PR |
@@ -76,7 +90,7 @@ Set `VIBE_DEPTH` in the environment before `npm run local-issue` or GitHub Actio
 
 ## MCP in Cursor
 
-Add `mcp.json` to Cursor settings (already in repo root):
+Repo root ships `mcp.json`. For project-scoped MCP in Cursor, copy or symlink to `.cursor/mcp.json` (already committed in this repo):
 
 ```json
 {
@@ -89,7 +103,50 @@ Add `mcp.json` to Cursor settings (already in repo root):
 }
 ```
 
+**Enable in Cursor:** Settings → MCP → ensure `vibe-release-gates` is on. Run from repo root so `npx tsx src/release-gate/mcp.ts` resolves.
+
 Use `constitution_schemas` for HPURL-ready JSON Schema and `validate_capsule` to verify a local run bundle.
+
+## Solo autopilot checklist
+
+Full walkthrough: **[Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md)**
+
+1. `npm run activate` on `main`
+2. Enable MCP (`mcp.json` / `.cursor/mcp.json`) + `.cursor/skills/vibe-engine`
+3. Open a [Vibe Request](.github/ISSUE_TEMPLATE/vibe-request.yml) issue with **2–4 bound file paths**, intent, and outcome
+4. Add label `vibe/run` (and `vibe:ship` for deploy depth)
+5. Watch **Sovereign OS Event Bus** workflow; green **Vibe Promotion Gate** on the PR
+6. Operator: `/status`, `/approve` (protected paths), `/retry`, `/rollback` via issue comments
+7. Optional: verify determinism with `npm run replay -- . <runId>` (see run folder under `.runs/`)
+
+Daily local runs at depth ≥ 3 default to `VIBE_TEST_MODE=subgraph` (changed-file vitest). Override with `VIBE_TEST_MODE=full` for full-suite parity.
+
+PR commits that mention AI tooling must include an `Assisted-by:` trailer (enforced by `tdd-attribution.yml`).
+
+## Optional auto-merge on green CI
+
+Add label **`vibe/auto-merge`** to a PR (or set repo variable **`VIBE_AUTO_MERGE=1`** for repo-wide opt-in). When branch protection checks and **Vibe Promotion Gate** are green, `.github/workflows/vibe-auto-merge.yml` squash-merges the PR.
+
+```bash
+npm run pr:auto-merge -- 15 --dry-run   # verify readiness locally
+```
+
+Skill: `.cursor/skills/vibe-auto-merge`
+
+## TabDab / Lovable profile
+
+For [tabdab-link-proof](https://github.com/afelin/tabdab-link-proof) or other Lovable apps:
+
+```bash
+# In target repo after install:
+cp .env.example .env   # set VIBE_PROJECT_PROFILE=tabdab
+
+# Or install vibe-engine-os layer into an existing repo:
+bash runs/install-into-repo.sh /path/to/tabdab-link-proof
+cd /path/to/tabdab-link-proof && npm install && npm run activate
+```
+
+`VIBE_PROJECT_PROFILE=tabdab` merges allowed prefixes from `src/policy/profiles/tabdab.json`.
 
 ## Run capsule layout
 
@@ -99,7 +156,8 @@ Each run writes under `.runs/<runId>/`:
 | --- | --- |
 | `manifest.json` | Issue, branch, generated files, metrics, `vowsHash`, `capsuleHash` |
 | `actor.snapshot.json` | XState persisted snapshot for resume |
-| `trace.jsonl` | Phase spans (preflight, codegen, tsc, vitest) |
+| `trace.ndjson` | Phase spans (preflight, codegen, tsc, vitest) |
+| `events.ndjson` | OS event ledger for deterministic replay (`npm run replay`) |
 | `capsule.hash` | SHA-256 promotion capsule |
 | `ROLLBACK.md` | Human rollback instructions |
 

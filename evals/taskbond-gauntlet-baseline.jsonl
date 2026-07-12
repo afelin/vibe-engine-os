@@ -14,3 +14,10 @@
 {"id":"tabdab_allow_04","case_hash":"42d9afd32756ec10","pass":true}
 {"id":"tabdab_disallowed_01","case_hash":"d6696d438553c22d","pass":true,"reason":"disallowed_prefix"}
 {"id":"require_approval_01","case_hash":"9410d66ad3e67be4","pass":true}
+{"id":"adv_workflow_bind_01","case_hash":"ec3274564e7f431b","pass":true,"reason":"forbidden_prefix"}
+{"id":"adv_abs_path_01","case_hash":"d4bfda10ec646b45","pass":true,"reason":"disallowed_prefix"}
+{"id":"adv_home_path_01","case_hash":"1e9e0a7580324884","pass":true,"reason":"disallowed_prefix"}
+{"id":"adv_intent_too_long_01","case_hash":"d20ab02a993f4d9e","pass":true,"reason":"intent_too_long"}
+{"id":"adv_too_many_files_01","case_hash":"09c69c9ed64b8bde","pass":true,"reason":"too_many_bound_files"}
+{"id":"adv_negative_balance_01","case_hash":"7e28e3eaec387b5f","pass":true,"reason":"forbidden_prefix"}
+{"id":"adv_obfuscated_path_01","case_hash":"abfb00db979433d3","pass":true,"reason":"forbidden_prefix"}
