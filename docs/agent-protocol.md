@@ -55,7 +55,7 @@ Before planning at depth ≥ 2, the runtime **seals a TaskBond** from the issue 
 - **boundFiles** (exact paths — **required** at depth ≥ 2)
 - **bondHash** on manifest and `.runs/bonds/issue-<N>.bond.json`
 
-Bond evaluation uses **agent mandates** (`evaluate_mandates`) plus bond policy in `src/policy/mandates.json`. Scoped context uses **boundFiles only** — no repomix fallback when paths are bound.
+Bond evaluation uses **agent mandates** (`evaluate_mandates`) plus bond policy in `src/policy/mandates.json`. Proposed paths are normalized before prefix checks (blocks obfuscated paths like `src/./auth/…`). Scoped context uses **boundFiles only** — no repomix fallback when paths are bound.
 
 ```bash
 npm run bond:seal -- . 42 "Title" "### Intent...\n### Files...\nsrc/foo.ts"

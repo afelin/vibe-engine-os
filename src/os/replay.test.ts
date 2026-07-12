@@ -83,6 +83,13 @@ describe("time-travel replay gate", () => {
     expect(verdict.ok).toBe(false);
     expect(verdict.reason).toContain("events.ndjson not found");
   });
+
+  it("rejects invalid run ids without touching the filesystem", () => {
+    const root = makeRoot(tmpDirs);
+    const verdict = replayRun(root, "../escape");
+    expect(verdict.ok).toBe(false);
+    expect(verdict.reason).toContain("Invalid runId");
+  });
 });
 
 function makeRoot(tmpDirs: string[]) {

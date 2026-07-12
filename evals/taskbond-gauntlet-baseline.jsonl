@@ -20,3 +20,4 @@
 {"id":"adv_intent_too_long_01","case_hash":"d20ab02a993f4d9e","pass":true,"reason":"intent_too_long"}
 {"id":"adv_too_many_files_01","case_hash":"09c69c9ed64b8bde","pass":true,"reason":"too_many_bound_files"}
 {"id":"adv_negative_balance_01","case_hash":"7e28e3eaec387b5f","pass":true,"reason":"forbidden_prefix"}
+{"id":"adv_obfuscated_path_01","case_hash":"abfb00db979433d3","pass":true,"reason":"forbidden_prefix"}

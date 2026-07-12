@@ -75,13 +75,21 @@ function sha256Json(value: unknown): string {
 }
 
 export function replayRun(rootDir: string, runId: string): ReplayResult {
-  if (!hasEventLedger(rootDir, runId)) {
+  let safeRunId: string;
+  try {
+    safeRunId = sanitizeRunId(runId);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { ok: false, reason: message };
+  }
+
+  if (!hasEventLedger(rootDir, safeRunId)) {
     return { ok: false, reason: "events.ndjson not found (legacy run without event ledger)" };
   }
 
   let lines: ReplayLedgerLine[];
   try {
-    lines = readEventLedger(rootDir, runId);
+    lines = readEventLedger(rootDir, safeRunId);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     return { ok: false, reason: `event ledger unreadable: ${message}` };
@@ -93,7 +101,7 @@ export function replayRun(rootDir: string, runId: string): ReplayResult {
   }
 
   const snapshotPath = path.join(
-    resolveRunDir(rootDir, runId),
+    resolveRunDir(rootDir, safeRunId),
     "actor.snapshot.json",
   );
   if (!fs.existsSync(snapshotPath)) {
