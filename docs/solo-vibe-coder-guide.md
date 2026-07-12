@@ -15,14 +15,16 @@ For the business case and stakeholder framing, see [Plain-Language Briefing](./p
 | Write a short issue: intent, outcome, 2–4 file paths | Seals a **TaskBond** — a signed work order AI cannot exceed |
 | Add label `vibe/run` | Runs plan → code → tests → verification on GitHub |
 | Comment `/approve` when asked | Unblocks protected paths (e.g. `package.json`) |
-| Merge the PR when checks are green | Leaves a **capsule** (tamper-proof receipt) under `.runs/<runId>/` |
+| Add label `vibe/auto-merge` (optional) | Squash-merges the PR when all checks are green |
+| Or merge manually when checks are green | Leaves a **capsule** (tamper-proof receipt) under `.runs/<runId>/` |
 
 **Built-in safety nets (no extra setup):**
 
 - **Mandates** — blocks forbidden areas (auth, workflows, secrets paths)
-- **Gauntlet** — 22+ scenarios including adversarial “break-in” attempts must stay blocked
+- **Gauntlet** — 23+ scenarios including adversarial “break-in” attempts must stay blocked
 - **Replay gate** — re-runs every completed flight from its event ledger; mismatch blocks promotion
 - **Attribution audit** — PRs mentioning AI tools without `Assisted-by:` do not merge
+- **Auto-merge (opt-in)** — label `vibe/auto-merge` only; requires green **Vibe Promotion Gate**
 
 ---
 
@@ -180,8 +182,25 @@ Exit code 0 = replayed state matches stored snapshot.
 | **Vibe Promotion Gate** | Preflight passed: gauntlet green, bond valid, capsule/replay OK |
 | **TDD attribution** | Commits mentioning AI tools have `Assisted-by:` (or `Co-authored-by:` with an AI tool) |
 | **Replay determinism gate** | Event ledger replays to the same ending hash |
+| **Auto-merge (optional)** | With label `vibe/auto-merge`, merges automatically when all checks are green |
 
 Require **Vibe Promotion Gate** on `main` in branch protection for production repos.
+
+### Optional autonomous merge
+
+1. Add label **`vibe/auto-merge`** to the PR when you are ready for hands-off merge.
+2. Ensure branch protection requires **Vibe Promotion Gate** (and attribution audit).
+3. When CI finishes green, `vibe-auto-merge.yml` squash-merges — no manual button.
+
+Repo-wide opt-in: GitHub **Settings → Secrets and variables → Actions → Variables** → `VIBE_AUTO_MERGE=1` (skips label requirement; use carefully).
+
+Dry-run locally:
+
+```bash
+export GITHUB_TOKEN=ghp_...
+export GITHUB_REPOSITORY=owner/repo
+npm run pr:auto-merge -- 15 --dry-run
+```
 
 ---
 

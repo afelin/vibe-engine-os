@@ -123,6 +123,16 @@ Daily local runs at depth ≥ 3 default to `VIBE_TEST_MODE=subgraph` (changed-fi
 
 PR commits that mention AI tooling must include an `Assisted-by:` trailer (enforced by `tdd-attribution.yml`).
 
+## Optional auto-merge on green CI
+
+Add label **`vibe/auto-merge`** to a PR (or set repo variable **`VIBE_AUTO_MERGE=1`** for repo-wide opt-in). When branch protection checks and **Vibe Promotion Gate** are green, `.github/workflows/vibe-auto-merge.yml` squash-merges the PR.
+
+```bash
+npm run pr:auto-merge -- 15 --dry-run   # verify readiness locally
+```
+
+Skill: `.cursor/skills/vibe-auto-merge`
+
 ## TabDab / Lovable profile
 
 For [tabdab-link-proof](https://github.com/afelin/tabdab-link-proof) or other Lovable apps:

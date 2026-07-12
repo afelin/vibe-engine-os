@@ -113,6 +113,18 @@ Enforced twice before promotion:
 
 PRs to `main` must carry an `Assisted-by:` trailer on any commit whose message mentions AI tooling (cursor, claude, gpt, copilot, gemini, groq). Enforced by `.github/workflows/tdd-attribution.yml` running `scripts/audit-attribution.mjs` (fail-open on git errors). The engine holds itself to the rule: promotion commits from `forever.yml` append `Assisted-by: vibe-engine-os`.
 
+## Auto-merge (optional)
+
+Opt-in autonomous squash merge when CI is green:
+
+- **Label:** `vibe/auto-merge` on the PR (default — per-PR opt-in)
+- **Repo variable:** `VIBE_AUTO_MERGE=1` skips the label requirement
+- **Workflow:** `.github/workflows/vibe-auto-merge.yml` (triggers on PR updates + `check_suite: completed`)
+- **Gate:** requires `mergeable_state: clean` and successful **Vibe Promotion Gate** on the PR head SHA
+- **CLI:** `npm run pr:auto-merge -- <pr_number> [--dry-run]` or `--sha <commit>`
+
+Cursor skill: `.cursor/skills/vibe-auto-merge`
+
 ## Gate Resolution
 
 ```bash

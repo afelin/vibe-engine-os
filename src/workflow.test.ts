@@ -173,6 +173,18 @@ describe("GitHub Actions workflow", () => {
     expect(workflow).toContain("Assisted-by: vibe-engine-os");
   });
 
+  it("wires optional auto-merge when CI is green", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/vibe-auto-merge.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain("pull_request");
+    expect(workflow).toContain("check_suite");
+    expect(workflow).toContain("pr:auto-merge");
+    expect(workflow).toContain("VIBE_AUTO_MERGE");
+  });
+
   it("uses structured gate failure feedback in the runtime ratchet", () => {
     const runSource = fs.readFileSync(
       path.join(process.cwd(), "src/os/run.ts"),
