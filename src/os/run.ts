@@ -41,8 +41,10 @@ import type {
   ExecutionDag,
   GeneratedFile,
   OSContext,
+  OSEvent,
   VerificationResult,
 } from "./events.js";
+import { appendOsEvent, initializeEventLedger } from "./replay.js";
 import {
   appendScoreboardEntry,
   readActorSnapshot,
@@ -197,6 +199,19 @@ export async function runOSActor(
     initialContext,
     resumeSnapshot ? { snapshot: resumeSnapshot } : undefined,
   );
+  // Event ledger for deterministic replay (npm run replay). Legacy resumed
+  // runs without a ledger cannot be replayed from an initial context, so
+  // recording is disabled for them.
+  const recordEvents = initializeEventLedger(
+    rootDir,
+    runId,
+    initialContext,
+    Boolean(resumeSnapshot),
+  );
+  const send = (event: OSEvent): void => {
+    if (recordEvents) appendOsEvent(rootDir, runId, event);
+    actor.send(event);
+  };
   const releaseGate = resolveReleaseGatePatch(input.issueTitle, input.issueBody);
   const deterministicPatch = releaseGate?.files ?? null;
   const constitution = deps.readConstitution();
@@ -206,7 +221,7 @@ export async function runOSActor(
 
   appendTraceSpan(rootDir, runId, { phase: "preflight" });
   if (!pastPlanning) {
-    actor.send({ type: "preflight.completed", findings: [] });
+    send({ type: "preflight.completed", findings: [] });
   }
 
   const gateBoundFiles = releaseGate?.files.map((file) => file.path) ?? [];
@@ -294,7 +309,7 @@ export async function runOSActor(
         acceptance: ["release gate satisfied"],
       })),
     };
-    actor.send({ type: "plan.created", dag });
+    send({ type: "plan.created", dag });
   } else {
     const planner = resolvePlannerEndpoint();
     if (planner === "off") {
@@ -365,7 +380,7 @@ ${vibe}`;
 
     plan = depth >= 2 ? rawPlan : rawPlan;
     dag = depth >= 2 ? parsePlannerDag(rawPlan, fallbackDag) : fallbackDag;
-    actor.send({ type: "plan.created", dag });
+    send({ type: "plan.created", dag });
     appendTraceSpan(rootDir, runId, { phase: "planner", detail: plan.slice(0, 200) });
   }
 
@@ -510,7 +525,7 @@ ${vibe}`;
     (caps.enforcesProtectedApproval || riskReview.risk === "high");
 
   if (!skipToCodegen) {
-    actor.send({
+    send({
       type: "risk.reviewed",
       risk: riskReview.risk,
       reason: riskReview.reason,
@@ -519,7 +534,7 @@ ${vibe}`;
 
     if (actor.getSnapshot().value === "awaiting_approval") {
       if (approvedBy) {
-        actor.send({
+        send({
           type: "approval.granted",
           actor: approvedBy,
           commentId: "env-approval",
@@ -546,7 +561,7 @@ ${vibe}`;
       }
     }
   } else if (approvedBy) {
-    actor.send({
+    send({
       type: "approval.granted",
       actor: approvedBy,
       commentId: "env-approval",
@@ -584,7 +599,7 @@ ${vibe}`;
 
   while (attempts < mandates.max_attempts) {
     attempts++;
-    prepareCodegenAttempt(actor, attempts);
+    prepareCodegenAttempt(actor, send, attempts);
 
     let generatedFiles: GeneratedFile[];
     if (deterministicPatch) {
@@ -636,11 +651,11 @@ ${vibe}`;
       feedbackMarkdown = formatGateFailuresMarkdown(gateFailures);
       recordedErrors.push(feedbackMarkdown);
       gateIdsFailed.push(...gateFailures.map((item) => item.gate_id));
-      actor.send({
+      send({
         type: "verification.failed",
         failure: toClassifiedFailure("model_output", "Generated patch validation failed", feedbackMarkdown),
       });
-      if (!prepareCodegenRetry(actor)) break;
+      if (!prepareCodegenRetry(actor, send)) break;
       continue;
     }
 
@@ -776,12 +791,12 @@ ${vibe}`;
 
     if (loopPassed) {
       finalVerifiedFiles = generatedFiles;
-      actor.send({ type: "patch.generated", files: generatedFiles });
-      actor.send({ type: "verification.passed", results: verificationResults });
+      send({ type: "patch.generated", files: generatedFiles });
+      send({ type: "verification.passed", results: verificationResults });
       if (caps.allowsDeploy) {
-        actor.send({ type: "publish.completed", previewUrl: "preview://local" });
+        send({ type: "publish.completed", previewUrl: "preview://local" });
       } else {
-        actor.send({ type: "publish.completed" });
+        send({ type: "publish.completed" });
       }
 
       if (attempts > 1 && recordedErrors.length > 0) {
@@ -793,7 +808,7 @@ ${vibe}`;
     }
 
     deps.restoreBackups(backups);
-    actor.send({
+    send({
       type: "verification.failed",
       failure: toClassifiedFailure(
         gateFailures[0]?.gate_id === "vitest" ? "test" : "compile",
@@ -801,7 +816,7 @@ ${vibe}`;
         feedbackMarkdown,
       ),
     });
-    if (!prepareCodegenRetry(actor)) break;
+    if (!prepareCodegenRetry(actor, send)) break;
   }
 
   if (finalVerifiedFiles.length === 0) {
@@ -959,20 +974,27 @@ function loadResumeSnapshot(
   return snapshot;
 }
 
-function prepareCodegenAttempt(actor: OSPlayer, attempt: number) {
+function prepareCodegenAttempt(
+  actor: OSPlayer,
+  send: (event: OSEvent) => void,
+  attempt: number,
+) {
   const state = String(actor.getSnapshot().value);
   if (state === "learning") {
-    actor.send({ type: "codegen.retry" });
+    send({ type: "codegen.retry" });
   }
-  actor.send({ type: "attempt.started", attempt });
+  send({ type: "attempt.started", attempt });
 }
 
-function prepareCodegenRetry(actor: OSPlayer): boolean {
+function prepareCodegenRetry(
+  actor: OSPlayer,
+  send: (event: OSEvent) => void,
+): boolean {
   const snapshot = actor.getSnapshot();
   if (snapshot.context.attempts >= snapshot.context.maxAttempts) {
     return false;
   }
-  actor.send({ type: "codegen.retry" });
+  send({ type: "codegen.retry" });
   return String(actor.getSnapshot().value) === "generating_patch";
 }
 

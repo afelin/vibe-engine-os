@@ -94,6 +94,23 @@ Canonical SHA-256 over `{ manifest, snapshot, traceTail, vowsHash }`.
 
 Written to `.runs/<runId>/capsule.hash`. Verifiable via MCP or HTTP.
 
+## Replay Determinism Gate
+
+Every run appends its OS events to `.runs/<runId>/events.ndjson` (first line records the initial context). Replay rebuilds a fresh player from that ledger and compares the SHA-256 of the replayed snapshot against the stored `actor.snapshot.json`:
+
+```bash
+npm run replay -- . <runId>   # prints { ok, replayedHash, storedHash }, exits 1 on mismatch
+```
+
+Enforced twice before promotion:
+
+- `bond:preflight` check `replay.deterministic` — **skip-ok** for legacy runs without `events.ndjson`
+- CI `Replay determinism gate` step in `forever.yml`, before `promote:apply`
+
+## Attribution
+
+PRs to `main` must carry an `Assisted-by:` trailer on any commit whose message mentions AI tooling (cursor, claude, gpt, copilot, gemini, groq). Enforced by `.github/workflows/tdd-attribution.yml` running `scripts/audit-attribution.mjs` (fail-open on git errors). The engine holds itself to the rule: promotion commits from `forever.yml` append `Assisted-by: vibe-engine-os`.
+
 ## Gate Resolution
 
 ```bash

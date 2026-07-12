@@ -127,7 +127,8 @@ Each run writes under `.runs/<runId>/`:
 | --- | --- |
 | `manifest.json` | Issue, branch, generated files, metrics, `vowsHash`, `capsuleHash` |
 | `actor.snapshot.json` | XState persisted snapshot for resume |
-| `trace.jsonl` | Phase spans (preflight, codegen, tsc, vitest) |
+| `trace.ndjson` | Phase spans (preflight, codegen, tsc, vitest) |
+| `events.ndjson` | OS event ledger for deterministic replay (`npm run replay`) |
 | `capsule.hash` | SHA-256 promotion capsule |
 | `ROLLBACK.md` | Human rollback instructions |
 

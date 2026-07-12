@@ -3,6 +3,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { execSync } from "node:child_process";
 import { readRunManifest } from "../run/manifest.js";
+import { hasEventLedger, replayRun } from "../os/replay.js";
 import { readTaskBond } from "./store.js";
 
 const rootDir = process.argv[2] ?? ".";
@@ -106,10 +107,34 @@ function checkCapsule(runIdValue: string): void {
   }
 }
 
+function checkReplayDeterministic(runIdValue: string): void {
+  if (!runIdValue) {
+    record("replay.deterministic", true, "skipped (no run id)");
+    return;
+  }
+  if (!hasEventLedger(rootDir, runIdValue)) {
+    record(
+      "replay.deterministic",
+      true,
+      "skipped (legacy run without events.ndjson)",
+    );
+    return;
+  }
+  const result = replayRun(rootDir, runIdValue);
+  record(
+    "replay.deterministic",
+    result.ok,
+    result.ok
+      ? result.replayedHash
+      : (result.reason ?? "replayed snapshot mismatch"),
+  );
+}
+
 runGauntlet();
 checkBondForIssue();
 checkManifestBond(runId);
 checkCapsule(runId);
+checkReplayDeterministic(runId);
 
 const failed = checks.filter((c) => !c.ok);
 for (const check of checks) {

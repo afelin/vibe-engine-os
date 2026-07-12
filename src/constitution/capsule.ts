@@ -42,7 +42,7 @@ export function readCapsuleHash(rootDir: string, runId: string): string | null {
 }
 
 export function readTraceTail(rootDir: string, runId: string, limit = 5): string[] {
-  const tracePath = path.join(resolveRunDir(rootDir, runId), "trace.jsonl");
+  const tracePath = path.join(resolveRunDir(rootDir, runId), "trace.ndjson");
   if (!fs.existsSync(tracePath)) return [];
 
   const lines = fs

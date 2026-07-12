@@ -199,6 +199,17 @@ jobs:
           RUN_ID: ${{ env.RUN_ID }}
         run: npm run bond:preflight -- . "$ISSUE_NUMBER" "$RUN_ID"
 
+      - name: Replay determinism gate
+        if: ${{ env.RUN_ID != '' }}
+        env:
+          RUN_ID: ${{ env.RUN_ID }}
+        run: |
+          if [ -f ".runs/$RUN_ID/events.ndjson" ]; then
+            npm run replay -- . "$RUN_ID"
+          else
+            echo "No event ledger to replay (legacy run without events.ndjson)"
+          fi
+
       - name: Apply promotion bundle
         if: ${{ env.RUN_ID != '' }}
         env:
@@ -229,5 +240,5 @@ jobs:
               fi
             done < <(node -e "JSON.parse(require('fs').readFileSync('.runs/$RUN_ID/manifest.json','utf8')).generatedFiles.forEach(f=>console.log(f))")
           fi
-          git commit -m "feat(ai): promotion for #${{ needs.gate-check.outputs.issue_number }}" || echo "No changes"
+          git commit -m "feat(ai): promotion for #${{ needs.gate-check.outputs.issue_number }}" -m "Assisted-by: vibe-engine-os" || echo "No changes"
           git push origin "$BRANCH_NAME" || git push --set-upstream origin "$BRANCH_NAME" || true
