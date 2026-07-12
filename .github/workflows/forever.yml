@@ -247,6 +247,42 @@ jobs:
           git push origin "$BRANCH_NAME" || git push --set-upstream origin "$BRANCH_NAME" || true
           echo "VIBE_HEAD_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
+      - name: Ensure PR exists
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH_NAME="vibe/issue-${{ needs.gate-check.outputs.issue_number }}"
+          ISSUE_NUM="${{ needs.gate-check.outputs.issue_number }}"
+          OWNER="${GITHUB_REPOSITORY%%/*}"
+          EXISTING=$(curl -sS \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls?head=${OWNER}:${BRANCH_NAME}&state=open" \
+            | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); process.stdout.write(d[0]?.html_url ?? '')")
+          if [ -n "$EXISTING" ]; then
+            echo "PR already open: $EXISTING"
+            PR_URL="$EXISTING"
+          else
+            PR_URL=$(node scripts/create-pr.mjs \
+              --title "feat(ai): promotion for #${ISSUE_NUM}" \
+              --head "$BRANCH_NAME" \
+              --body "Automated promotion for issue #${ISSUE_NUM}. Assisted-by: vibe-engine-os")
+          fi
+          echo "VIBE_PR_URL=$PR_URL" >> "$GITHUB_ENV"
+          mkdir -p .runs
+          printf '%s\n' "$PR_URL" > .runs/pr-url.txt
+
+      - name: Update cockpit with PR link
+        if: ${{ env.VIBE_PR_URL != '' && env.RUN_ID != '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ needs.gate-check.outputs.issue_number }}
+          VIBE_PR_URL: ${{ env.VIBE_PR_URL }}
+          RUN_ID: ${{ env.RUN_ID }}
+        run: bun run src/operator/publish-pr-cockpit.ts . "$RUN_ID"
+
       - name: Post promotion gate on branch head
         if: ${{ env.RUN_ID != '' && env.VIBE_HEAD_SHA != '' }}
         env:
@@ -256,3 +292,49 @@ jobs:
           VIBE_CHECK_ONLY: "1"
           RUN_ID: ${{ env.RUN_ID }}
         run: npm run promote:apply -- . "$RUN_ID"
+
+  vibe-deploy:
+    needs: [gate-check, vibe-promote]
+    if: ${{ needs.vibe-promote.result == 'success' && vars.VIBE_DEPLOY == '1' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Download run artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: vibe-runs-${{ github.run_id }}
+          path: .runs/
+
+      - name: Read run id
+        run: |
+          RUN_ID=""
+          if [ -f ".runs/run-id.txt" ]; then
+            RUN_ID="$(tr -d '[:space:]' < .runs/run-id.txt)"
+          fi
+          if [ -z "$RUN_ID" ]; then
+            echo "No run id in .runs/run-id.txt — deploy skipped"
+            exit 1
+          fi
+          echo "RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
+
+      - name: Validate capsule for deploy
+        run: npm run gate:validate-capsule -- . "$RUN_ID"
+
+      - name: Deploy from capsule (placeholder)
+        env:
+          RUN_ID: ${{ env.RUN_ID }}
+        run: |
+          echo "Deploy would run here for run $RUN_ID (capsule-validated, not main tip)."
+          echo "Wire Cloudflare Pages OIDC: cloudflare/pages-action with id-token: write"
+          echo "See docs/platform-enforcement.md for the full pattern."

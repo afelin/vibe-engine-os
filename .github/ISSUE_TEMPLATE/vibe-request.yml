@@ -19,6 +19,8 @@ body:
 
         **Operator commands** (issue comments): `/status` · `/approve` · `/retry` · `/rollback`
 
+        You'll get a PR link and receipt in comments—no terminal required.
+
   - type: textarea
     id: intent
     attributes:

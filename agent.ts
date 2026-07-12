@@ -3,7 +3,7 @@ import * as path from "node:path";
 import { appendOperatorEvent } from "./src/os/event-ledger.js";
 import { readPersistedApproval, persistApproval } from "./src/os/approval-store.js";
 import { runOSActor } from "./src/os/run.js";
-import { renderCockpitComment } from "./src/operator/cockpit.js";
+import { renderCockpitComment, resolvePrUrl } from "./src/operator/cockpit.js";
 import { routeGitHubComment } from "./src/operator/github-comment-router.js";
 import { publishCockpitComment, resolveGitHubCommentTarget } from "./src/publishing/github-comments.js";
 import {
@@ -244,6 +244,7 @@ async function publishCockpitFromEnv(
     runId: string;
     vowsHash?: string;
     capsuleHash?: string;
+    prUrl?: string;
     metrics?: {
       firstPassGreen?: boolean;
       gateIdsFailed?: string[];
@@ -266,7 +267,11 @@ async function publishCockpitFromEnv(
     generatedFiles: runState.generatedFiles,
     verificationResults: [],
     failures: runState.failures,
-  }, ".", manifest);
+  }, ".", manifest ? {
+    ...manifest,
+    repository: target.repository,
+    prUrl: manifest.prUrl ?? resolvePrUrl("."),
+  } : undefined);
 
   try {
     const result = await publishCockpitComment({

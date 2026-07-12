@@ -207,6 +207,8 @@ describe("GitHub Actions workflow", () => {
 
     expect(workflow).toContain("pull_request");
     expect(workflow).toContain("check_suite");
+    expect(workflow).toContain("workflow_dispatch");
+    expect(workflow).toContain("checks: read");
     expect(workflow).toContain("pr:auto-merge");
     expect(workflow).toContain("VIBE_AUTO_MERGE");
   });
@@ -220,5 +222,81 @@ describe("GitHub Actions workflow", () => {
     expect(runSource).toContain("formatGateFailuresMarkdown");
     expect(runSource).toContain("gateFailures");
     expect(runSource).toContain("createGateFailure");
+  });
+
+  it("auto-creates PR when missing after git sync", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/forever.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain("Ensure PR exists");
+    expect(workflow).toContain("scripts/create-pr.mjs");
+    expect(workflow).toContain(".runs/pr-url.txt");
+    expect(workflow).toContain("VIBE_PR_URL");
+    expect(workflow.indexOf("Git sync and PR")).toBeLessThan(
+      workflow.indexOf("Ensure PR exists"),
+    );
+  });
+
+  it("gates deploy-from-capsule on VIBE_DEPLOY variable", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/forever.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain("vibe-deploy:");
+    expect(workflow).toContain("vars.VIBE_DEPLOY == '1'");
+    expect(workflow).toContain("id-token: write");
+    expect(workflow).toContain("Validate capsule for deploy");
+    expect(workflow).toContain("Deploy from capsule (placeholder)");
+    expect(workflow).toContain(".runs/run-id.txt");
+  });
+
+  it("exposes deploy_after_validate on composite action", () => {
+    const action = fs.readFileSync(
+      path.join(process.cwd(), "action.yml"),
+      "utf8",
+    );
+
+    expect(action).toContain("deploy_after_validate");
+    expect(action).toContain('default: "false"');
+    expect(action).toContain("Deploy placeholder (opt-in)");
+  });
+
+  it("tells nocode users they get PR and receipt in issue template", () => {
+    const template = fs.readFileSync(
+      path.join(process.cwd(), ".github/ISSUE_TEMPLATE/vibe-request.yml"),
+      "utf8",
+    );
+
+    expect(template).toContain(
+      "You'll get a PR link and receipt in comments—no terminal required.",
+    );
+  });
+
+  it("updates cockpit comment with PR link after promotion", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/forever.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain("Update cockpit with PR link");
+    expect(workflow).toContain("publish-pr-cockpit.ts");
+    expect(workflow.indexOf("Ensure PR exists")).toBeLessThan(
+      workflow.indexOf("Update cockpit with PR link"),
+    );
+  });
+
+  it("wires cockpit receipt links through hpurl primitives", () => {
+    const cockpitSource = fs.readFileSync(
+      path.join(process.cwd(), "src/operator/cockpit.ts"),
+      "utf8",
+    );
+
+    expect(cockpitSource).toContain("buildProofHpurl");
+    expect(cockpitSource).toContain("resolvePrUrl");
+    expect(cockpitSource).toContain("prUrl");
+    expect(fs.existsSync(path.join(process.cwd(), "proof/index.html"))).toBe(true);
   });
 });
