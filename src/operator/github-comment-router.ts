@@ -93,26 +93,54 @@ function responseBodyForCommand(
   commandType: Exclude<ReturnType<typeof parseOperatorCommand>["type"], "unknown">,
   input: GitHubCommentRouteInput,
 ): string {
+  const cockpitOptions = {
+    labels: input.labels,
+    commandBody: input.body,
+    expandTechnical: commandType === "details",
+  };
+
   switch (commandType) {
     case "approve":
       return [
         "## Approval received",
         "",
-        "The approval intent was recorded as a typed OS event. The actor decides whether it is valid from the current state.",
+        "Resuming the paused run to finish codegen and promotion.",
         "",
-        renderCockpitComment(input.state, input.context),
+        renderCockpitComment(input.state, input.context, input.rootDir, undefined, cockpitOptions),
       ].join("\n");
+    case "continue":
+      return [
+        "## Continue requested",
+        "",
+        "Resuming the active run from the saved checkpoint.",
+        "",
+        renderCockpitComment(input.state, input.context, input.rootDir, undefined, cockpitOptions),
+      ].join("\n");
+    case "details":
+      return renderCockpitComment(
+        input.state,
+        input.context,
+        input.rootDir,
+        undefined,
+        { ...cockpitOptions, expandTechnical: true },
+      );
     case "rollback":
       return input.readRollback().body;
     case "status":
-      return renderCockpitComment(input.state, input.context);
+      return renderCockpitComment(
+        input.state,
+        input.context,
+        input.rootDir,
+        undefined,
+        cockpitOptions,
+      );
     case "plan":
       return [
         "## Plan requested",
         "",
         "The plan request was recorded as a typed OS event.",
         "",
-        renderCockpitComment(input.state, input.context),
+        renderCockpitComment(input.state, input.context, input.rootDir, undefined, cockpitOptions),
       ].join("\n");
     case "retry":
       return [
@@ -120,7 +148,7 @@ function responseBodyForCommand(
         "",
         "The retry request was recorded as a typed OS event. The actor decides whether retry is valid from the current state.",
         "",
-        renderCockpitComment(input.state, input.context),
+        renderCockpitComment(input.state, input.context, input.rootDir, undefined, cockpitOptions),
       ].join("\n");
     case "deploy":
       return [
@@ -128,7 +156,7 @@ function responseBodyForCommand(
         "",
         "The deploy request was recorded as a typed OS event. Deployment remains gated until the actor reaches a deployable state.",
         "",
-        renderCockpitComment(input.state, input.context),
+        renderCockpitComment(input.state, input.context, input.rootDir, undefined, cockpitOptions),
       ].join("\n");
   }
 }

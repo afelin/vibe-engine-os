@@ -36,7 +36,9 @@ You do not need to run anything locally. Watch the **Actions** tab if you want p
 2. Review the diff and check that CI is green.
 3. Merge manually, **or** add label `vibe/auto-merge` to squash-merge when all checks pass.
 
-**Operator commands** (reply on the issue as comments): `/status` · `/approve` · `/retry` · `/rollback`
+**Operator commands** (reply on the issue as comments): `/status` · `/approve` · `/continue` · `/retry` · `/rollback`
+
+Comments use plain-language updates by default. Add label `vibe:technical` or comment `/details` to expand state, capsule hash, and scoreboard metrics.
 
 ---
 

@@ -162,6 +162,74 @@ package.json
     expect(result.state).toBe("awaiting_approval");
   });
 
+  it("approve-after-pause resumes to promotion-ready completion", async () => {
+    const root = makeRoot(tmpDirs);
+    const deps = buildStubDeps(
+      [{ path: ".github/CODEOWNERS", content: "* @team\n" }],
+      JSON.stringify({
+        issueNumber: "106",
+        title: "CODEOWNERS resume",
+        nodes: [
+          {
+            id: "edit-1",
+            title: "Edit CODEOWNERS",
+            kind: "edit",
+            dependsOn: [],
+            risk: "high",
+            files: [".github/CODEOWNERS"],
+            acceptance: ["tests pass"],
+          },
+        ],
+      }),
+      root,
+    );
+
+    const paused = await runOSActor(
+      {
+        issueNumber: "106",
+        issueTitle: "CODEOWNERS resume",
+        issueBody: `### Intent (one sentence)
+Update CODEOWNERS
+
+### Files to touch (exact paths)
+.github/CODEOWNERS
+`,
+        rootDir: root,
+      },
+      deps,
+    );
+
+    expect(paused.state).toBe("awaiting_approval");
+    expect(paused.manifest?.runId).toBeTruthy();
+
+    const resumed = await runOSActor(
+      {
+        issueNumber: "106",
+        issueTitle: "CODEOWNERS resume",
+        issueBody: `### Intent (one sentence)
+Update CODEOWNERS
+
+### Files to touch (exact paths)
+.github/CODEOWNERS
+`,
+        rootDir: root,
+        approvedBy: "operator",
+      },
+      deps,
+    );
+
+    expect(resumed.success).toBe(true);
+    expect(resumed.generatedFiles.map((file) => file.path)).toContain(
+      ".github/CODEOWNERS",
+    );
+    expect(
+      fs.readFileSync(
+        path.join(root, ".runs", "index", "issue-106.json"),
+        "utf8",
+      ),
+    ).toContain("completed");
+  });
+
   it("depth 1 writes plan only without codegen", async () => {
     process.env.VIBE_DEPTH = "1";
     const root = makeRoot(tmpDirs);

@@ -46,7 +46,7 @@ jobs:
           fi
           if echo "$LABELS_LOWER" | grep -q "vibe/run"; then SHOULD_RUN=1; fi
           if echo "$BODY" | grep -q "/vibe"; then SHOULD_RUN=1; fi
-          if echo "$BODY" | grep -Eq '^/(plan|approve|retry|rollback|status|deploy)'; then SHOULD_RUN=1; fi
+          if echo "$BODY" | grep -Eq '^/(plan|approve|continue|retry|rollback|status|deploy|details)'; then SHOULD_RUN=1; fi
           if [ "$EVENT_NAME" = "pull_request_review" ] || [ "$EVENT_NAME" = "pull_request_review_comment" ]; then SHOULD_RUN=1; fi
           echo "should_run=$SHOULD_RUN" >> "$GITHUB_OUTPUT"
 
@@ -177,6 +177,27 @@ jobs:
             write_env_multiline "ISSUE_BODY" "$BODY_ISSUE"
           fi
 
+      - name: Restore .runs state
+        uses: actions/cache/restore@v4
+        with:
+          path: .runs
+          key: vibe-runs-issue-${{ needs.gate-check.outputs.issue_number }}
+          restore-keys: |
+            vibe-runs-issue-${{ needs.gate-check.outputs.issue_number }}
+
+      - name: Resolve active run id
+        env:
+          ISSUE_NUMBER: ${{ needs.gate-check.outputs.issue_number }}
+        run: |
+          INDEX_FILE=".runs/index/issue-${ISSUE_NUMBER}.json"
+          if [ -f "$INDEX_FILE" ]; then
+            RUN_ID=$(node -e "const fs=require('fs');const i=JSON.parse(fs.readFileSync('$INDEX_FILE','utf8'));if(i.state==='completed'||i.state==='failed')process.exit(0);process.stdout.write(i.runId)")
+            if [ -n "$RUN_ID" ]; then
+              echo "VIBE_RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
+              echo "Resuming run $RUN_ID from index"
+            fi
+          fi
+
       - name: Run agent
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -197,6 +218,13 @@ jobs:
           name: vibe-runs-${{ github.run_id }}
           path: .runs/
           if-no-files-found: ignore
+
+      - name: Save .runs state
+        if: ${{ env.VIBE_OPERATOR_ONLY != '1' }}
+        uses: actions/cache/save@v4
+        with:
+          path: .runs
+          key: vibe-runs-issue-${{ needs.gate-check.outputs.issue_number }}
 
   vibe-promote:
     needs: [gate-check, vibe-run]

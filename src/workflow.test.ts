@@ -305,6 +305,38 @@ describe("GitHub Actions workflow", () => {
     );
   });
 
+  it("restores .runs cache and resolves VIBE_RUN_ID from issue index before agent", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/forever.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain("Restore .runs state");
+    expect(workflow).toContain("actions/cache/restore@v4");
+    expect(workflow).toContain("Resolve active run id");
+    expect(workflow).toContain(".runs/index/issue-");
+    expect(workflow).toContain("VIBE_RUN_ID=$RUN_ID");
+    expect(workflow.indexOf("Resolve active run id")).toBeLessThan(
+      workflow.indexOf("bun run agent.ts"),
+    );
+    expect(workflow).toContain("actions/cache/save@v4");
+    expect(workflow).toContain("approve|continue");
+    expect(workflow).toContain("deploy|details");
+  });
+
+  it("exposes plain-language cockpit with progressive disclosure", () => {
+    const cockpitSource = fs.readFileSync(
+      path.join(process.cwd(), "src/operator/cockpit.ts"),
+      "utf8",
+    );
+
+    expect(cockpitSource).toContain("What's happening");
+    expect(cockpitSource).toContain("resolveNextAction");
+    expect(cockpitSource).toContain("<details");
+    expect(cockpitSource).toContain("shouldExpandTechnical");
+    expect(fs.existsSync(path.join(process.cwd(), "proof/index.html"))).toBe(true);
+  });
+
   it("wires cockpit receipt links through hpurl primitives", () => {
     const cockpitSource = fs.readFileSync(
       path.join(process.cwd(), "src/operator/cockpit.ts"),
@@ -314,6 +346,5 @@ describe("GitHub Actions workflow", () => {
     expect(cockpitSource).toContain("buildProofHpurl");
     expect(cockpitSource).toContain("resolvePrUrl");
     expect(cockpitSource).toContain("prUrl");
-    expect(fs.existsSync(path.join(process.cwd(), "proof/index.html"))).toBe(true);
   });
 });

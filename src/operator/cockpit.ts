@@ -6,6 +6,7 @@ import {
 } from "../constitution/hpurl.js";
 import type { OSContext } from "../os/events.js";
 import { getVibeDepth, renderDepthStatus, type VibeDepth } from "../os/depth.js";
+import { readTaskBond } from "../bond/store.js";
 import { readScoreboardEntries } from "../run/manifest.js";
 
 export function resolvePrUrl(rootDir = "."): string | undefined {
@@ -32,23 +33,92 @@ export type CockpitManifest = {
     durationMs?: number;
     attempts?: number;
     tokensEstimate?: number;
+    hallucinationBlocked?: boolean;
   };
 };
+
+export type CockpitRenderOptions = {
+  expandTechnical?: boolean;
+};
+
+const NEXT_ACTION_BY_STATE: Record<string, string> = {
+  received: "The engine is starting. No action needed yet.",
+  preflight: "Preflight checks are running. Wait for the next update.",
+  planning: "The planner is building an execution plan. Wait for the next update.",
+  risk_review: "Risk review is in progress. Wait for the next update.",
+  awaiting_approval:
+    "A protected change needs your OK. Comment `/approve` on this issue to continue.",
+  generating_patch: "Code is being generated. Wait for verification.",
+  verifying: "Tests and gates are running. Wait for the result.",
+  learning: "A failure was recorded. Comment `/retry` to try again or `/rollback` for instructions.",
+  publishing: "Opening or updating your pull request.",
+  completed: "Review the PR link above and merge when CI is green.",
+  failed: "Read the failure summary below. Fix the issue body or comment `/retry`.",
+  operator_command: "Use `/status` for a fresh snapshot or `/continue` to resume a paused run.",
+};
+
+export function resolveNextAction(state: string): string {
+  return NEXT_ACTION_BY_STATE[state] ?? "Wait for the engine to post the next update.";
+}
+
+export function shouldExpandTechnical(
+  labels?: string,
+  commandBody?: string,
+  options?: CockpitRenderOptions,
+): boolean {
+  if (options?.expandTechnical) return true;
+  if (commandBody?.trim().toLowerCase().startsWith("/details")) return true;
+  if (!labels) return false;
+  return labels
+    .split(",")
+    .map((label) => label.trim().toLowerCase())
+    .includes("vibe:technical");
+}
 
 export function renderCockpitComment(
   state: string,
   context: OSContext,
   rootDir = ".",
   manifest?: CockpitManifest,
+  options?: CockpitRenderOptions & { labels?: string; commandBody?: string },
 ) {
   const depth = (context.vibeDepth ?? getVibeDepth()) as VibeDepth;
   const prUrl = manifest?.prUrl ?? resolvePrUrl(rootDir);
+  const bond = readTaskBond(rootDir, context.issueNumber);
+  const expandTechnical = shouldExpandTechnical(
+    options?.labels,
+    options?.commandBody,
+    options,
+  );
+  const nextAction = resolveNextAction(state);
 
-  return [
-    "## Vibe Engine OS Cockpit",
+  const plainBlock = [
+    "## Vibe Engine OS",
     "",
-    prUrl ? `**PR:** [Open pull request](${prUrl})` : undefined,
+    prUrl ? `**Pull request:** [Open PR](${prUrl})` : undefined,
     prUrl ? "" : undefined,
+    "### What's happening",
+    describeWhatsHappening(state, context),
+    "",
+    "### Next step",
+    nextAction,
+    "",
+    "### Outcome checklist",
+    renderOutcomeChecklist(bond?.outcomes ?? []),
+    "",
+    "### Commands",
+    "`/status` · `/approve` · `/continue` · `/retry` · `/rollback` · `/details`",
+    "",
+  ]
+    .filter((line): line is string => line !== undefined)
+    .join("\n");
+
+  const technicalBlock = [
+    expandTechnical ? "<details open>" : "<details>",
+    expandTechnical
+      ? "<summary>Technical details</summary>"
+      : "<summary>Technical details (comment `/details` or add label `vibe:technical`)</summary>",
+    "",
     `**State:** ${state}`,
     `**Issue:** #${context.issueNumber} ${context.issueTitle}`,
     renderDepthStatus(depth),
@@ -63,33 +133,69 @@ export function renderCockpitComment(
       : undefined,
     renderReceiptLine(manifest),
     "",
-    "### Changed Files",
+    "### Changed files",
     renderChangedFiles(context),
     "",
-    "### Latest Failures",
+    "### Latest failures",
     renderFailures(context),
     "",
-    "### Scoreboard (last 20 runs)",
-    renderScoreboardSummary(rootDir),
+    "### Scoreboard",
+    renderScoreboardSummary(rootDir, manifest),
     "",
     "### Rollback",
     "Rollback metadata is recorded in `.runs/<runId>/ROLLBACK.md` after a verified generated run.",
     "",
-    "### Commands",
-    "`/plan` `/approve` `/retry` `/rollback` `/status` `/deploy`",
-    "",
+    "</details>",
   ]
     .filter((line): line is string => line !== undefined)
     .join("\n");
+
+  return `${plainBlock}\n${technicalBlock}`;
 }
 
-export function renderScoreboardSummary(rootDir = "."): string {
+function describeWhatsHappening(state: string, context: OSContext): string {
+  switch (state) {
+    case "awaiting_approval":
+      return `Paused on a protected change (${context.risk ?? "high"} risk). Your approval unblocks codegen.`;
+    case "learning":
+      return context.failures.length > 0
+        ? `Last attempt failed: ${context.failures[context.failures.length - 1]?.symptom ?? "see failures below"}.`
+        : "Recovering from a failed verification pass.";
+    case "completed":
+      return "Run finished. Your PR and receipt are ready for review.";
+    case "failed":
+      return "Run stopped before promotion. See failures or fix the issue request.";
+    case "generating_patch":
+    case "verifying":
+      return "Building and verifying code within your TaskBond file scope.";
+    case "planning":
+    case "risk_review":
+      return "Planning and safety review before any files are written.";
+    default:
+      return `Engine state: ${state}.`;
+  }
+}
+
+function renderOutcomeChecklist(outcomes: string[]): string {
+  if (outcomes.length === 0) {
+    return "- No outcomes listed in the TaskBond. Add an **Outcome** section to your issue.";
+  }
+  return outcomes.map((outcome) => `- [ ] ${outcome}`).join("\n");
+}
+
+export function renderScoreboardSummary(
+  rootDir = ".",
+  manifest?: CockpitManifest,
+): string {
   const entries = readScoreboardEntries(rootDir, 20);
   if (entries.length === 0) return "No runs recorded yet.";
 
   const successCount = entries.filter((entry) => entry.success).length;
   const firstPassCount = entries.filter(
     (entry) => entry.metrics.firstPassGreen,
+  ).length;
+  const hallucinationCount = entries.filter(
+    (entry) => entry.metrics.hallucinationBlocked,
   ).length;
   const avgDuration =
     entries.reduce((sum, entry) => sum + entry.metrics.durationMs, 0) /
@@ -99,12 +205,23 @@ export function renderScoreboardSummary(rootDir = "."): string {
   ).length;
   const tokensSavedEstimate = gateRuns * 4000;
 
-  return [
+  const lines = [
     `- **Success rate:** ${((successCount / entries.length) * 100).toFixed(0)}% (${successCount}/${entries.length})`,
     `- **First-pass rate:** ${((firstPassCount / entries.length) * 100).toFixed(0)}%`,
+    `- **Hallucination blocks:** ${hallucinationCount} run(s) stopped off-scope paths`,
     `- **Avg duration:** ${avgDuration.toFixed(0)}ms`,
     `- **Tokens saved (est.):** ~${tokensSavedEstimate} (gate vs LLM path)`,
-  ].join("\n");
+  ];
+
+  if (manifest?.metrics?.firstPassGreen !== undefined) {
+    lines.unshift(
+      `- **This run first-pass:** ${manifest.metrics.firstPassGreen ? "yes" : "no"}${
+        manifest.metrics.hallucinationBlocked ? " (hallucination blocked)" : ""
+      }`,
+    );
+  }
+
+  return lines.join("\n");
 }
 
 function renderReceiptLine(manifest?: CockpitManifest): string | undefined {

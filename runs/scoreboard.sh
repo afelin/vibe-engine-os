@@ -38,6 +38,11 @@ const summary = {
 };
 
 console.log('## Scoreboard (last 20 runs)');
+const firstPassPct = (summary.firstPassRate * 100).toFixed(0);
+const hallucinationPct = (summary.hallucinationBlockRate * 100).toFixed(0);
+console.log(
+  \`Plain English: \${summary.runs} recent runs — \${(summary.successRate * 100).toFixed(0)}% succeeded, \${firstPassPct}% first-pass green, \${summary.hallucinationBlockRate > 0 ? hallucinationPct + '% blocked off-scope paths' : 'no hallucination blocks'}.\`,
+);
 console.log(JSON.stringify(summary, null, 2));
 console.log('');
 for (const entry of lines.reverse()) {
