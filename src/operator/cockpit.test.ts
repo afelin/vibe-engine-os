@@ -1,37 +1,63 @@
 import { describe, expect, it } from "vitest";
-import { renderCockpitComment } from "./cockpit.js";
+import {
+  renderCockpitComment,
+  resolveNextAction,
+  shouldExpandTechnical,
+} from "./cockpit.js";
 import type { OSContext } from "../os/events.js";
 
-describe("operator cockpit", () => {
-  it("renders state, files, failures, rollback, and commands", () => {
-    const text = renderCockpitComment("learning", {
-      issueNumber: "7",
-      issueTitle: "Fix compile failure",
-      issueBody: "Please fix it",
-      attempts: 2,
-      maxAttempts: 3,
-      risk: "medium",
-      riskReason: "Package mutation",
-      findings: [],
-      generatedFiles: [{ path: "src/index.ts", content: "export {};" }],
-      verificationResults: [],
-      failures: [
-        {
-          failureClass: "compile",
-          symptom: "Missing .js import extension",
-          output: "TS2835",
-        },
-      ],
-    } satisfies OSContext);
+const baseContext = {
+  issueNumber: "7",
+  issueTitle: "Fix compile failure",
+  issueBody: "Please fix it",
+  attempts: 2,
+  maxAttempts: 3,
+  risk: "medium",
+  riskReason: "Package mutation",
+  findings: [],
+  generatedFiles: [{ path: "src/index.ts", content: "export {};" }],
+  verificationResults: [],
+  failures: [
+    {
+      failureClass: "compile" as const,
+      symptom: "Missing .js import extension",
+      output: "TS2835",
+    },
+  ],
+} satisfies OSContext;
 
-    expect(text).toContain("Vibe Engine OS Cockpit");
-    expect(text).toContain("learning");
-    expect(text).toContain("#7 Fix compile failure");
-    expect(text).toContain("medium");
+describe("operator cockpit", () => {
+  it("renders plain-language block with technical details collapsed", () => {
+    const text = renderCockpitComment("learning", baseContext);
+
+    expect(text).toContain("## Vibe Engine OS");
+    expect(text).toContain("### What's happening");
+    expect(text).toContain("### Next step");
+    expect(text).toContain("### Outcome checklist");
+    expect(text).toContain("<details>");
+    expect(text).toContain("Technical details");
+    expect(text).toContain("/continue");
+    expect(text).toContain("/details");
     expect(text).toContain("src/index.ts");
     expect(text).toContain("compile: Missing .js import extension");
-    expect(text).toContain("/approve");
-    expect(text).toContain("/rollback");
+  });
+
+  it("expands technical details for /details and vibe:technical", () => {
+    const fromDetails = renderCockpitComment("learning", baseContext, ".", undefined, {
+      commandBody: "/details",
+      expandTechnical: true,
+    });
+    expect(fromDetails).toContain("<details open>");
+
+    expect(
+      shouldExpandTechnical("vibe/run, vibe:technical", undefined),
+    ).toBe(true);
+    expect(shouldExpandTechnical("vibe/run", "/status")).toBe(false);
+  });
+
+  it("maps machine states to deterministic next actions", () => {
+    expect(resolveNextAction("awaiting_approval")).toContain("/approve");
+    expect(resolveNextAction("completed")).toContain("merge");
   });
 
   it("renders capsule hash and scoreboard when manifest provided", () => {
@@ -53,6 +79,7 @@ describe("operator cockpit", () => {
         runId: "run-1",
         capsuleHash: "abc123",
         vowsHash: "vows456",
+        metrics: { firstPassGreen: true },
       },
     );
 
@@ -61,6 +88,7 @@ describe("operator cockpit", () => {
     expect(text).toContain("run=run-1");
     expect(text).toContain("validate_capsule");
     expect(text).toContain("Scoreboard");
+    expect(text).toContain("This run first-pass");
   });
 
   it("embeds repository in receipt link when provided", () => {
@@ -112,7 +140,7 @@ describe("operator cockpit", () => {
       },
     );
 
-    expect(text.indexOf("Open pull request")).toBeLessThan(text.indexOf("**State:**"));
+    expect(text.indexOf("Open PR")).toBeLessThan(text.indexOf("### What's happening"));
     expect(text).toContain("https://github.com/owner/repo/pull/99");
   });
 });

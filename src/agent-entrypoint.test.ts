@@ -112,6 +112,19 @@ describe("agent entrypoint hardening", () => {
     expect(agentSource).toContain("process.env.GITHUB_ENV");
   });
 
+  it("chains /approve and /continue into resume instead of operator-only exit", () => {
+    const agentSource = fs.readFileSync(
+      path.join(process.cwd(), "agent.ts"),
+      "utf8",
+    );
+
+    expect(agentSource).toContain("chainsIntoResume");
+    expect(agentSource).toContain("resolveResumeRunId");
+    expect(agentSource).toContain("readIssueRunIndex");
+    expect(agentSource).toContain("process.env.VIBE_RUN_ID = runId");
+    expect(agentSource).toContain('console.log(`🧭 Resuming run');
+  });
+
   it("marks approval-required runs for workflow promotion gating", () => {
     const agentSource = fs.readFileSync(
       path.join(process.cwd(), "agent.ts"),

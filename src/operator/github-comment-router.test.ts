@@ -39,7 +39,7 @@ describe("GitHub comment router", () => {
         actor: "afelin",
         commentId: "comment-1",
       });
-      expect(result.responseBody).toContain("Approval received");
+      expect(result.responseBody).toContain("Resuming the paused run");
     } finally {
       if (previous === undefined) delete process.env.GITHUB_ACTIONS;
       else process.env.GITHUB_ACTIONS = previous;
@@ -87,7 +87,7 @@ describe("GitHub comment router", () => {
     });
 
     expect(result.event?.type).toBe("operator.status_requested");
-    expect(result.responseBody).toContain("Vibe Engine OS Cockpit");
+    expect(result.responseBody).toContain("## Vibe Engine OS");
     expect(result.responseBody).toContain("learning");
   });
 

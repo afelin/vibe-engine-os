@@ -105,7 +105,9 @@ export type OSEvent =
         | "operator.retry_requested"
         | "operator.rollback_requested"
         | "operator.status_requested"
-        | "operator.deploy_requested";
+        | "operator.deploy_requested"
+        | "operator.continue_requested"
+        | "operator.details_requested";
       protocolVersion: "os.operator.v1";
       actor: string;
       commentId: string;

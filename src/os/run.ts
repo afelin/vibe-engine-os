@@ -74,6 +74,7 @@ import {
 } from "../constitution/capsule.js";
 import { readPersistedApproval } from "./approval-store.js";
 import { sanitizeRunId } from "../run/paths.js";
+import { readIssueRunIndex, writeIssueRunIndex } from "../run/issue-index.js";
 import { sha256Content } from "../run/promotion.js";
 import { sealTaskBond, type TaskBond } from "../bond/seal.js";
 import { readTaskBond, writeTaskBond } from "../bond/store.js";
@@ -193,6 +194,12 @@ export async function runOSActor(
     input.approvedBy ?? persistedApproval?.approvedBy ?? undefined;
   const resumeSnapshot = loadResumeSnapshot(rootDir, runId, input.issueNumber);
   const pastPlanning = isPastPlanning(resumeSnapshot);
+
+  writeIssueRunIndex(rootDir, input.issueNumber, {
+    runId,
+    state: resumeSnapshot ? String(resumeSnapshot.value) : "received",
+    updatedAt: new Date().toISOString(),
+  });
 
   const initialContext: OSContext = {
     ...createInitialOSContext(),
@@ -497,7 +504,9 @@ ${vibe}`;
 
   const resumeState = resumeSnapshot ? String(resumeSnapshot.value) : null;
   const skipToCodegen =
-    resumeState === "generating_patch" || resumeState === "learning";
+    resumeState === "generating_patch" ||
+    resumeState === "learning" ||
+    (resumeState === "awaiting_approval" && Boolean(approvedBy));
 
   const plannedFiles =
     collectPlannedFiles(dag).length > 0
@@ -660,6 +669,7 @@ ${vibe}`;
     const validation = runGeneratedPatchValidators(generatedFiles, {
       allowedPaths: allowedCodegenPaths,
       rootDir,
+      approvalGranted: Boolean(approvedBy),
     });
     if (
       validation.gateFailures.some((item) => item.gate_id === "bond_compliance")
@@ -1001,6 +1011,12 @@ function finishRun(args: FinishRunInput): RunOutput {
 
   writeActorSnapshot(args.rootDir, args.runId, getPersistedSnapshot(args.actor));
 
+  writeIssueRunIndex(args.rootDir, args.input.issueNumber, {
+    runId: args.runId,
+    state: args.state,
+    updatedAt: new Date().toISOString(),
+  });
+
   return {
     success: args.success,
     state: args.state,
@@ -1013,12 +1029,26 @@ function finishRun(args: FinishRunInput): RunOutput {
   };
 }
 
-function resolveRunId(issueNumber: string, _rootDir: string): string {
+function resolveRunId(issueNumber: string, rootDir: string): string {
   const envRunId = process.env.VIBE_RUN_ID?.trim();
   if (envRunId) return sanitizeRunId(envRunId);
+
+  const fromIndex = readIssueRunIndexForResume(rootDir, issueNumber);
+  if (fromIndex) return fromIndex;
+
   return sanitizeRunId(
     `issue-${issueNumber}-${new Date().toISOString().replace(/[:.]/g, "-")}`,
   );
+}
+
+function readIssueRunIndexForResume(
+  rootDir: string,
+  issueNumber: string,
+): string | null {
+  const entry = readIssueRunIndex(rootDir, issueNumber);
+  if (!entry) return null;
+  if (entry.state === "completed" || entry.state === "failed") return null;
+  return sanitizeRunId(entry.runId);
 }
 
 function loadResumeSnapshot(
@@ -1026,7 +1056,14 @@ function loadResumeSnapshot(
   runId: string,
   issueNumber: string,
 ): OSPlayerSnapshot | null {
-  if (!process.env.VIBE_RUN_ID?.trim()) return null;
+  const index = readIssueRunIndex(rootDir, issueNumber);
+  const resumeRequested =
+    Boolean(process.env.VIBE_RUN_ID?.trim()) ||
+    (index !== null &&
+      index.runId === runId &&
+      index.state !== "completed" &&
+      index.state !== "failed");
+  if (!resumeRequested) return null;
 
   const raw = readActorSnapshot(rootDir, runId);
   if (!raw || typeof raw !== "object") return null;
@@ -1064,10 +1101,10 @@ function prepareCodegenRetry(
 function isPastPlanning(snapshot: OSPlayerSnapshot | null): boolean {
   if (!snapshot) return false;
   const state = String(snapshot.value);
+  if (state === "awaiting_approval") return true;
   const pastStates = new Set([
     "planning",
     "risk_review",
-    "awaiting_approval",
     "generating_patch",
     "verifying",
     "learning",

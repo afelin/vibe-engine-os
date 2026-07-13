@@ -12,6 +12,7 @@ import {
   validateNoPathTraversal,
   validateNoSecrets,
   validateProtectedFiles,
+  type PolicyMode,
   type ValidatorResult,
 } from "./validators.js";
 
@@ -66,6 +67,7 @@ export function remediationForValidator(name: string): string {
 export type RunGeneratedPatchValidatorsOpts = {
   allowedPaths?: string[];
   rootDir?: string;
+  approvalGranted?: boolean;
 };
 
 function validateAgentMandates(files: GeneratedFile[]): ValidatorResult {
@@ -88,10 +90,13 @@ export function runGeneratedPatchValidators(
   files: GeneratedFile[],
   opts: RunGeneratedPatchValidatorsOpts = {},
 ): ValidatorPipelineResult {
+  const policyMode: PolicyMode = opts.approvalGranted
+    ? "maintainer_change"
+    : "generated_patch";
   const results = [
     validateNoPathTraversal(files),
-    validateFilePolicy("generated_patch", files),
-    validateProtectedFiles(files),
+    validateFilePolicy(policyMode, files),
+    ...(opts.approvalGranted ? [] : [validateProtectedFiles(files)]),
     validateAgentMandates(files),
     validateNoSecrets(files),
     validateEsmImportExtensions(files),

@@ -12,7 +12,9 @@ export type OperatorRequestedEvent =
   | ({ type: "operator.retry_requested" } & OperatorEventBase)
   | ({ type: "operator.rollback_requested" } & OperatorEventBase)
   | ({ type: "operator.status_requested" } & OperatorEventBase)
-  | ({ type: "operator.deploy_requested" } & OperatorEventBase);
+  | ({ type: "operator.deploy_requested" } & OperatorEventBase)
+  | ({ type: "operator.continue_requested" } & OperatorEventBase)
+  | ({ type: "operator.details_requested" } & OperatorEventBase);
 
 export type OperatorEventMetadata = {
   actor: string;
@@ -46,6 +48,10 @@ export function mapCommandToEvent(
       return { type: "operator.status_requested", ...base };
     case "deploy":
       return { type: "operator.deploy_requested", ...base };
+    case "continue":
+      return { type: "operator.continue_requested", ...base };
+    case "details":
+      return { type: "operator.details_requested", ...base };
     case "unknown":
       return null;
   }

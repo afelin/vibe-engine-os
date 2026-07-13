@@ -5,6 +5,8 @@ import { readPersistedApproval, persistApproval } from "./src/os/approval-store.
 import { runOSActor } from "./src/os/run.js";
 import { renderCockpitComment, resolvePrUrl } from "./src/operator/cockpit.js";
 import { routeGitHubComment } from "./src/operator/github-comment-router.js";
+import { chainsIntoResume, parseOperatorCommand } from "./src/operator/commands.js";
+import { readIssueRunIndex } from "./src/run/issue-index.js";
 import { publishCockpitComment, resolveGitHubCommentTarget } from "./src/publishing/github-comments.js";
 import {
   buildIdempotencyKey,
@@ -46,11 +48,12 @@ async function runOS() {
   }
 
   if (isOperatorCommentEvent()) {
+    const command = parseOperatorCommand(ISSUE_BODY);
     const route = routeGitHubComment({
       body: ISSUE_BODY,
       actor: GITHUB_ACTOR,
       commentId: GITHUB_COMMENT_ID,
-      state: "operator_command",
+      state: readActiveRunState(".", ISSUE_NUMBER) ?? "operator_command",
       rootDir: ".",
       labels: process.env.VIBE_LABELS,
       repository: process.env.GITHUB_REPOSITORY,
@@ -79,10 +82,25 @@ async function runOS() {
         }
       } else {
         console.log("🧭 Operator command denied.");
+        await publishCommentBodyFromEnv(route.responseBody);
+        return;
       }
-      markOperatorOnlyFromEnv();
-      await publishCommentBodyFromEnv(route.responseBody);
-      return;
+
+      if (chainsIntoResume(command)) {
+        const runId = resolveResumeRunId(".", ISSUE_NUMBER);
+        if (runId) {
+          process.env.VIBE_RUN_ID = runId;
+          console.log(`🧭 Resuming run ${runId} after ${command.type}`);
+        } else {
+          console.log("🧭 No active run to resume; posting acknowledgement only.");
+          await publishCommentBodyFromEnv(route.responseBody);
+          return;
+        }
+      } else {
+        markOperatorOnlyFromEnv();
+        await publishCommentBodyFromEnv(route.responseBody);
+        return;
+      }
     }
   }
 
@@ -182,6 +200,17 @@ function isOperatorCommentEvent() {
   return eventName === "issue_comment" || eventName === "pull_request_review";
 }
 
+function readActiveRunState(rootDir: string, issueNumber: string): string | null {
+  return readIssueRunIndex(rootDir, issueNumber)?.state ?? null;
+}
+
+function resolveResumeRunId(rootDir: string, issueNumber: string): string | null {
+  const entry = readIssueRunIndex(rootDir, issueNumber);
+  if (!entry) return null;
+  if (entry.state === "completed" || entry.state === "failed") return null;
+  return entry.runId;
+}
+
 function markOperatorOnlyFromEnv() {
   const githubEnv = process.env.GITHUB_ENV;
   if (!githubEnv) return;
@@ -271,7 +300,9 @@ async function publishCockpitFromEnv(
     ...manifest,
     repository: target.repository,
     prUrl: manifest.prUrl ?? resolvePrUrl("."),
-  } : undefined);
+  } : undefined, {
+    labels: process.env.VIBE_LABELS,
+  });
 
   try {
     const result = await publishCockpitComment({
