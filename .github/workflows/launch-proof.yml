@@ -1,0 +1,40 @@
+name: Launch Proof (zero-token E2E)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: read
+  checks: read
+
+jobs:
+  launch-proof:
+    name: Zero-token issue → PR → receipt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Preflight launch readiness
+        run: npm run launch:readiness
+
+      - name: Run zero-token E2E proof
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/launch-e2e.mjs
+
+      - name: Upload launch proof artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: launch-proof
+          path: .vibe/launch-proof.json
+          if-no-files-found: error

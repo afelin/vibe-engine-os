@@ -8,6 +8,13 @@ import type { OSContext } from "../os/events.js";
 import { getVibeDepth, renderDepthStatus, type VibeDepth } from "../os/depth.js";
 import { readTaskBond } from "../bond/store.js";
 import { readScoreboardEntries } from "../run/manifest.js";
+import { countGauntletCases } from "../launch/readiness.js";
+import { readInterventions } from "../research/interventions.js";
+import {
+  renderDecisionExplain,
+  resolveCockpitDecisionId,
+  resolveExplainDepth,
+} from "./explain.js";
 
 export function resolvePrUrl(rootDir = "."): string | undefined {
   const fromEnv = process.env.VIBE_PR_URL?.trim();
@@ -57,6 +64,19 @@ const NEXT_ACTION_BY_STATE: Record<string, string> = {
   operator_command: "Use `/status` for a fresh snapshot or `/continue` to resume a paused run.",
 };
 
+
+function renderExplainBlock(
+  state: string,
+  labels?: string,
+): string | undefined {
+  const depth = resolveExplainDepth({ labels });
+  if (depth === "off") return undefined;
+  const decisionId = resolveCockpitDecisionId(state);
+  if (!decisionId) return undefined;
+  const block = renderDecisionExplain(decisionId, depth);
+  return block || undefined;
+}
+
 export function resolveNextAction(state: string): string {
   return NEXT_ACTION_BY_STATE[state] ?? "Wait for the engine to post the next update.";
 }
@@ -91,12 +111,21 @@ export function renderCockpitComment(
     options,
   );
   const nextAction = resolveNextAction(state);
+  const plainReceipt = renderPlainReceiptLine(manifest);
+  const gauntletLine = renderGauntletLine(rootDir);
+  const tokensSavedLine = renderTokensSavedLine(manifest);
 
   const plainBlock = [
     "## Vibe Engine OS",
     "",
     prUrl ? `**Pull request:** [Open PR](${prUrl})` : undefined,
     prUrl ? "" : undefined,
+    plainReceipt,
+    plainReceipt ? "" : undefined,
+    gauntletLine,
+    gauntletLine ? "" : undefined,
+    tokensSavedLine,
+    tokensSavedLine ? "" : undefined,
     "### What's happening",
     describeWhatsHappening(state, context),
     "",
@@ -106,6 +135,8 @@ export function renderCockpitComment(
     "### Outcome checklist",
     renderOutcomeChecklist(bond?.outcomes ?? []),
     "",
+    renderExplainBlock(state, options?.labels),
+    renderExplainBlock(state, options?.labels) ? "" : undefined,
     "### Commands",
     "`/status` · `/approve` · `/continue` · `/retry` · `/rollback` · `/details`",
     "",
@@ -204,6 +235,7 @@ export function renderScoreboardSummary(
     entry.metrics.gateIdsFailed.length === 0 && entry.metrics.attempts <= 1,
   ).length;
   const tokensSavedEstimate = gateRuns * 4000;
+  const interventions = readInterventions(rootDir, 50);
 
   const lines = [
     `- **Success rate:** ${((successCount / entries.length) * 100).toFixed(0)}% (${successCount}/${entries.length})`,
@@ -211,6 +243,7 @@ export function renderScoreboardSummary(
     `- **Hallucination blocks:** ${hallucinationCount} run(s) stopped off-scope paths`,
     `- **Avg duration:** ${avgDuration.toFixed(0)}ms`,
     `- **Tokens saved (est.):** ~${tokensSavedEstimate} (gate vs LLM path)`,
+    `- **Policy interventions:** ${interventions.length} recorded`,
   ];
 
   if (manifest?.metrics?.firstPassGreen !== undefined) {
@@ -222,6 +255,47 @@ export function renderScoreboardSummary(
   }
 
   return lines.join("\n");
+}
+
+function renderPlainReceiptLine(manifest?: CockpitManifest): string | undefined {
+  if (!manifest?.capsuleHash || !manifest.vowsHash) return undefined;
+
+  const proofBase =
+    manifest.proofBase ??
+    process.env.VIBE_PROOF_BASE ??
+    DEFAULT_PROOF_BASE;
+  const repository =
+    manifest.repository ?? process.env.GITHUB_REPOSITORY ?? undefined;
+
+  const proofUrl = buildProofHpurl(proofBase, {
+    runId: manifest.runId,
+    capsuleHash: manifest.capsuleHash,
+    vowsHash: manifest.vowsHash,
+    repo: repository,
+  });
+
+  return `**Receipt verified:** [View proof](${proofUrl})`;
+}
+
+export function renderGauntletLine(rootDir = "."): string | undefined {
+  const gauntlet = countGauntletCases(rootDir);
+  if (!gauntlet) return undefined;
+  if (gauntlet.pass === gauntlet.total) {
+    return `**Gauntlet:** ${gauntlet.pass}/${gauntlet.total} green`;
+  }
+  return `**Gauntlet:** ${gauntlet.pass}/${gauntlet.total} (${gauntlet.total - gauntlet.pass} failing)`;
+}
+
+export function renderTokensSavedLine(manifest?: CockpitManifest): string | undefined {
+  const tokens = manifest?.metrics?.tokensEstimate;
+  const zeroToken =
+    tokens === 0 ||
+    (tokens === undefined &&
+      manifest?.metrics?.firstPassGreen &&
+      (manifest.metrics.gateIdsFailed?.length ?? 0) === 0);
+
+  if (!zeroToken) return undefined;
+  return "**This run saved ~4000 tokens** (zero-token gate path)";
 }
 
 function renderReceiptLine(manifest?: CockpitManifest): string | undefined {

@@ -29,7 +29,9 @@ npm run activate
 | [Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md) | Solo founders — activate, first issue, operator commands |
 | [Plain-Language Briefing](docs/plain-language-briefing.md) | Stakeholders — capabilities, problems solved, VFA assessment |
 | [Agent Protocol](docs/agent-protocol.md) | Agents & integrators — MCP, TaskBond, schemas, gates |
+| [Agent Adapter](docs/agent-adapter.md) | Any framework — manifest, MCP + issue ingress paths |
 | [Nocode Quickstart](docs/nocode-quickstart.md) | Nocode users — issue → PR → receipt, no terminal |
+| [Launch Proof](docs/launch-proof.md) | Operators — zero-token E2E runbook + artifact slots |
 | [Platform Enforcement](docs/platform-enforcement.md) | Operators — deploy-from-capsule, GitHub Pro-free enforcement |
 | [Go-to-Market](docs/go-to-market.md) | Founders — tiers, outreach, competitor gap |
 | [OS Phases](docs/os-phases.md) | Promotion phase diagram (auto-derived from machine) |
@@ -48,10 +50,20 @@ npm run activate
 
 ```bash
 git clone <repo-url> && cd vibe-engine-os
-npm run activate
+bash runs/adopt.sh .
 
+# Or install into an existing repo:
+bash runs/adopt.sh /path/to/your-repo
+```
+
+`runs/adopt.sh` runs install (if needed), `npm install`, and `npm run activate` — exports `.vibe/schemas.json`, `.vibe/agent-adapter.json`, and `.vibe/activated.json`.
+
+```bash
 # Zero-token smoke (no API keys)
 ISSUE_NUMBER=3 ISSUE_TITLE="cloud loop" ISSUE_BODY="src/cloud-loop-smoke.ts src/cloud-loop-smoke.test.ts" npm run local-issue
+
+# Launch readiness preflight
+npm run launch:readiness
 
 # Label-driven depth: vibe:plan-only → 1, vibe:safe → 2, vibe:ship → 4
 # Or VIBE_DEPTH: 0 explain, 1 plan, 2 safe files, 3 tests, 4 deploy, 5 protected /approve
@@ -66,7 +78,19 @@ npm run constitution:serve   # local verify API :8787
 
 [![vibe-validate](https://img.shields.io/badge/action-vibe--validate-blue)](action.yml)
 
-Install into another repo: `bash runs/install-into-repo.sh /path/to/repo`
+Install bundle only: `bash runs/install-into-repo.sh /path/to/repo`
+
+## Launch proof
+
+Zero-token E2E on private GitHub: issue → PR → receipt → green **Vibe Promotion Gate**.
+
+```bash
+npm run launch:readiness          # local file + gauntlet + MCP checks
+# Actions → Launch Proof (workflow_dispatch) → .vibe/launch-proof.json
+npm run launch:scar               # GTM snippet from proof artifacts
+```
+
+When `.vibe/launch-proof.json` exists, it records `issueNumber`, `prUrl`, `capsuleHash`, and `checksGreen`. See [Launch Proof runbook](docs/launch-proof.md). Public repo + Pages deferred until private smoke passes.
 
 ## Zero-token smoke
 

@@ -1,0 +1,87 @@
+# Launch Proof Runbook
+
+Canonical zero-token E2E proof: **issue → PR → receipt → green checks** on a private GitHub repo.
+
+## When to run
+
+After `npm run launch:readiness` passes on `main`, trigger **Launch Proof (zero-token E2E)** via Actions → `workflow_dispatch`.
+
+## What it does
+
+1. Creates a Vibe Request issue with cloud-loop smoke paths (no LLM secrets)
+2. Polls issue comments for PR link + capsule receipt
+3. Polls PR checks for **Vibe Promotion Gate** (+ attribution when present)
+4. Writes `.vibe/launch-proof.json`
+
+Local dry-run (requires `gh` auth): `node scripts/launch-e2e.mjs`
+
+## Artifact slots
+
+Fill after a successful run (commit `.vibe/launch-proof.json` or paste from Actions artifact):
+
+| Slot | Example / placeholder |
+| --- | --- |
+| Issue # | `#___` |
+| Issue URL | `https://github.com/<owner>/<repo>/issues/___` |
+| PR URL | `https://github.com/<owner>/<repo>/pull/___` |
+| Capsule hash | `sha256:…` |
+| Receipt link | `[View proof](…)` from cockpit comment |
+| Screenshot — issue comment | `docs/assets/launch-proof-issue.png` |
+| Screenshot — PR checks | `docs/assets/launch-proof-checks.png` |
+| Checks green | `true` |
+
+## Acceptance
+
+- [ ] `npm run launch:readiness` exits 0 on `main`
+- [ ] `.vibe/launch-proof.json` has `issueNumber`, `prUrl`, `capsuleHash`, `checksGreen: true`
+- [ ] Issue comment contains PR link + receipt
+- [ ] **Vibe Promotion Gate** green on vibe branch PR
+
+## Manual ops (after proof passes)
+
+Do **not** automate these in launch PRs — complete in GitHub UI when acceptance above is met.
+
+### Branch protection on `main`
+
+Per [GitHub App / branch protection](./github-app.md):
+
+- [ ] Require **Vibe Promotion Gate** on PRs to `main`
+- [ ] Require **Audit Assisted-by attribution** on PRs to `main`
+- [ ] Require status checks to pass before merge
+
+### Post-launch public gate (deferred)
+
+Only after private smoke passes:
+
+- [ ] Make repository public (OSS GTM)
+- [ ] Enable GitHub Pages (`pages.yml` workflow)
+- [ ] Verify hosted receipt URLs (`DEFAULT_PROOF_BASE` in `src/constitution/hpurl.ts`)
+- [ ] Update README clone URL
+
+## Troubleshooting
+
+| Symptom | Fix |
+| --- | --- |
+| Issue created but no PR within 45m | Check Actions logs for `forever.yml`; confirm `vibe/run` label |
+| Receipt missing in comment | Wait for promote job; check `.runs/` artifact upload |
+| Vibe Promotion Gate pending | `vibe-pr-gate.yml` runs on PR open — re-sync PR |
+| `gh: not found` in workflow | Use `runs/ensure-gh.sh` pattern or `actions/setup-node` + preinstalled gh on runner |
+
+## Related
+
+- `npm run launch:readiness` — local preflight
+- `npm run launch:scar` — GTM snippet from proof + gauntlet
+- [Go-to-Market](./go-to-market.md) — scar post templates
+
+## One-command ship
+
+After readiness is green locally:
+
+```bash
+npm run launch:ship
+```
+
+This runs `launch:readiness`, triggers **Launch Proof (zero-token E2E)** on `main`, polls until success, then attempts branch protection via `scripts/enable-branch-protection.mjs`. State is written to `.vibe/launch-ship-state.json`.
+
+In GitHub Actions, use **Launch Ship** (`workflow_dispatch`). Branch protection may require a PAT with admin repo scope — see script output for UI fallback steps.
+

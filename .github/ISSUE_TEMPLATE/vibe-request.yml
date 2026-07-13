@@ -17,6 +17,8 @@ body:
 
         **Bound files:** list **2–4 exact paths** under Files to touch — enough to scope codegen, not so many that context rots.
 
+        **Explain dial** (optional): labels `vibe:explain-short`, `vibe:explain-long`, `vibe:explain-expand`, or `vibe:explain-off` — extra plain-language “why” in cockpit comments.
+
         **Operator commands** (issue comments): `/status` · `/approve` · `/retry` · `/rollback`
 
         You'll get a PR link and receipt in comments—no terminal required.
@@ -84,5 +86,19 @@ body:
       placeholder: |
         Related issue #12
         Must match existing patterns in src/cloud/
+    validations:
+      required: false
+
+  - type: dropdown
+    id: explain_depth
+    attributes:
+      label: Explain depth (optional)
+      description: Adds pedagogical context in issue comments. Match with labels after submit if needed.
+      options:
+        - Default (short)
+        - vibe:explain-off
+        - vibe:explain-short
+        - vibe:explain-long
+        - vibe:explain-expand
     validations:
       required: false

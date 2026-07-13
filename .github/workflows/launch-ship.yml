@@ -1,0 +1,42 @@
+name: Launch Ship
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+  checks: read
+  pull-requests: read
+  issues: read
+
+jobs:
+  launch-ship:
+    name: Readiness → proof → branch protection
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run launch ship orchestration
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VIBE_LAUNCH_SKIP_PUSH_CHECK: "1"
+          VIBE_EXPLAIN: ${{ vars.VIBE_EXPLAIN }}
+          VIBE_EXPLAIN_REPO: ${{ vars.VIBE_EXPLAIN }}
+        run: node scripts/launch-orchestrate.mjs
+
+      - name: Upload launch ship state
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: launch-ship-state
+          path: .vibe/launch-ship-state.json
+          if-no-files-found: warn

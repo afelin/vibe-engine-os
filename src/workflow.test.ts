@@ -346,5 +346,67 @@ describe("GitHub Actions workflow", () => {
     expect(cockpitSource).toContain("buildProofHpurl");
     expect(cockpitSource).toContain("resolvePrUrl");
     expect(cockpitSource).toContain("prUrl");
+    expect(cockpitSource).toContain("renderPlainReceiptLine");
+    expect(cockpitSource).toContain("renderGauntletLine");
+  });
+
+  it("install-into-repo.sh copies full adopt bundle manifest", () => {
+    const script = fs.readFileSync(
+      path.join(process.cwd(), "runs/install-into-repo.sh"),
+      "utf8",
+    );
+
+    const required = [
+      ".github/ISSUE_TEMPLATE",
+      "forever.yml",
+      "vibe-pr-gate.yml",
+      "tdd-attribution.yml",
+      "vibe-auto-merge.yml",
+      "proof",
+      "evals",
+      "scripts",
+      "tsconfig.json",
+      ".nvmrc",
+      "VOWS.md",
+      "nocode-quickstart.md",
+      "agent-protocol.md",
+      "github-app.md",
+      "runs/adopt.sh",
+    ];
+
+    for (const item of required) {
+      expect(script).toContain(item);
+    }
+  });
+
+  it("ci workflow runs check and launch readiness on PRs", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/ci.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain("npm ci");
+    expect(workflow).toContain("npm run check");
+    expect(workflow).toContain("npm run launch:readiness");
+  });
+
+  it("launch-proof workflow is workflow_dispatch only", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/launch-proof.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain("workflow_dispatch");
+    expect(workflow).toContain("scripts/launch-e2e.mjs");
+    expect(workflow).not.toContain("schedule:");
+  });
+
+  it("package.json exposes launch scripts", () => {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(process.cwd(), "package.json"), "utf8"),
+    ) as { scripts: Record<string, string> };
+
+    expect(pkg.scripts["launch:readiness"]).toContain("readiness-cli");
+    expect(pkg.scripts["launch:scar"]).toContain("scar-post.mjs");
   });
 });

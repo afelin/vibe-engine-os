@@ -1,0 +1,33 @@
+name: Autoresearch Weekly
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  autoresearch:
+    name: Weekly gate + mandate fixtures
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run autoresearch
+        run: npm run autoresearch
+
+      - name: Upload research artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: autoresearch-${{ github.run_id }}
+          path: .runs/research/
+          if-no-files-found: warn

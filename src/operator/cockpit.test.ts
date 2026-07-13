@@ -1,6 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   renderCockpitComment,
+  renderGauntletLine,
+  renderTokensSavedLine,
   resolveNextAction,
   shouldExpandTechnical,
 } from "./cockpit.js";
@@ -53,6 +55,20 @@ describe("operator cockpit", () => {
       shouldExpandTechnical("vibe/run, vibe:technical", undefined),
     ).toBe(true);
     expect(shouldExpandTechnical("vibe/run", "/status")).toBe(false);
+  });
+
+  it("includes explain block when depth is long via env", () => {
+    vi.stubEnv("VIBE_EXPLAIN", "long");
+    const text = renderCockpitComment(
+      "awaiting_approval",
+      baseContext,
+      ".",
+      undefined,
+      { labels: "vibe/run" },
+    );
+    expect(text).toContain("Why this matters");
+    expect(text).toContain("/approve");
+    vi.unstubAllEnvs();
   });
 
   it("maps machine states to deterministic next actions", () => {
@@ -142,5 +158,45 @@ describe("operator cockpit", () => {
 
     expect(text.indexOf("Open PR")).toBeLessThan(text.indexOf("### What's happening"));
     expect(text).toContain("https://github.com/owner/repo/pull/99");
+  });
+
+  it("shows receipt and gauntlet in plain block when capsule exists", () => {
+    const text = renderCockpitComment(
+      "completed",
+      {
+        issueNumber: "1",
+        issueTitle: "Done",
+        issueBody: "",
+        attempts: 1,
+        maxAttempts: 3,
+        findings: [],
+        generatedFiles: [],
+        verificationResults: [],
+        failures: [],
+      } satisfies OSContext,
+      ".",
+      {
+        runId: "run-1",
+        capsuleHash: "abc123",
+        vowsHash: "vows456",
+        metrics: { firstPassGreen: true, tokensEstimate: 0 },
+      },
+    );
+
+    const detailsIndex = text.indexOf("<details>");
+    expect(text.indexOf("Receipt verified")).toBeLessThan(detailsIndex);
+    expect(text.indexOf("View proof")).toBeLessThan(detailsIndex);
+    expect(text.indexOf("Gauntlet:")).toBeLessThan(detailsIndex);
+    expect(text).toContain("zero-token gate path");
+  });
+
+  it("renders gauntlet and tokens saved helpers", () => {
+    expect(renderGauntletLine(".")).toMatch(/\*\*Gauntlet:\*\* \d+\/\d+ green/);
+    expect(
+      renderTokensSavedLine({
+        runId: "run-1",
+        metrics: { firstPassGreen: true, tokensEstimate: 0 },
+      }),
+    ).toContain("4000 tokens");
   });
 });

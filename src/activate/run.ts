@@ -5,6 +5,8 @@ import {
   smokeMcpHandlers,
   writeActivatedJson,
 } from "./check.js";
+import { exportAgentAdapter } from "../launch/agent-adapter.js";
+import { runLaunchReadiness } from "../launch/readiness.js";
 import { createVowAttestation } from "../constitution/vows.js";
 
 const rootDir = process.argv[2] ?? ".";
@@ -26,6 +28,8 @@ if (!mcpSmoke.pass) {
 
 const attestation = createVowAttestation(rootDir);
 const schemasPath = exportSchemas(rootDir);
+const adapterPath = exportAgentAdapter(rootDir);
+const launchReadiness = runLaunchReadiness(rootDir);
 
 const activatedPath = writeActivatedJson(rootDir, {
   activatedAt: attestation.attestedAt,
@@ -33,9 +37,16 @@ const activatedPath = writeActivatedJson(rootDir, {
   schemaVersion: attestation.vowsVersion,
   gateSmokePass: mcpSmoke.pass,
   checkPass: true,
+  launchReadiness: launchReadiness.ok ? "pass" : "fail",
 });
 
 console.log(`✓ Schemas exported: ${schemasPath}`);
+console.log(`✓ Agent adapter: ${adapterPath}`);
 console.log(`✓ MCP smoke: ${mcpSmoke.gateCount} gates`);
+console.log(
+  launchReadiness.ok
+    ? "✓ Launch readiness: pass"
+    : "⚠ Launch readiness: fail (run npm run launch:readiness)",
+);
 console.log(`✓ Activated: ${activatedPath}`);
 printPersonaQuickstart();

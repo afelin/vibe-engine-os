@@ -40,6 +40,8 @@ You do not need to run anything locally. Watch the **Actions** tab if you want p
 
 Comments use plain-language updates by default. Add label `vibe:technical` or comment `/details` to expand state, capsule hash, and scoreboard metrics.
 
+**Explain dial** (how much “why” you get in comments): set env `VIBE_EXPLAIN=off|short|long|expand`, add label `vibe:explain-short` / `vibe:explain-long` / `vibe:explain-expand`, or set repository variable `VIBE_EXPLAIN`. Default is `short` for issue runs; agents default to `off`.
+
 ---
 
 ## What you get
@@ -51,3 +53,15 @@ Comments use plain-language updates by default. Add label `vibe:technical` or co
 | Promotion gate | GitHub check on the PR head commit |
 
 For deeper context, see [Solo Vibe Coder Guide](./solo-vibe-coder-guide.md) and [Platform Enforcement](./platform-enforcement.md).
+
+---
+
+## Troubleshooting
+
+| Symptom | Fix |
+| --- | --- |
+| `mergeable_state_unstable` on auto-merge | Wait for all checks to finish; re-add label `vibe/auto-merge` or trigger **Vibe Auto Merge** via `workflow_dispatch` |
+| Checks not in branch-protection picker | Run one vibe issue first so **Vibe Promotion Gate** and **Audit Assisted-by attribution** appear — see [GitHub App](./github-app.md) |
+| Receipt link 404 (private repo) | Use local `proof/index.html` with capsule hash from the issue comment until repo is public and Pages is enabled |
+| `launch:readiness` fails on adopt | Run `bash runs/adopt.sh .` — ensures workflows, evals, proof, and issue template are installed |
+| No PR comment after long wait | Check Actions tab for **Sovereign OS Event Bus**; confirm issue has `vibe/run` label |

@@ -42,6 +42,41 @@
 
 ---
 
+## Scar post templates (fill from launch-proof artifacts)
+
+Run `npm run launch:scar` after [Launch Proof](./launch-proof.md) passes. Replace placeholders with values from `.vibe/launch-proof.json`.
+
+### Template 1 — Gauntlet block
+
+> The constitution blocked a forbidden path before it reached `main`.
+>
+> **Launch proof:** issue #`<issueNumber>` → [PR](`<prUrl>`)  
+> **Capsule:** `sha256:<capsuleHash>`  
+> **Gauntlet:** 32/32 green — one bad mandate would have shipped.
+>
+> Agents propose. The constitution promotes or blocks.
+
+### Template 2 — Nocode loop
+
+> I labeled a GitHub issue. No terminal. Got a PR + tamper-evident receipt.
+>
+> Issue: `<issueUrl>`  
+> Receipt: [View proof](`<receiptLink>`)  
+> Checks: Vibe Promotion Gate green on `<prUrl>`
+>
+> See [Nocode Quickstart](./nocode-quickstart.md).
+
+### Template 3 — Zero-token economics
+
+> Zero-token gate path saved ~4000 tokens on the launch-proof run.
+>
+> **Issue #`<issueNumber>`** → deterministic cloud-loop smoke → PR with capsule hash.  
+> No LLM API keys in CI. Promotion only when the receipt validates.
+>
+> `npm run launch:readiness` + workflow_dispatch launch-proof — reproducible on private GitHub.
+
+---
+
 ## Activation metrics
 
 | Metric | Signal |

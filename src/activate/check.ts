@@ -96,6 +96,7 @@ export type ActivatedState = {
   schemaVersion: string;
   gateSmokePass: boolean;
   checkPass: boolean;
+  launchReadiness?: "pass" | "fail";
 };
 
 export function writeActivatedJson(
