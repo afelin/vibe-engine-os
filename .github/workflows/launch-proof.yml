@@ -8,6 +8,7 @@ permissions:
   issues: write
   pull-requests: read
   checks: read
+  actions: write
 
 jobs:
   launch-proof:
