@@ -24,7 +24,7 @@ src/cloud-loop-smoke.test.ts
 `;
 
 function ghJson(args) {
-  const output = execSync(`gh ${args} --json`, {
+  const output = execSync(`gh ${args}`, {
     encoding: "utf8",
     stdio: ["pipe", "pipe", "pipe"],
     env: process.env,
@@ -79,7 +79,7 @@ async function waitForIssueProof(issueNumber) {
   let receiptLink;
 
   while (Date.now() - started < MAX_WAIT_MS) {
-    const payload = ghJson(`issue view ${issueNumber} --comments`);
+    const payload = ghJson(`issue view ${issueNumber} --json comments`);
     const bodies = (payload.comments ?? [])
       .map((comment) => comment.body ?? "")
       .join("\n");
@@ -112,9 +112,10 @@ async function waitForPrChecks(prUrl) {
   if (!prNumber) throw new Error(`Cannot parse PR number from ${prUrl}`);
 
   while (Date.now() - started < MAX_WAIT_MS) {
-    const checks = ghJson(`pr checks ${prNumber}`);
-    const gate = checks.find((check) => check.name === "Vibe Promotion Gate");
-    const attribution = checks.find(
+    const checks = ghJson(`pr checks ${prNumber} --json name,state,bucket`);
+    const checkList = Array.isArray(checks) ? checks : checks?.checks ?? [];
+    const gate = checkList.find((check) => check.name === "Vibe Promotion Gate");
+    const attribution = checkList.find(
       (check) => check.name === "Audit Assisted-by attribution",
     );
 
@@ -131,7 +132,7 @@ async function waitForPrChecks(prUrl) {
     if (gate && gateGreen && attrGreen) {
       return {
         checksGreen: true,
-        checkNames: checks.map((check) => check.name),
+        checkNames: checkList.map((check) => check.name),
         gateConclusion: gate.state ?? gate.bucket,
       };
     }
