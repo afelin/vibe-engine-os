@@ -40,6 +40,24 @@ function ghText(args) {
   }).trim();
 }
 
+
+const REQUIRED_LABELS = [
+  { name: "vibe/run", color: "1D76DB", description: "Trigger vibe-engine sovereign loop" },
+  { name: "vibe:safe", color: "0E8A16", description: "Safe depth codegen" },
+];
+
+function ensureVibeLabels() {
+  for (const label of REQUIRED_LABELS) {
+    try {
+      ghText(
+        `label create "${label.name}" --color "${label.color}" --description "${label.description}" --force`,
+      );
+    } catch {
+      // label may already exist with different metadata
+    }
+  }
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -133,6 +151,8 @@ async function main() {
 
   const repo = ghText("repo view --json nameWithOwner -q .nameWithOwner");
   process.stdout.write(`Launch proof on ${repo}\n`);
+
+  ensureVibeLabels();
 
   const bodyFile = path.join(os.tmpdir(), "vibe-launch-proof-body.md");
   fs.writeFileSync(bodyFile, ISSUE_BODY, "utf8");
