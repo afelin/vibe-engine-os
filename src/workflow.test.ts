@@ -213,6 +213,23 @@ describe("GitHub Actions workflow", () => {
     expect(workflow).toContain("VIBE_AUTO_MERGE");
   });
 
+  it("posts promotion gate on feature PR head after npm check", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/vibe-pr-gate.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain("pull_request");
+    expect(workflow).toContain("branches: [main]");
+    expect(workflow).toContain("checks: write");
+    expect(workflow).toContain("npm run check");
+    expect(workflow).toContain("promote:post-pr-gate");
+    expect(workflow).toContain("VIBE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}");
+    expect(workflow.indexOf("npm run check")).toBeLessThan(
+      workflow.indexOf("promote:post-pr-gate"),
+    );
+  });
+
   it("uses structured gate failure feedback in the runtime ratchet", () => {
     const runSource = fs.readFileSync(
       path.join(process.cwd(), "src/os/run.ts"),
