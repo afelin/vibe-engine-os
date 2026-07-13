@@ -24,6 +24,13 @@ import {
   formatSealVerdict,
 } from "../bond/verdict.js";
 import { getVibeDepth } from "../os/depth.js";
+import {
+  buildContextBundle,
+  resolveContextFiles,
+} from "../context/bundle.js";
+import { recallLessons } from "../memory/recall.js";
+import type { ExecutionDag } from "../os/events.js";
+import { parseExecutionDag } from "../constitution/parse.js";
 
 export const RELEASE_GATE_MCP = {
   name: "vibe-release-gates",
@@ -138,6 +145,36 @@ export const RELEASE_GATE_TOOLS = [
         depth: { type: "number" },
       },
       required: ["issue_body"],
+    },
+  },
+  {
+    name: "build_scoped_context",
+    description:
+      "Build a ScopedContextBundle from bond files and optional DAG for promotion context.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        root_dir: { type: "string" },
+        bond_files: { type: "array", items: { type: "string" } },
+        dag: { type: "object" },
+        max_total_chars: { type: "number" },
+        max_per_file_chars: { type: "number" },
+      },
+      required: ["bond_files"],
+    },
+  },
+  {
+    name: "recall_lessons",
+    description:
+      "Deterministic lesson recall by path prefix (no embeddings).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        root_dir: { type: "string" },
+        path_prefixes: { type: "array", items: { type: "string" } },
+        limit: { type: "number" },
+      },
+      required: ["path_prefixes"],
     },
   },
 ] as const;
@@ -364,6 +401,50 @@ export function callReleaseGateTool(
       null,
       2,
     );
+  }
+
+  if (name === "build_scoped_context") {
+    const rootDir = typeof args.root_dir === "string" ? args.root_dir : ".";
+    const bondFiles = Array.isArray(args.bond_files)
+      ? args.bond_files.filter((item): item is string => typeof item === "string")
+      : [];
+    const dagInput: ExecutionDag =
+      args.dag && typeof args.dag === "object"
+        ? parseExecutionDag(args.dag)
+        : {
+            issueNumber: "0",
+            title: "scoped-context",
+            nodes: bondFiles.map((file, index) => ({
+              id: `edit-${index + 1}`,
+              title: "Bound file",
+              kind: "edit" as const,
+              dependsOn: [],
+              risk: "low" as const,
+              files: [file],
+              acceptance: ["ok"],
+            })),
+          };
+
+    const files = resolveContextFiles(rootDir, dagInput, bondFiles);
+    const bundle = buildContextBundle(rootDir, files, {
+      maxTotalChars:
+        typeof args.max_total_chars === "number" ? args.max_total_chars : undefined,
+      maxPerFileChars:
+        typeof args.max_per_file_chars === "number"
+          ? args.max_per_file_chars
+          : undefined,
+    });
+    return JSON.stringify(bundle, null, 2);
+  }
+
+  if (name === "recall_lessons") {
+    const rootDir = typeof args.root_dir === "string" ? args.root_dir : ".";
+    const prefixes = Array.isArray(args.path_prefixes)
+      ? args.path_prefixes.filter((item): item is string => typeof item === "string")
+      : [];
+    const limit = typeof args.limit === "number" ? args.limit : 5;
+    const result = recallLessons(rootDir, prefixes, limit);
+    return JSON.stringify(result, null, 2);
   }
 
   throw new Error(`Unknown tool: ${name}`);

@@ -5,6 +5,7 @@ import { hasEventLedger, replayRun } from "../os/replay.js";
 import { sanitizeRunId } from "../run/paths.js";
 import { callReleaseGateTool } from "../release-gate/mcp-handlers.js";
 import { readTaskBond } from "./store.js";
+import { recordPolicyInterventions } from "../research/interventions.js";
 
 const rootDir = process.argv[2] ?? ".";
 const issueNumber = process.argv[3] ?? process.env.ISSUE_NUMBER ?? "";
@@ -147,7 +148,19 @@ function checkReplayDeterministic(runIdValue: string): void {
   );
 }
 
+function checkPolicyInterventions(): void {
+  const intervention = recordPolicyInterventions(rootDir);
+  record(
+    "policy.interventions",
+    true,
+    intervention
+      ? `logged ${intervention.changedFiles.join(", ")}`
+      : "no policy changes",
+  );
+}
+
 runGauntlet();
+checkPolicyInterventions();
 checkBondForIssue();
 checkManifestBond(runId);
 checkCapsule(runId);

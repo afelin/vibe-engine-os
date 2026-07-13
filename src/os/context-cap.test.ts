@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { capContext, dedupeLines } from "./run.js";
+import { capContext, dedupeLines } from "../context/cap.js";
 
 describe("capContext", () => {
   it("preserves head content when capping from the start", () => {

@@ -1,11 +1,15 @@
 import { z } from "zod";
 import {
   constitutionCatalog,
+  evoLessonSchema,
   executionDagSchema,
   gateFailureSchema,
+  gateFeedbackEntrySchema,
   mandateEvalSchema,
   mandatesSchema,
+  recallResultSchema,
   runManifestSchema,
+  scopedContextBundleSchema,
   scoreboardEntrySchema,
   taskBondEvalSchema,
   taskBondSchema,
@@ -69,6 +73,22 @@ export function parseTaskBond(data: unknown) {
 
 export function parseTaskBondEval(data: unknown) {
   return parseWith("TaskBondEval", taskBondEvalSchema, data);
+}
+
+export function parseScopedContextBundle(data: unknown) {
+  return parseWith("ScopedContextBundle", scopedContextBundleSchema, data);
+}
+
+export function parseEvoLesson(data: unknown) {
+  return parseWith("EvoLesson", evoLessonSchema, data);
+}
+
+export function parseRecallResult(data: unknown) {
+  return parseWith("RecallResult", recallResultSchema, data);
+}
+
+export function parseGateFeedbackEntry(data: unknown) {
+  return parseWith("GateFeedbackEntry", gateFeedbackEntrySchema, data);
 }
 
 export function exportCatalogJsonSchema(): Record<string, unknown> {

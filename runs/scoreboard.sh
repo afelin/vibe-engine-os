@@ -27,6 +27,14 @@ const summary = {
   averageDurationMs:
     lines.reduce((sum, entry) => sum + (entry.metrics?.durationMs ?? 0), 0) /
     lines.length,
+  averageContextChars:
+    lines.reduce((sum, entry) => sum + (entry.metrics?.contextChars ?? 0), 0) /
+    lines.length,
+  truncationRate:
+    lines.filter((entry) => entry.metrics?.truncated).length / lines.length,
+  hallucinationBlockRate:
+    lines.filter((entry) => entry.metrics?.hallucinationBlocked).length /
+    lines.length,
 };
 
 console.log('## Scoreboard (last 20 runs)');
@@ -34,7 +42,7 @@ console.log(JSON.stringify(summary, null, 2));
 console.log('');
 for (const entry of lines.reverse()) {
   console.log(
-    \`- \${entry.runId}: success=\${entry.success} attempts=\${entry.metrics?.attempts ?? 0} firstPass=\${entry.metrics?.firstPassGreen ?? false} durationMs=\${entry.metrics?.durationMs ?? 0}\`,
+    \`- \${entry.runId}: success=\${entry.success} attempts=\${entry.metrics?.attempts ?? 0} firstPass=\${entry.metrics?.firstPassGreen ?? false} durationMs=\${entry.metrics?.durationMs ?? 0} contextChars=\${entry.metrics?.contextChars ?? 0} truncated=\${entry.metrics?.truncated ?? false} hallucinationBlocked=\${entry.metrics?.hallucinationBlocked ?? false}\`,
   );
 }
 "

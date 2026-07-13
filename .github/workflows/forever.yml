@@ -50,6 +50,44 @@ jobs:
           if [ "$EVENT_NAME" = "pull_request_review" ] || [ "$EVENT_NAME" = "pull_request_review_comment" ]; then SHOULD_RUN=1; fi
           echo "should_run=$SHOULD_RUN" >> "$GITHUB_OUTPUT"
 
+      - name: Enforce bound files at depth >= 3
+        if: steps.label_gate.outputs.should_run == '1'
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          REVIEW_BODY: ${{ github.event.review.body }}
+          ISSUE_LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}
+        run: |
+          BODY="$ISSUE_BODY"
+          if [ "$EVENT_NAME" = "issue_comment" ]; then BODY="$COMMENT_BODY"; fi
+          if [ "$EVENT_NAME" = "pull_request_review" ] || [ "$EVENT_NAME" = "pull_request_review_comment" ]; then
+            BODY="${REVIEW_BODY:-$BODY}"
+          fi
+
+          LABELS_LOWER=$(echo "$ISSUE_LABELS" | tr '[:upper:]' '[:lower:]')
+          DEPTH="${VIBE_DEPTH:-3}"
+          if echo "$LABELS_LOWER" | grep -q "vibe:plan-only"; then DEPTH=1; fi
+          if echo "$LABELS_LOWER" | grep -q "vibe:safe"; then DEPTH=2; fi
+          if echo "$LABELS_LOWER" | grep -q "vibe:ship"; then DEPTH=4; fi
+
+          if [ "$DEPTH" -lt 3 ]; then
+            echo "Bound-file gate skipped (depth=$DEPTH)"
+            exit 0
+          fi
+
+          if echo "$BODY" | grep -Eq '(^|[[:space:]])(src|tests|supabase|\.github|\.planning|\.skills)/[^[:space:]]+'; then
+            echo "Bound files present in issue body"
+            exit 0
+          fi
+          if echo "$BODY" | grep -q 'package\.json'; then
+            echo "Bound files present (package.json)"
+            exit 0
+          fi
+
+          echo "::error::Depth >= 3 requires bound file paths in issue body (TaskBond Files to touch section)"
+          exit 1
+
       - name: Context outputs
         id: context
         run: |

@@ -7,7 +7,7 @@ import {
 import { computeVowsHash } from "../constitution/vows.js";
 
 describe("release gate MCP handlers", () => {
-  it("advertises eight deterministic tools", () => {
+  it("advertises ten deterministic tools", () => {
     expect(RELEASE_GATE_TOOLS.map((tool) => tool.name)).toEqual([
       "list_gates",
       "resolve_gate",
@@ -17,6 +17,8 @@ describe("release gate MCP handlers", () => {
       "validate_capsule",
       "seal_bond",
       "validate_bond",
+      "build_scoped_context",
+      "recall_lessons",
     ]);
   });
 
@@ -95,6 +97,30 @@ describe("release gate MCP handlers", () => {
     const text = callReleaseGateTool("constitution_schemas");
     const parsed = JSON.parse(text) as Record<string, unknown>;
     expect(parsed.ExecutionDag).toMatchObject({ type: "object" });
+    expect(parsed.ScopedContextBundle).toMatchObject({ type: "object" });
+    expect(parsed.EvoLesson).toMatchObject({ type: "object" });
+  });
+
+  it("builds scoped context bundle via MCP", () => {
+    const text = callReleaseGateTool("build_scoped_context", {
+      root_dir: ".",
+      bond_files: ["src/os/run.ts"],
+      max_total_chars: 5000,
+    });
+    const parsed = JSON.parse(text) as { files: unknown[]; totalChars: number };
+    expect(parsed.files.length).toBeGreaterThan(0);
+    expect(parsed.totalChars).toBeGreaterThan(0);
+  });
+
+  it("recalls lessons via MCP", () => {
+    const text = callReleaseGateTool("recall_lessons", {
+      root_dir: ".",
+      path_prefixes: ["src/"],
+      limit: 3,
+    });
+    const parsed = JSON.parse(text) as { lessons: unknown[]; markdown: string };
+    expect(Array.isArray(parsed.lessons)).toBe(true);
+    expect(typeof parsed.markdown).toBe("string");
   });
 
   it("validates a run capsule manifest", () => {
