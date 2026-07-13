@@ -52,7 +52,16 @@ import {
   type RunMetrics,
   writeActorSnapshot,
 } from "../run/manifest.js";
-import { buildScopedRepomix } from "../context/scoped-repomix.js";
+import {
+  buildContextBundle,
+  formatContextBundleForPrompt,
+  resolveContextFiles,
+  type ScopedContextBundle,
+} from "../context/bundle.js";
+import { capContext } from "../context/cap.js";
+import { recallLessons } from "../memory/recall.js";
+import { appendLesson, writeEvoMemExport } from "../memory/lesson.js";
+import { seedGateFeedbackCache } from "../memory/feedback-cache.js";
 import {
   buildVitestSubgraphCommand,
   mapChangedFilesToVitest,
@@ -216,7 +225,7 @@ export async function runOSActor(
   const deterministicPatch = releaseGate?.files ?? null;
   const constitution = deps.readConstitution();
   const repoContext = deps.readRepoContext();
-  const evoMemContext = deps.readEvoMem();
+  seedGateFeedbackCache(rootDir);
   const vibe = `TITLE: ${input.issueTitle}\nDESCRIPTION: ${input.issueBody}`;
 
   appendTraceSpan(rootDir, runId, { phase: "preflight" });
@@ -283,6 +292,7 @@ export async function runOSActor(
 
   const boundFiles = taskBond?.boundFiles ?? gateBoundFiles;
 
+  const lessonRecall = recallLessons(rootDir, boundFiles.length > 0 ? boundFiles : ["src/"]);
   const failureRecall = boundFiles
     .flatMap((filePath) => readRecentFailuresByPathPrefix(rootDir, filePath, 3))
     .slice(0, 3);
@@ -332,17 +342,18 @@ export async function runOSActor(
       ],
     };
 
-    const scopedContext = buildScopedRepomix(rootDir, fallbackDag);
+    const contextFiles = resolveContextFiles(rootDir, fallbackDag, boundFiles);
+    const plannerBundle = buildContextBundle(rootDir, contextFiles);
     const contextBlob =
       boundFiles.length > 0
-        ? scopedContext
+        ? formatContextBundleForPrompt(plannerBundle)
         : depth < 2
           ? capContext(repoContext, 16000)
-          : scopedContext;
+          : formatContextBundleForPrompt(plannerBundle);
 
     const plannerSystem = depth === 0
       ? `You are a Software 3.0 Architect. Explain the request without proposing file edits.\n${constitution}`
-      : `You are a Software 3.0 Architect. Follow this constitution strictly:\n${constitution}\n\nGlobal Codebase Map:\n${contextBlob}${formatEvoMemForPlanner(evoMemContext)}${recalledFailures ? `\n\n⚠️ RECENT STRUCTURED FAILURES FOR THESE PATHS:\n${recalledFailures}` : ""}`;
+      : `You are a Software 3.0 Architect. Follow this constitution strictly:\n${constitution}\n\nGlobal Codebase Map:\n${contextBlob}${lessonRecall.markdown}${recalledFailures ? `\n\n⚠️ RECENT STRUCTURED FAILURES FOR THESE PATHS:\n${recalledFailures}` : ""}`;
 
     const plannerUser =
       depth === 0
@@ -596,6 +607,11 @@ ${vibe}`;
   let finalVerifiedFiles: GeneratedFile[] = [];
   let attempts = 0;
   let tokensEstimate = 0;
+  let hallucinationBlocked = false;
+
+  const codegenContextFiles = resolveContextFiles(rootDir, dag, boundFiles);
+  const codegenBundle = buildContextBundle(rootDir, codegenContextFiles);
+  const allowedCodegenPaths = [...new Set([...plannedFiles, ...boundFiles])];
 
   while (attempts < mandates.max_attempts) {
     attempts++;
@@ -610,7 +626,12 @@ ${vibe}`;
         throw new Error("Codegen provider is off and no deterministic patch is available.");
       }
 
-      const codePrompt = buildCodegenPrompt(plan, plannedFiles, feedbackMarkdown);
+      const codePrompt = buildCodegenPrompt(
+        plan,
+        plannedFiles,
+        feedbackMarkdown,
+        codegenBundle,
+      );
       const rawCode = await deps.callOpenAI(
         codegen.baseUrl,
         codegen.apiKey,
@@ -636,7 +657,15 @@ ${vibe}`;
       path: generatedFiles.map((file) => file.path).join(","),
     });
 
-    const validation = runGeneratedPatchValidators(generatedFiles);
+    const validation = runGeneratedPatchValidators(generatedFiles, {
+      allowedPaths: allowedCodegenPaths,
+      rootDir,
+    });
+    if (
+      validation.gateFailures.some((item) => item.gate_id === "bond_compliance")
+    ) {
+      hallucinationBlocked = true;
+    }
     // Ax boundary: deterministic validators run before any disk write.
     appendTraceSpan(rootDir, runId, {
       phase: "validator",
@@ -648,9 +677,16 @@ ${vibe}`;
 
     if (!validation.passed) {
       gateFailures = validation.gateFailures;
-      feedbackMarkdown = formatGateFailuresMarkdown(gateFailures);
+      feedbackMarkdown = formatGateFailuresMarkdown(gateFailures, rootDir);
       recordedErrors.push(feedbackMarkdown);
       gateIdsFailed.push(...gateFailures.map((item) => item.gate_id));
+      recordLessonFromGateFailure({
+        rootDir,
+        runId,
+        gateFailures,
+        boundFiles,
+        plannedFiles,
+      });
       send({
         type: "verification.failed",
         failure: toClassifiedFailure("model_output", "Generated patch validation failed", feedbackMarkdown),
@@ -689,7 +725,7 @@ ${vibe}`;
             "Fix TypeScript compile errors before retrying.",
           ),
         );
-        feedbackMarkdown = formatGateFailuresMarkdown(gateFailures);
+        feedbackMarkdown = formatGateFailuresMarkdown(gateFailures, rootDir);
         recordedErrors.push(errMsg);
         gateIdsFailed.push("typescript_compiler");
         loopPassed = false;
@@ -729,7 +765,7 @@ ${vibe}`;
               "Fix failing tests before retrying.",
             ),
           );
-          feedbackMarkdown = formatGateFailuresMarkdown(gateFailures);
+          feedbackMarkdown = formatGateFailuresMarkdown(gateFailures, rootDir);
           recordedErrors.push(errMsg);
           gateIdsFailed.push("vitest");
           loopPassed = false;
@@ -772,7 +808,7 @@ ${vibe}`;
                 "Address the critic rejection before retrying.",
               ),
             );
-            feedbackMarkdown = formatGateFailuresMarkdown(gateFailures);
+            feedbackMarkdown = formatGateFailuresMarkdown(gateFailures, rootDir);
             recordedErrors.push(verdict);
             gateIdsFailed.push("causal_critic");
             loopPassed = false;
@@ -800,9 +836,17 @@ ${vibe}`;
       }
 
       if (attempts > 1 && recordedErrors.length > 0) {
-        deps.appendEvoMem(
-          `\n- [Issue #${input.issueNumber}] Resolved runtime failures during iteration:\n  ${recordedErrors.join("\n  ")}\n`,
-        );
+        appendLesson(rootDir, {
+          runId,
+          failureClass: "retry_success",
+          gate_id: gateIdsFailed[0],
+          path: finalVerifiedFiles[0]?.path ?? plannedFiles[0] ?? "src/",
+          symptom: recordedErrors.join("; ").slice(0, 500),
+          fix: "Resolved after codegen retry",
+          reuseWhen: boundFiles.length > 0 ? boundFiles : plannedFiles,
+          traceSpanTs: new Date().toISOString(),
+        });
+        writeEvoMemExport(rootDir);
       }
       break;
     }
@@ -815,6 +859,13 @@ ${vibe}`;
         gateFailures[0]?.analysis.detail.split("\n")[0] ?? "Verification failed",
         feedbackMarkdown,
       ),
+    });
+    recordLessonFromGateFailure({
+      rootDir,
+      runId,
+      gateFailures,
+      boundFiles,
+      plannedFiles,
     });
     if (!prepareCodegenRetry(actor, send)) break;
   }
@@ -841,6 +892,9 @@ ${vibe}`;
       firstPassGreen: false,
       tokensEstimate,
       approvalRequired: false,
+      contextChars: codegenBundle.totalChars,
+      truncated: codegenBundle.truncated,
+      hallucinationBlocked,
     });
   }
 
@@ -862,6 +916,9 @@ ${vibe}`;
     firstPassGreen: attempts === 1 && gateIdsFailed.length === 0,
     tokensEstimate,
     approvalRequired,
+    contextChars: codegenBundle.totalChars,
+    truncated: codegenBundle.truncated,
+    hallucinationBlocked,
   });
 }
 
@@ -884,6 +941,9 @@ type FinishRunInput = {
   tokensEstimate?: number;
   approvalRequired: boolean;
   bondHash?: string;
+  contextChars?: number;
+  truncated?: boolean;
+  hallucinationBlocked?: boolean;
 };
 
 function finishRun(args: FinishRunInput): RunOutput {
@@ -893,6 +953,9 @@ function finishRun(args: FinishRunInput): RunOutput {
     gateIdsFailed: [...new Set(args.gateIdsFailed)],
     durationMs: Date.now() - args.startedAt,
     tokensEstimate: args.tokensEstimate,
+    contextChars: args.contextChars,
+    truncated: args.truncated,
+    hallucinationBlocked: args.hallucinationBlocked,
   };
 
   const bondHash =
@@ -1047,23 +1110,11 @@ function buildManifest(
   };
 }
 
-function extractRequiredPaths(body: string): string[] {
-  const patterns = [
-    /\bsrc\/[\w./-]+\.ts\b/g,
-    /\btests\/[\w./-]+\.ts\b/g,
-    /\.github\/[\w./-]+/g,
-    /\bpackage\.json\b/g,
-  ];
-  const paths = patterns.flatMap((pattern) =>
-    [...body.matchAll(pattern)].map((match) => match[0]),
-  );
-  return [...new Set(paths)];
-}
-
 function buildCodegenPrompt(
   plan: string,
   requiredPaths: string[],
   feedbackMarkdown: string,
+  contextBundle?: ScopedContextBundle,
 ): string {
   let codePrompt = `Execute this plan strictly:\n${plan}\n\nOutput ONLY valid JSON matching this schema:
         {
@@ -1078,6 +1129,10 @@ function buildCodegenPrompt(
         - In TypeScript files, local ESM imports MUST use a .js extension (e.g. import { x } from "./example.js").
         - Do not emit markdown fences or commentary outside the JSON object.`;
 
+  if (contextBundle && contextBundle.files.length > 0) {
+    codePrompt += `\n\n## Existing source (read-only)\n${formatContextBundleForPrompt(contextBundle)}`;
+  }
+
   if (requiredPaths.length > 0) {
     codePrompt += `\n\nRequired output files (use these exact paths):\n${requiredPaths.join("\n")}`;
   }
@@ -1086,6 +1141,32 @@ function buildCodegenPrompt(
   }
   return codePrompt;
 }
+
+function recordLessonFromGateFailure(args: {
+  rootDir: string;
+  runId: string;
+  gateFailures: GateFailure[];
+  boundFiles: string[];
+  plannedFiles: string[];
+}): void {
+  const failure = args.gateFailures[0];
+  if (!failure) return;
+
+  appendLesson(args.rootDir, {
+    runId: args.runId,
+    failureClass: failure.gate_id,
+    gate_id: failure.gate_id,
+    path: failure.analysis.path,
+    symptom: failure.analysis.detail.slice(0, 500),
+    fix: failure.remediation_instruction,
+    reuseWhen:
+      args.boundFiles.length > 0 ? args.boundFiles : args.plannedFiles,
+    traceSpanTs: new Date().toISOString(),
+  });
+  writeEvoMemExport(args.rootDir);
+}
+
+export { dedupeLines, capContext } from "../context/cap.js";
 
 function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
@@ -1104,43 +1185,6 @@ function extractExecError(error: unknown): string {
     return String((error as { stdout?: Buffer }).stdout ?? "Unknown exec error");
   }
   return error instanceof Error ? error.message : String(error);
-}
-
-export function dedupeLines(text: string): string {
-  const lines = text.split("\n");
-  const kept = new Set<string>();
-  const result: string[] = [];
-  for (let i = lines.length - 1; i >= 0; i--) {
-    const line = lines[i]!;
-    if (!kept.has(line)) {
-      kept.add(line);
-      result.unshift(line);
-    }
-  }
-  return result.join("\n");
-}
-
-export function capContext(
-  text: string,
-  maxChars: number,
-  from: "head" | "tail" = "head",
-): string {
-  if (text.length <= maxChars) return text;
-  const omitted = text.length - maxChars;
-  if (from === "tail") {
-    return `…[context truncated: ${omitted} chars omitted from start to fit model input limits]\n\n${text.slice(-maxChars)}`;
-  }
-  return `${text.slice(0, maxChars)}\n\n…[context truncated: ${omitted} chars omitted to fit model input limits]`;
-}
-
-function formatEvoMemForPlanner(evoMem: string): string {
-  if (!evoMem) return "";
-  const deduped = dedupeLines(evoMem);
-  return capContext(
-    `\n\n⚠️ HISTORICAL RUNTIME ERRORS TO AVOID:\n${deduped}`,
-    2000,
-    "tail",
-  );
 }
 
 function getGitValue(command: string, fallback: string) {

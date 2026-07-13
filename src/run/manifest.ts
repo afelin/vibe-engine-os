@@ -13,6 +13,9 @@ export type RunMetrics = {
   firstPassGreen: boolean;
   gateIdsFailed: string[];
   durationMs: number;
+  contextChars?: number;
+  truncated?: boolean;
+  hallucinationBlocked?: boolean;
 };
 
 export type RunManifest = {

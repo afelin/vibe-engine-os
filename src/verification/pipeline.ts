@@ -1,5 +1,6 @@
 import { evaluateMandates } from "../policy/evaluate.js";
 import type { GeneratedFile } from "../os/events.js";
+import { validateBondCompliance } from "./bond-compliance.js";
 import {
   createGateFailure,
   type GateFailure,
@@ -41,7 +42,7 @@ function validatorToGateFailure(
   );
 }
 
-function remediationForValidator(name: string): string {
+export function remediationForValidator(name: string): string {
   switch (name) {
     case "path_traversal":
       return "Use relative paths under src/, tests/, .planning/, or .skills/.";
@@ -55,10 +56,17 @@ function remediationForValidator(name: string): string {
       return "Remove secret-like values from generated files before retrying.";
     case "agent_mandate":
       return "Remove forbidden paths or request /approve for protected prefixes.";
+    case "bond_compliance":
+      return "Use only paths from the execution plan and bound file set.";
     default:
       return "Fix the validator failure and retry.";
   }
 }
+
+export type RunGeneratedPatchValidatorsOpts = {
+  allowedPaths?: string[];
+  rootDir?: string;
+};
 
 function validateAgentMandates(files: GeneratedFile[]): ValidatorResult {
   const evaluation = evaluateMandates(files.map((file) => file.path));
@@ -78,6 +86,7 @@ function validateAgentMandates(files: GeneratedFile[]): ValidatorResult {
 
 export function runGeneratedPatchValidators(
   files: GeneratedFile[],
+  opts: RunGeneratedPatchValidatorsOpts = {},
 ): ValidatorPipelineResult {
   const results = [
     validateNoPathTraversal(files),
@@ -87,11 +96,29 @@ export function runGeneratedPatchValidators(
     validateNoSecrets(files),
     validateEsmImportExtensions(files),
   ];
+
+  const bondCompliance =
+    opts.allowedPaths && opts.allowedPaths.length > 0
+      ? validateBondCompliance(files, opts.allowedPaths, opts.rootDir ?? ".")
+      : null;
+
   const failed = results.filter((result) => !result.passed);
   const gateFailures = failed.map((result) =>
     validatorToGateFailure(result, files),
   );
-  const failures = failed.map((result) => `${result.name}: ${result.output}`);
+
+  if (bondCompliance && !bondCompliance.passed) {
+    gateFailures.push(...bondCompliance.gateFailures);
+  }
+
+  const failures = [
+    ...failed.map((result) => `${result.name}: ${result.output}`),
+    ...(bondCompliance && !bondCompliance.passed
+      ? bondCompliance.gateFailures.map(
+          (item) => `bond_compliance: ${item.analysis.detail}`,
+        )
+      : []),
+  ];
 
   return {
     passed: failures.length === 0,

@@ -27,6 +27,10 @@ All structured artifacts validate against `src/constitution/catalog.ts`:
 | `TaskBond` | Sealed ingress packet (anti-rot/decay) |
 | `TaskBondEval` | Bond + mandate evaluation result |
 | `GateFailure` | Ratchet feedback |
+| `ScopedContextBundle` | Capped promotion context |
+| `EvoLesson` | Evidence-linked recall lesson |
+| `RecallResult` | Deterministic lesson recall output |
+| `GateFeedbackEntry` | Cached gate remediation |
 | `VowAttestation` | Vows compliance |
 | `MandateEval` | Path policy result |
 
@@ -44,6 +48,8 @@ HTTP: `npm run constitution:serve` → `GET /schemas`, `POST /verify-capsule`
 | `validate_capsule` | After run completes |
 | `seal_bond` | Seal TaskBond from issue body to disk |
 | `validate_bond` | Dry-run bond + mandate check (Cursor/agents) |
+| `build_scoped_context` | Build ScopedContextBundle for codegen/planner context |
+| `recall_lessons` | Deterministic lesson recall by path prefix |
 | `list_gates` | Discover zero-token gates |
 
 ## TaskBond (anti-rot / anti-decay)
@@ -55,7 +61,31 @@ Before planning at depth ≥ 2, the runtime **seals a TaskBond** from the issue 
 - **boundFiles** (exact paths — **required** at depth ≥ 2)
 - **bondHash** on manifest and `.runs/bonds/issue-<N>.bond.json`
 
-Bond evaluation uses **agent mandates** (`evaluate_mandates`) plus bond policy in `src/policy/mandates.json`. Proposed paths are normalized before prefix checks (blocks obfuscated paths like `src/./auth/…`). Scoped context uses **boundFiles only** — no repomix fallback when paths are bound.
+Bond evaluation uses **agent mandates** (`evaluate_mandates`) plus bond policy in `src/policy/mandates.json`. Proposed paths are normalized before prefix checks (blocks obfuscated paths like `src/./auth/…`). Scoped context uses **boundFiles + DAG planned files** via `ScopedContextBundle` — no repomix fallback when paths are bound at depth ≥ 3.
+
+## Anti-rot primitives
+
+Promotion context and hallucination guards stay in vibe-engine (CyberReady OPA handles compliance separately).
+
+| Primitive | Module | Purpose |
+|-----------|--------|---------|
+| `ScopedContextBundle` | `src/context/bundle.ts` | Capped, hashable file snippets for planner + codegen |
+| `BondComplianceValidator` | `src/verification/bond-compliance.ts` | Block generated paths outside planned ∪ bound |
+| `EvoLesson` | `src/memory/lesson.ts` | Evidence-linked lessons in `.evomem/lessons.ndjson` |
+| `recallLessons` | `src/memory/recall.ts` | Deterministic prefix recall (no embeddings) |
+| `GateFeedbackCache` | `src/memory/feedback-cache.ts` | Static remediation in `.vibe/cache/gates/` |
+| `InterventionLedger` | `src/research/interventions.ts` | Log policy file changes in `.runs/interventions.ndjson` |
+
+Codegen prompts include `## Existing source (read-only)` from the bundle. Scoreboard tracks `contextChars`, `truncated`, and `hallucinationBlocked`.
+
+MCP export for external agents (e.g. CyberReady adapter):
+
+```bash
+# build_scoped_context — bond_files + optional dag → bundle JSON
+# recall_lessons — path_prefixes → RecallResult
+```
+
+`EVOMEM.md` is an optional human-readable export generated from structured lessons (not the source of truth).
 
 ```bash
 npm run bond:seal -- . 42 "Title" "### Intent...\n### Files...\nsrc/foo.ts"

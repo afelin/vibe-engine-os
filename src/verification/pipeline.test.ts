@@ -15,6 +15,18 @@ describe("generated patch validator pipeline", () => {
     expect(result.failures).toEqual([]);
   });
 
+  it("returns structured gate failures for bond compliance escape", () => {
+    const result = runGeneratedPatchValidators(
+      [{ path: "src/unplanned.ts", content: "export {};" }],
+      { allowedPaths: ["src/planned.ts"] },
+    );
+
+    expect(result.passed).toBe(false);
+    expect(result.gateFailures.some((item) => item.gate_id === "bond_compliance")).toBe(
+      true,
+    );
+  });
+
   it("returns structured gate failures for validator failures", () => {
     const result = runGeneratedPatchValidators([
       { path: "../outside.ts", content: "export {};" },

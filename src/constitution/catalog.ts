@@ -44,6 +44,9 @@ export const runMetricsSchema = z.object({
   firstPassGreen: z.boolean(),
   gateIdsFailed: z.array(z.string()),
   durationMs: z.number().nonnegative(),
+  contextChars: z.number().nonnegative().optional(),
+  truncated: z.boolean().optional(),
+  hallucinationBlocked: z.boolean().optional(),
 });
 
 export const vowAttestationSchema = z.object({
@@ -189,6 +192,46 @@ export const failedPhaseSchema = z.object({
   reason: z.string().optional(),
 });
 
+export const contextFileEntrySchema = z.object({
+  path: z.string(),
+  content: z.string(),
+  contentHash: z.string().min(1),
+});
+
+export const scopedContextBundleSchema = z.object({
+  files: z.array(contextFileEntrySchema),
+  totalChars: z.number().nonnegative(),
+  truncated: z.boolean(),
+});
+
+export const evoLessonSchema = z.object({
+  id: z.string().min(1),
+  runId: z.string().min(1),
+  failureClass: z.string().min(1),
+  gate_id: z.string().optional(),
+  path: z.string(),
+  symptom: z.string(),
+  fix: z.string(),
+  reuseWhen: z.array(z.string()),
+  traceSpanTs: z.string(),
+  createdAt: z.string().datetime(),
+});
+
+export const recallResultSchema = z.object({
+  lessons: z.array(evoLessonSchema),
+  markdown: z.string(),
+  totalChars: z.number().nonnegative(),
+  truncated: z.boolean(),
+});
+
+export const gateFeedbackEntrySchema = z.object({
+  gate_id: z.string().min(1),
+  remediation_instruction: z.string(),
+  examples: z.array(z.string()).optional(),
+  cacheHash: z.string().min(1),
+  updatedAt: z.string().datetime(),
+});
+
 export const constitutionCatalog = defineCatalog({
   ExecutionDag: executionDagSchema,
   GateFailure: gateFailureSchema,
@@ -200,6 +243,10 @@ export const constitutionCatalog = defineCatalog({
   MandateEval: mandateEvalSchema,
   Mandates: mandatesSchema,
   BondPolicy: bondPolicySchema,
+  ScopedContextBundle: scopedContextBundleSchema,
+  EvoLesson: evoLessonSchema,
+  RecallResult: recallResultSchema,
+  GateFeedbackEntry: gateFeedbackEntrySchema,
   ReceivedPhase: receivedPhaseSchema,
   PreflightPhase: preflightPhaseSchema,
   PlanningPhase: planningPhaseSchema,
