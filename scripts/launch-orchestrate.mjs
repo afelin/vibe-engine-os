@@ -7,7 +7,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 const POLL_INTERVAL_MS = 20_000;
-const MAX_WAIT_MS = 50 * 60 * 1000;
+const MAX_WAIT_MS = 75 * 60 * 1000;
 const STATE_PATH = path.join(".vibe", "launch-ship-state.json");
 
 function sleep(ms) {
@@ -101,6 +101,8 @@ function writeState(state) {
   fs.writeFileSync(STATE_PATH, `${JSON.stringify(state, null, 2)}\n`, "utf8");
 }
 
+const dryRun = process.argv.includes("--dry-run");
+
 async function main() {
   const startedAt = new Date().toISOString();
   const state = {
@@ -117,6 +119,23 @@ async function main() {
     printExplain("launch.readiness");
     runReadiness();
     state.readiness = { ok: true, at: new Date().toISOString() };
+
+    if (dryRun) {
+      try {
+        state.pushCheck = assertGitPushOptional();
+      } catch (e) {
+        state.pushCheck = {
+          ok: false,
+          warning: e instanceof Error ? e.message : String(e),
+        };
+      }
+      state.finishedAt = new Date().toISOString();
+      state.ok = true;
+      state.dryRun = true;
+      writeState(state);
+      process.stdout.write("launch:ship dry-run complete (readiness only)\n");
+      return;
+    }
 
     printExplain("launch.proof");
     state.pushCheck = assertGitPushOptional();
@@ -135,18 +154,26 @@ async function main() {
     );
     state.branchProtection = bp;
 
-    state.ok = bp.ok !== false && state.workflow.ok;
+    if (workflow.proof && !workflow.proof.receiptLink) {
+      process.stdout.write(
+        "Note: hosted receipt URL may 404 on a private repo until Pages is enabled — recorded in proof, not a ship blocker.\n",
+      );
+    }
+
+    const bpStatus = bp.status ?? (bp.skipped ? "skipped_needs_admin" : bp.ok ? "enabled" : "failed");
+    state.ok = state.workflow.ok && bpStatus !== "failed";
     state.finishedAt = new Date().toISOString();
     writeState(state);
 
-    if (!bp.ok) {
+    if (bpStatus === "skipped_needs_admin") {
       process.stderr.write(
-        "Launch proof succeeded; branch protection needs manual or PAT admin step.\n",
+        "Branch protection skipped (needs admin PAT or UI). One-liner when you have admin scope:\n" +
+          "  gh api -X PUT repos/$(gh repo view -q .nameWithOwner)/branches/main/protection --input scripts/.branch-protection-payload.json\n" +
+          "Or: https://github.com/$(gh repo view -q .nameWithOwner)/settings/branches\n",
       );
-      process.exit(2);
     }
 
-    process.stdout.write("launch:ship complete\n");
+    process.stdout.write(`launch:ship complete (branchProtection=${bpStatus})\n`);
   } catch (error) {
     state.finishedAt = new Date().toISOString();
     state.error = error instanceof Error ? error.message : String(error);

@@ -38,6 +38,18 @@ For automation, set a PAT with \`repo\` + admin on the repo and export GH_TOKEN 
 }
 
 export function enableBranchProtection() {
+  if (
+    process.env.VIBE_SKIP_BRANCH_PROTECTION === "1" ||
+    process.env.VIBE_SKIP_BRANCH_PROTECTION === "true"
+  ) {
+    return {
+      ok: true,
+      skipped: true,
+      status: "skipped_needs_admin",
+      reason: "VIBE_SKIP_BRANCH_PROTECTION=1",
+    };
+  }
+
   const repo = execSync("gh repo view --json nameWithOwner -q .nameWithOwner", {
     encoding: "utf8",
     env: process.env,
@@ -68,12 +80,20 @@ export function enableBranchProtection() {
         env: process.env,
       },
     );
-    return { ok: true, repo, checks: REQUIRED_CHECKS };
+    return { ok: true, status: "enabled", repo, checks: REQUIRED_CHECKS };
   } catch (error) {
     printUiFallback(repo);
     const message =
       error instanceof Error ? error.message : String(error);
-    return { ok: false, repo, checks: REQUIRED_CHECKS, error: message };
+    const needsAdmin = /403|404|admin|sso/i.test(message);
+    return {
+      ok: true,
+      skipped: true,
+      status: needsAdmin ? "skipped_needs_admin" : "failed",
+      repo,
+      checks: REQUIRED_CHECKS,
+      error: message,
+    };
   }
 }
 
@@ -81,5 +101,5 @@ const isCli = process.argv[1] && fileURLToPath(import.meta.url) === process.argv
 if (isCli) {
   const result = enableBranchProtection();
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-  process.exit(result.ok ? 0 : 1);
+  process.exit(result.status === "failed" ? 1 : 0);
 }

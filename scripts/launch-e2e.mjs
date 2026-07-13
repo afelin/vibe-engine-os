@@ -72,6 +72,22 @@ function extractCapsuleHash(text) {
   return match?.[1];
 }
 
+
+function dispatchForeverLoop(issueNumber) {
+  const ref = process.env.VIBE_LAUNCH_REF?.trim() || "main";
+  try {
+    ghText(`workflow run forever.yml --ref ${ref} -f issue_number=${issueNumber}`);
+    process.stdout.write(
+      `Dispatched forever.yml for issue #${issueNumber} (GITHUB_TOKEN-created issues do not auto-trigger workflows)\n`,
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(
+      `Could not dispatch forever.yml: ${message}\nIf issue was created in Actions, add workflow_dispatch on forever.yml or use a PAT for issue create.\n`,
+    );
+  }
+}
+
 async function waitForIssueProof(issueNumber) {
   const started = Date.now();
   let prUrl;
@@ -169,6 +185,10 @@ async function main() {
 
   process.stdout.write(`Created issue #${issueNumber}\n`);
 
+  if (process.env.GITHUB_ACTIONS === "true") {
+    dispatchForeverLoop(issueNumber);
+  }
+
   const { prUrl, capsuleHash, receiptLink } = await waitForIssueProof(
     issueNumber,
   );
@@ -193,6 +213,12 @@ async function main() {
   const outDir = path.join(".vibe");
   fs.mkdirSync(outDir, { recursive: true });
   const outPath = path.join(outDir, "launch-proof.json");
+  if (!receiptLink) {
+    process.stdout.write(
+      "Note: receipt link not in issue comments yet (private repos may 404 hosted proof URLs until Pages is enabled — not a launch blocker).\n",
+    );
+  }
+
   fs.writeFileSync(outPath, `${JSON.stringify(proof, null, 2)}\n`, "utf8");
   process.stdout.write(`Wrote ${outPath}\n`);
 }

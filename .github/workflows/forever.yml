@@ -1,6 +1,12 @@
 name: Sovereign OS Event Bus
 
 on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Issue number to process (launch proof / manual)
+        required: true
+        type: string
   issues:
     types: [opened, edited]
   issue_comment:
@@ -17,7 +23,7 @@ permissions:
   checks: write
 
 concurrency:
-  group: os-thread-${{ github.event.issue.number || github.event.pull_request.number }}
+  group: os-thread-${{ github.event.issue.number || github.event.inputs.issue_number || github.event.pull_request.number }}
   cancel-in-progress: false
 
 jobs:
@@ -32,14 +38,22 @@ jobs:
         id: label_gate
         env:
           EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_ISSUE: ${{ github.event.inputs.issue_number }}
           ISSUE_LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}
           ISSUE_BODY: ${{ github.event.issue.body }}
           COMMENT_BODY: ${{ github.event.comment.body }}
           REVIEW_BODY: ${{ github.event.review.body }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           SHOULD_RUN=0
           LABELS_LOWER=$(echo "$ISSUE_LABELS" | tr '[:upper:]' '[:lower:]')
           BODY="$ISSUE_BODY"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ -n "$DISPATCH_ISSUE" ]; then
+            ISSUE_JSON=$(curl -fsSL -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json"               "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${DISPATCH_ISSUE}")
+            LABELS_LOWER=$(echo "$ISSUE_JSON" | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const j=JSON.parse(d);console.log((j.labels||[]).map(l=>l.name).join(',').toLowerCase())})")
+            BODY=$(echo "$ISSUE_JSON" | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const j=JSON.parse(d);process.stdout.write(j.body||'')})")
+          fi
           if [ "$EVENT_NAME" = "issue_comment" ]; then BODY="$COMMENT_BODY"; fi
           if [ "$EVENT_NAME" = "pull_request_review" ] || [ "$EVENT_NAME" = "pull_request_review_comment" ]; then
             BODY="${REVIEW_BODY:-$BODY}"
@@ -54,18 +68,26 @@ jobs:
         if: steps.label_gate.outputs.should_run == '1'
         env:
           EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_ISSUE: ${{ github.event.inputs.issue_number }}
           ISSUE_BODY: ${{ github.event.issue.body }}
           COMMENT_BODY: ${{ github.event.comment.body }}
           REVIEW_BODY: ${{ github.event.review.body }}
           ISSUE_LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           BODY="$ISSUE_BODY"
+          LABELS_LOWER=$(echo "$ISSUE_LABELS" | tr '[:upper:]' '[:lower:]')
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ -n "$DISPATCH_ISSUE" ]; then
+            ISSUE_JSON=$(curl -fsSL -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json"               "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${DISPATCH_ISSUE}")
+            BODY=$(echo "$ISSUE_JSON" | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const j=JSON.parse(d);process.stdout.write(j.body||'')})")
+            LABELS_LOWER=$(echo "$ISSUE_JSON" | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const j=JSON.parse(d);console.log((j.labels||[]).map(l=>l.name).join(',').toLowerCase())})")
+          fi
           if [ "$EVENT_NAME" = "issue_comment" ]; then BODY="$COMMENT_BODY"; fi
           if [ "$EVENT_NAME" = "pull_request_review" ] || [ "$EVENT_NAME" = "pull_request_review_comment" ]; then
             BODY="${REVIEW_BODY:-$BODY}"
           fi
 
-          LABELS_LOWER=$(echo "$ISSUE_LABELS" | tr '[:upper:]' '[:lower:]')
           DEPTH="${VIBE_DEPTH:-3}"
           if echo "$LABELS_LOWER" | grep -q "vibe:plan-only"; then DEPTH=1; fi
           if echo "$LABELS_LOWER" | grep -q "vibe:safe"; then DEPTH=2; fi
@@ -91,7 +113,8 @@ jobs:
       - name: Context outputs
         id: context
         run: |
-          echo "issue_number=${{ github.event.issue.number || github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          ISSUE_NUM="${{ github.event.issue.number || github.event.pull_request.number || github.event.inputs.issue_number }}"
+          echo "issue_number=$ISSUE_NUM" >> "$GITHUB_OUTPUT"
 
   vibe-run:
     needs: gate-check
@@ -135,7 +158,13 @@ jobs:
             } >> "$GITHUB_ENV"
           }
 
-          echo "VIBE_LABELS=$ISSUE_LABELS" >> "$GITHUB_ENV"
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            ISSUE_NUM="${{ github.event.inputs.issue_number }}"
+            DISPATCH_LABELS=$(curl -fsSL -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github+json"               "https://api.github.com/repos/${{ github.repository }}/issues/${ISSUE_NUM}" | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const j=JSON.parse(d);process.stdout.write((j.labels||[]).map(l=>l.name).join(','))})")
+            echo "VIBE_LABELS=$DISPATCH_LABELS" >> "$GITHUB_ENV"
+          else
+            echo "VIBE_LABELS=$ISSUE_LABELS" >> "$GITHUB_ENV"
+          fi
           echo "GITHUB_SHA=${{ github.sha }}" >> "$GITHUB_ENV"
           echo "GITHUB_RUN_ID=${{ github.run_id }}" >> "$GITHUB_ENV"
           echo "GITHUB_DELIVERY_ID=${{ github.event.delivery_id || github.run_id }}" >> "$GITHUB_ENV"
@@ -171,6 +200,14 @@ jobs:
               REVIEW_CONTEXT=$(printf 'PR review feedback:\n%s\n\nPR title: %s' "$REVIEW_BODY" "$PR_TITLE")
             fi
             write_env_multiline "ISSUE_BODY" "$REVIEW_CONTEXT"
+          elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            ISSUE_NUM="${{ github.event.inputs.issue_number }}"
+            echo "ISSUE_NUMBER=$ISSUE_NUM" >> $GITHUB_ENV
+            ISSUE_JSON=$(curl -fsSL -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github+json"               "https://api.github.com/repos/${{ github.repository }}/issues/${ISSUE_NUM}")
+            ISSUE_TITLE=$(echo "$ISSUE_JSON" | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const j=JSON.parse(d);process.stdout.write(j.title||'')})")
+            ISSUE_BODY_DISPATCH=$(echo "$ISSUE_JSON" | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const j=JSON.parse(d);process.stdout.write(j.body||'')})")
+            echo "ISSUE_TITLE=${ISSUE_TITLE}" >> $GITHUB_ENV
+            write_env_multiline "ISSUE_BODY" "$ISSUE_BODY_DISPATCH"
           else
             echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
             echo "ISSUE_TITLE=${{ github.event.issue.title }}" >> $GITHUB_ENV

@@ -63,6 +63,8 @@ Only after private smoke passes:
 | Symptom | Fix |
 | --- | --- |
 | Issue created but no PR within 45m | Check Actions logs for `forever.yml`; confirm `vibe/run` label |
+| Launch proof issue never triggers `forever.yml` | Actions `GITHUB_TOKEN` issue create does not fire `issues` events — `launch-e2e` dispatches `forever.yml` via `workflow_dispatch` |
+| Branch protection API 403 | Set repo variable `VIBE_SKIP_BRANCH_PROTECTION=1` or use admin PAT; ship records `skipped_needs_admin` |
 | Receipt missing in comment | Wait for promote job; check `.runs/` artifact upload |
 | Vibe Promotion Gate pending | `vibe-pr-gate.yml` runs on PR open — re-sync PR |
 | `gh: not found` in workflow | Use `runs/ensure-gh.sh` pattern or `actions/setup-node` + preinstalled gh on runner |
@@ -78,8 +80,11 @@ Only after private smoke passes:
 After readiness is green locally:
 
 ```bash
-npm run launch:ship
+npm run launch:ship -- --dry-run   # readiness + push check only
+npm run launch:ship                # readiness → launch-proof workflow → branch protection
 ```
+
+Set `VIBE_SKIP_BRANCH_PROTECTION=1` (repo variable or env) to skip the admin API step; state is written to `.vibe/launch-ship-state.json`.
 
 This runs `launch:readiness`, triggers **Launch Proof (zero-token E2E)** on `main`, polls until success, then attempts branch protection via `scripts/enable-branch-protection.mjs`. State is written to `.vibe/launch-ship-state.json`.
 
