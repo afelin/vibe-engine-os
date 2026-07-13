@@ -1,0 +1,49 @@
+name: Vibe PR Promotion Gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  promotion-gate:
+    name: Vibe Promotion Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run npm check
+        id: check
+        run: npm run check
+        continue-on-error: true
+
+      - name: Post Vibe Promotion Gate on PR head
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SERVER_URL: ${{ github.server_url }}
+          VIBE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          VIBE_PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          CONCLUSION=success
+          if [ "${{ steps.check.outcome }}" != "success" ]; then
+            CONCLUSION=failure
+          fi
+          npm run promote:post-pr-gate -- --conclusion "$CONCLUSION"
+
+      - name: Require npm check pass
+        if: steps.check.outcome != 'success'
+        run: exit 1
