@@ -47,7 +47,69 @@ export const runMetricsSchema = z.object({
   contextChars: z.number().nonnegative().optional(),
   truncated: z.boolean().optional(),
   hallucinationBlocked: z.boolean().optional(),
+  healLevel: z.number().int().min(0).max(4).optional(),
+  agentSlot: z.string().optional(),
+  deterministicFix: z.boolean().optional(),
 });
+
+export const orchestratorDomainSchema = z.enum([
+  "code",
+  "m365",
+  "research",
+  "experiment",
+]);
+
+export const orchestratorTrustTierSchema = z.enum([
+  "corporate",
+  "experiment",
+  "human-in-loop",
+]);
+
+export const orchestratorIntentSchema = z.object({
+  action: z.enum(["troubleshoot", "route", "agents"]),
+  symptom: z.string().min(1),
+  title: z.string().optional(),
+  body: z.string().optional(),
+  domain: orchestratorDomainSchema.optional(),
+  trustTier: orchestratorTrustTierSchema.optional(),
+  runId: z.string().optional(),
+  gateId: z.string().optional(),
+  pathPrefixes: z.array(z.string()).optional(),
+  boundFiles: z.array(z.string()).optional(),
+});
+
+export const troubleshootPacketSchema = z.object({
+  runId: z.string().optional(),
+  symptom: z.string().min(1),
+  title: z.string().min(1),
+  body: z.string().optional(),
+  gateId: z.string().optional(),
+  pathPrefixes: z.array(z.string()).optional(),
+  boundFiles: z.array(z.string()).optional(),
+  trustTier: orchestratorTrustTierSchema,
+  domain: orchestratorDomainSchema.optional(),
+  rootDir: z.string().optional(),
+});
+
+export const healResultSchema = z.object({
+  healed: z.boolean(),
+  level: z.number().int().min(0).max(4),
+  deterministicFix: z.boolean().optional(),
+  agentSlot: z.string().optional(),
+  healLevel: z.number().int().min(0).max(4).optional(),
+  patch: z.record(z.string(), z.string()).optional(),
+  remediation: z.string().optional(),
+  hints: z.array(z.string()).optional(),
+  cockpit: z.string().optional(),
+  hpurl: z.string().optional(),
+  reason: z.string().optional(),
+  tokensSpent: z.number().nonnegative().optional(),
+});
+
+export type OrchestratorIntent = z.infer<typeof orchestratorIntentSchema>;
+export type TroubleshootPacket = z.infer<typeof troubleshootPacketSchema>;
+export type HealResult = z.infer<typeof healResultSchema>;
+export type OrchestratorDomain = z.infer<typeof orchestratorDomainSchema>;
 
 export const vowAttestationSchema = z.object({
   vowsVersion: z.string().min(1),
@@ -234,6 +296,9 @@ export const gateFeedbackEntrySchema = z.object({
 
 export const constitutionCatalog = defineCatalog({
   ExecutionDag: executionDagSchema,
+  OrchestratorIntent: orchestratorIntentSchema,
+  TroubleshootPacket: troubleshootPacketSchema,
+  HealResult: healResultSchema,
   GateFailure: gateFailureSchema,
   VowAttestation: vowAttestationSchema,
   TaskBond: taskBondSchema,

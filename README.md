@@ -34,7 +34,7 @@ vibe-engine-os is a **promotion gate**, not a codegen toy. Models propose JSON-s
 | **Activate / adopt** | One-command bootstrap: check, zero-token smoke, MCP smoke, schema export, vows attestation | `npm run activate` or `bash runs/adopt.sh /path/to/repo` | Built-in |
 | **`launch:readiness`** | Local preflight: workflows, gauntlet vs baseline, MCP smoke, proof page | `npm run launch:readiness` on `main` | Built-in |
 | **`launch:ship`** | One-command ship after readiness green | `npm run launch:ship` — see [Launch Proof runbook](docs/launch-proof.md) | Built-in |
-| **Launch proof E2E** | Zero-token cloud proof: issue → PR → receipt → green checks; writes `.vibe/launch-proof.json` | Actions → **Launch Proof (zero-token E2E)**; [green run](https://github.com/afelin/vibe-engine-os/actions/runs/29318253641) on [issue #34](https://github.com/afelin/vibe-engine-os/issues/34) | **Claimable** |
+| **Launch proof E2E** | Zero-token cloud proof: issue → PR → receipt → green checks; writes `.vibe/launch-proof.json` | Actions → **Launch Proof (zero-token E2E)**; [green run](https://github.com/afelin/vibe-engine-os/actions/runs/29321223413) on [issue #36](https://github.com/afelin/vibe-engine-os/issues/36) | **Claimable** |
 
 ### Powerful combinations
 

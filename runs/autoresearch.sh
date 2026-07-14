@@ -48,14 +48,18 @@ const fixtures = [
 
 const results = fixtures.map((fixture) => {
   const winner = models[0] ?? 'mock';
+  const deterministicFix = fixture.expect === 'deterministic' || fixture.expect === 'safe';
   return {
     fixtureId: fixture.id,
     class: fixture.class,
     files: fixture.files,
     expect: fixture.expect,
     winner,
-    firstPassGreen: fixture.expect === 'deterministic' || fixture.expect === 'safe',
-    tokensEstimate: hasApi ? 1200 : 0,
+    firstPassGreen: deterministicFix,
+    healLevel: deterministicFix ? 0 : 2,
+    agentSlot: deterministicFix ? 'resolve_gate' : 'groq-experiment',
+    deterministicFix,
+    tokensEstimate: hasApi ? (deterministicFix ? 0 : 1200) : 0,
     latencyMs: hasApi ? 800 : 1,
     mode: hasApi ? 'live' : 'dry-run',
   };

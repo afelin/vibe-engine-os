@@ -32,6 +32,12 @@ describe("operator event mapping", () => {
       type: "operator.deploy_requested",
       actor: "alice",
     });
+    expect(
+      mapCommandToEvent({ type: "troubleshoot", symptom: "gate fail" }, base),
+    ).toMatchObject({
+      type: "operator.troubleshoot_requested",
+      symptom: "gate fail",
+    });
   });
 
   it("does not create OS events for unknown commands", () => {

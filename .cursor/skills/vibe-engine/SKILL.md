@@ -16,8 +16,9 @@ Before proposing any file edits in a vibe-engine-os repository:
 3. Call MCP `constitution_schemas` and shape planner output to `ExecutionDag`.
 4. Never bypass vows in `VOWS.md` / `src/constitution/vows.json`.
 5. After a run, verify capsule via `validate_capsule` with `run_id`.
+6. Before troubleshoot LLM, call `resolve_gate` + `build_scoped_context`; route external agents via orchestrator registry (`npm run orchestrate`).
 
-Operator commands (`/approve`, `/retry`, `/rollback`) override agent proposals.
+Operator commands (`/approve`, `/retry`, `/rollback`, `/troubleshoot`) override agent proposals.
 
 ## Examples
 

@@ -11,6 +11,9 @@ export type AgentAdapterManifest = {
   };
   preflight_tools: string[];
   postrun_tools: string[];
+  troubleshoot_tools: string[];
+  external_agents: string[];
+  npm_diagnostics: string[];
   schemas_path: string;
   skill_path: string;
   http_verify?: string;
@@ -30,6 +33,7 @@ export function buildAgentAdapterManifest(_rootDir = "."): AgentAdapterManifest 
         "/retry",
         "/rollback",
         "/details",
+        "/troubleshoot",
       ],
       mcp_seal_bond: "seal_bond",
     },
@@ -44,6 +48,15 @@ export function buildAgentAdapterManifest(_rootDir = "."): AgentAdapterManifest 
       "build_scoped_context",
       "recall_lessons",
     ],
+    troubleshoot_tools: [
+      "resolve_gate",
+      "build_scoped_context",
+      "validate_capsule",
+      "recall_lessons",
+      "evaluate_mandate",
+    ],
+    external_agents: ["corp-claude", "m365-guide", "hermes", "groq-experiment"],
+    npm_diagnostics: ["bond:preflight", "replay", "launch:readiness", "scoreboard"],
     schemas_path: ".vibe/schemas.json",
     skill_path: ".cursor/skills/vibe-engine/SKILL.md",
     http_verify: "npm run constitution:serve",
