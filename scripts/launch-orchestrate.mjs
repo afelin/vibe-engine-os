@@ -87,12 +87,19 @@ function assertGitPushOptional() {
 
 async function triggerAndPollLaunchProof() {
   const ref = process.env.VIBE_LAUNCH_REF?.trim() || "main";
-  await waitForNoConcurrentLaunchProof(ref);
-  ghText(`workflow run launch-proof.yml --ref ${ref}`);
-
   let runId;
-  const started = Date.now();
-  while (Date.now() - started < 120_000) {
+  const active = listInProgressLaunchProofRuns(ref);
+  if (active.length > 0 && process.env.VIBE_LAUNCH_ALLOW_CONCURRENT !== "1") {
+    runId = active[0].databaseId;
+    process.stdout.write(
+      `Attaching to in-progress launch-proof run ${runId} (${active[0].url ?? "no url"})…\n`,
+    );
+  } else {
+    await waitForNoConcurrentLaunchProof(ref);
+    ghText(`workflow run launch-proof.yml --ref ${ref}`);
+
+    const started = Date.now();
+    while (Date.now() - started < 120_000) {
     await sleep(5_000);
     const runs = ghJson(
       `run list --workflow=launch-proof.yml --branch=${ref} --limit=3 --json databaseId,status,conclusion,createdAt`,
@@ -102,6 +109,9 @@ async function triggerAndPollLaunchProof() {
     if (latest?.databaseId) {
       runId = latest.databaseId;
       if (latest.status === "completed") break;
+    }
+  }
+
     }
   }
 
