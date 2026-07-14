@@ -1,0 +1,15 @@
+{
+  "recordedAt": "2026-01-01T00:00:00.000Z",
+  "repository": "owner/repo",
+  "issueNumber": 0,
+  "issueUrl": "https://github.com/owner/repo/issues/0",
+  "prUrl": "https://github.com/owner/repo/pull/0",
+  "capsuleHash": "sha256-placeholder",
+  "receiptLink": "https://owner.github.io/repo/proof#?run=example&capsule=sha256-placeholder&vows=sha256-placeholder&repo=owner%2Frepo",
+  "checksGreen": true,
+  "checkNames": [
+    "Vibe Promotion Gate"
+  ],
+  "gateConclusion": "SUCCESS",
+  "mode": "zero-token"
+}

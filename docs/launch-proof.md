@@ -17,7 +17,7 @@ Local dry-run (requires `gh` auth): `node scripts/launch-e2e.mjs`
 
 ## Artifact slots
 
-Fill after a successful run (commit `.vibe/launch-proof.json` or paste from Actions artifact):
+Fill after a successful run (local `.vibe/launch-proof.json` is gitignored; copy from Actions artifact or see `.vibe/launch-proof.json.example`):
 
 | Slot | Example / placeholder |
 | --- | --- |
