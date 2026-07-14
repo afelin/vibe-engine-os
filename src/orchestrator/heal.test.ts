@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { seedGateFeedbackCache } from "../memory/feedback-cache.js";
 import { diagnoseAndHeal } from "./heal.js";
 import { intentToPacket, routeIntent } from "./troubleshoot.js";
 
@@ -16,6 +17,22 @@ describe("orchestrator heal", () => {
     );
     expect(result.level).toBeGreaterThanOrEqual(0);
     expect(result.level).toBeLessThanOrEqual(3);
+  });
+
+  it("returns L1 feedback-cache remediation for promotion gate symptom", async () => {
+    seedGateFeedbackCache(".");
+    const result = await diagnoseAndHeal(
+      {
+        symptom: "Vibe Promotion Gate failing",
+        title: "Vibe Promotion Gate failing",
+        trustTier: "experiment",
+        rootDir: ".",
+      },
+      { skipLlm: true, skipDiagnostics: true },
+    );
+    expect(result.level).toBe(1);
+    expect(result.agentSlot).toBe("feedback-cache");
+    expect(result.remediation).toContain("bond:preflight");
   });
 
   it("matches deterministic gate when title/body hit registry", async () => {

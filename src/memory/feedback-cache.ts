@@ -38,6 +38,21 @@ export function seedGateFeedbackCache(rootDir: string): void {
     { gate_id: "typescript_compiler", remediation_instruction: "Fix TypeScript compile errors before retrying." },
     { gate_id: "vitest", remediation_instruction: "Fix failing tests before retrying." },
     { gate_id: "causal_critic", remediation_instruction: "Address the critic rejection before retrying." },
+    {
+      gate_id: "promotion_gate",
+      remediation_instruction:
+        "Run `npm run bond:preflight` and `npm run replay -- . <runId>`. Fix gauntlet, bond, capsule, or replay mismatch before re-promoting.",
+    },
+    {
+      gate_id: "replay_mismatch",
+      remediation_instruction:
+        "Re-run `npm run replay -- . <runId>`. Fix nondeterministic transitions or update snapshots only after verifying the drift is intentional.",
+    },
+    {
+      gate_id: "capsule_integrity",
+      remediation_instruction:
+        "Validate the run capsule with `validate_capsule` and ensure vowsHash matches `.vibe/activated.json`.",
+    },
   ];
 
   for (const seed of seeds) {

@@ -23,6 +23,8 @@ const CAPSULE_PATTERNS = /capsule|vows|manifest/i;
 const GAUNTLET_PATTERNS = /gauntlet|taskbond/i;
 const BOND_PATTERNS = /bond|bound.?file/i;
 const READINESS_PATTERNS = /readiness|workflow|proof page|launch/i;
+const PROMOTION_PATTERNS =
+  /promotion\s*gate|vibe\s*promotion|promotion\s*check|pr.?promotion|preflight.*promot/i;
 
 export function classifyPreflightOutput(stdout: string): DiagnosticClassification {
   const checks = parsePreflightChecks(stdout);
@@ -114,6 +116,14 @@ export function classifyFromSymptom(symptom: string): DiagnosticClassification {
   if (READINESS_PATTERNS.test(symptom)) {
     return {
       failureClass: "readiness",
+      summary: symptom,
+      checks: [],
+    };
+  }
+  if (PROMOTION_PATTERNS.test(symptom)) {
+    return {
+      failureClass: "preflight",
+      gateId: "promotion_gate",
       summary: symptom,
       checks: [],
     };

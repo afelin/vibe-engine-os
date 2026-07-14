@@ -8,13 +8,14 @@ import {
   parseOrchestratorIntent,
   parseTroubleshootPacket,
 } from "../constitution/parse.js";
-import { readGateFeedbackEntry } from "../memory/feedback-cache.js";
+import { readGateFeedbackEntry, seedGateFeedbackCache } from "../memory/feedback-cache.js";
 import { recallLessons } from "../memory/recall.js";
 import { renderCockpitComment } from "../operator/cockpit.js";
 import { appendOsEvent } from "../os/replay.js";
 import type { OSContext } from "../os/events.js";
 import { callReleaseGateTool } from "../release-gate/mcp-handlers.js";
 import { classifyProblem, domainToAgentSlot } from "./classify.js";
+import { classifyFromSymptom } from "./diagnose.js";
 import { diagnoseAndHeal } from "./heal.js";
 import { runTroubleshootDiagnostics } from "./npm-diagnostics.js";
 import { listDetectedAgents } from "./registry.js";
@@ -52,12 +53,13 @@ export function intentToPacket(
 ): TroubleshootPacket {
   const parsed = parseOrchestratorIntent(intent);
   const domain = parsed.domain ?? classifyProblem(parsed.symptom, parsed.body);
+  const symptomGateId = classifyFromSymptom(parsed.symptom).gateId;
   return parseTroubleshootPacket({
     runId: parsed.runId,
     symptom: parsed.symptom,
     title: parsed.title ?? parsed.symptom,
     body: parsed.body,
-    gateId: parsed.gateId,
+    gateId: parsed.gateId ?? symptomGateId,
     pathPrefixes: parsed.pathPrefixes,
     boundFiles: parsed.boundFiles,
     trustTier: parsed.trustTier ?? resolveTrustTier(rootDir),
@@ -159,9 +161,11 @@ export async function runTroubleshootDag(
     body: packet.body ?? packet.symptom,
   });
 
-  // Step 2: feedback cache
-  if (packet.gateId) {
-    readGateFeedbackEntry(rootDir, packet.gateId);
+  // Step 2: feedback cache (seed defaults idempotently for L1 hits)
+  seedGateFeedbackCache(rootDir);
+  const cacheGateId = packet.gateId ?? classifyFromSymptom(packet.symptom).gateId;
+  if (cacheGateId) {
+    readGateFeedbackEntry(rootDir, cacheGateId);
   }
 
   // Step 3: build_scoped_context when bound files present

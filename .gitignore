@@ -7,3 +7,5 @@ CRITIC_FAILED.md
 repomix-output.txt
 .vibe/*
 !.vibe/.gitkeep
+!.vibe/orchestrator/
+!.vibe/orchestrator/agents.json.example

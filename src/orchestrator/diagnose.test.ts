@@ -12,6 +12,12 @@ describe("orchestrator diagnose", () => {
     expect(result.gateId).toBe("replay_mismatch");
   });
 
+  it("classifies promotion gate symptoms", () => {
+    const result = classifyFromSymptom("Vibe Promotion Gate failing");
+    expect(result.failureClass).toBe("preflight");
+    expect(result.gateId).toBe("promotion_gate");
+  });
+
   it("parses preflight stdout", () => {
     const output = [
       "[ok] taskbond.gauntlet",

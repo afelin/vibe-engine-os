@@ -73,8 +73,9 @@ export async function diagnoseAndHeal(
     });
   }
 
-  // L1: cached remediation
-  const gateId = packet.gateId ?? gate.gateId;
+  // L1: cached remediation (symptom signatures when gateId omitted)
+  const symptomGateId = classifyFromSymptom(packet.symptom).gateId;
+  const gateId = packet.gateId ?? gate.gateId ?? symptomGateId;
   if (gateId) {
     const cached = readGateFeedbackEntry(rootDir, gateId);
     if (cached) {

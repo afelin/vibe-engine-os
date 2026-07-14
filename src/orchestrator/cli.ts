@@ -9,15 +9,28 @@ import {
   runTroubleshootDag,
 } from "./troubleshoot.js";
 
+function resolveSkipLlm(argv: string[]): { skipLlm: boolean; args: string[] } {
+  const envSkip =
+    process.env.ORCHESTRATOR_SKIP_LLM === "1" ||
+    process.env.ORCHESTRATOR_SKIP_LLM === "true";
+  const flagSkip = argv.includes("--skip-llm");
+  return {
+    skipLlm: envSkip || flagSkip,
+    args: argv.filter((arg) => arg !== "--skip-llm"),
+  };
+}
+
 async function main(): Promise<void> {
   const rootDir = process.cwd();
   const [command, ...rest] = process.argv.slice(2);
 
   if (!command || command === "--help" || command === "-h") {
     console.log(`Usage:
-  npm run orchestrate -- troubleshoot "<symptom>"
+  npm run orchestrate -- troubleshoot "<symptom>" [--skip-llm]
   npm run orchestrate -- route --intent "<symptom>"
-  npm run orchestrate -- agents`);
+  npm run orchestrate -- agents
+
+Env: ORCHESTRATOR_SKIP_LLM=1 skips L2+ LLM calls (CI smoke).`);
     process.exit(0);
   }
 
@@ -43,7 +56,8 @@ async function main(): Promise<void> {
   }
 
   if (command === "troubleshoot") {
-    const symptom = rest.join(" ").trim();
+    const { skipLlm, args } = resolveSkipLlm(rest);
+    const symptom = args.join(" ").trim();
     if (!symptom) {
       console.error("troubleshoot requires a symptom string");
       process.exit(1);
@@ -59,6 +73,7 @@ async function main(): Promise<void> {
     const outcome = await runTroubleshootDag(packet, {
       rootDir,
       actor: "cli",
+      skipLlm,
       trustCheck: () => {
         const script = path.join(rootDir, "scripts", "ai-trust-check.sh");
         try {

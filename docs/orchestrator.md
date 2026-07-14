@@ -6,6 +6,9 @@ Thin routing layer over the existing vibe-engine-os stack — no duplicate gate 
 
 ```bash
 npm run orchestrate -- troubleshoot "Vibe Promotion Gate failing on replay mismatch"
+npm run orchestrate -- troubleshoot "Vibe Promotion Gate failing" --skip-llm
+ORCHESTRATOR_SKIP_LLM=1 npm run orchestrate -- troubleshoot "<symptom>"
+npm run orchestrate:smoke
 npm run orchestrate -- route --intent "debug M365 Teams webhook"
 npm run orchestrate -- agents
 ```
@@ -32,9 +35,13 @@ Intent → resolve_gate (MCP) → feedback-cache → npm diagnostics
 
 **Constitutional cage:** orchestrator never auto-modifies `mandates.json`, `gates.json`, `VOWS.md`, credentials, or workflow permissions.
 
+**CI smoke:** pass `--skip-llm` or set `ORCHESTRATOR_SKIP_LLM=1` to stop at L0–L1 without corp-claude / groq calls. `npm run orchestrate:smoke` runs a deterministic promotion-gate symptom.
+
+**Feedback cache:** `seedGateFeedbackCache` writes `.vibe/cache/gates/<gateId>.json`. Symptom signatures (e.g. "Vibe Promotion Gate") map to `promotion_gate` via `classifyFromSymptom`. Re-seed on activate or at troubleshoot start.
+
 ## External agent slots
 
-Configure `.vibe/orchestrator/agents.json` (see `agents.json.example`):
+Configure `.vibe/orchestrator/agents.json` (see `agents.json.example`). Slots **degrade gracefully** when CLI or API keys are missing — `npm run orchestrate -- agents` shows `available: false` and the heal ladder escalates to the next level instead of crashing.
 
 | Slot | Detect | Trust |
 |------|--------|-------|
@@ -42,6 +49,8 @@ Configure `.vibe/orchestrator/agents.json` (see `agents.json.example`):
 | `m365-guide` | always | human-in-loop |
 | `hermes` | `hermes --version` | experiment |
 | `groq-experiment` | `GROQ_API_KEY` + router | experiment |
+
+Missing `corp-claude` / `hermes` CLIs or groq keys → slot unavailable; troubleshoot continues at L0–L1 or escalates to `m365-guide` / human.
 
 ## MCP tools used (via `callReleaseGateTool`)
 

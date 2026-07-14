@@ -64,6 +64,30 @@ function runReadiness() {
   });
 }
 
+function runOptionalTroubleshoot() {
+  if (process.env.VIBE_LAUNCH_TROUBLESHOOT !== "1") {
+    return { skipped: true };
+  }
+
+  const symptom =
+    process.env.VIBE_LAUNCH_TROUBLESHOOT_SYMPTOM?.trim() ||
+    "Vibe Promotion Gate preflight";
+
+  process.stdout.write(`launch:ship troubleshoot preflight (${symptom})…\n`);
+  try {
+    execSync(`npm run orchestrate -- troubleshoot "${symptom}" --skip-llm`, {
+      stdio: "inherit",
+      env: { ...process.env, ORCHESTRATOR_SKIP_LLM: "1" },
+    });
+    return { ok: true, symptom };
+  } catch {
+    process.stderr.write(
+      "Warning: launch troubleshoot preflight reported issues (fail-open; set VIBE_LAUNCH_TROUBLESHOOT=0 to skip).\n",
+    );
+    return { ok: false, symptom, failOpen: true };
+  }
+}
+
 function printExplain(decisionId) {
   const result = spawnSync(
     "npx",
@@ -156,6 +180,7 @@ async function main() {
 
   try {
     printExplain("launch.readiness");
+    state.troubleshoot = runOptionalTroubleshoot();
     runReadiness();
     state.readiness = { ok: true, at: new Date().toISOString() };
 

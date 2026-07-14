@@ -1,0 +1,36 @@
+{
+  "_readme": "Copy to agents.json. Slots degrade gracefully when CLI or API keys are missing — orchestrator falls through to the next heal level.",
+  "agents": [
+    {
+      "id": "corp-claude",
+      "enabled": true,
+      "trustTier": "corporate",
+      "_note": "Requires `claude --version`. Missing CLI → L3 human escalation."
+    },
+    {
+      "id": "m365-guide",
+      "enabled": true,
+      "trustTier": "human-in-loop",
+      "_note": "Always available; returns BizChat deep-link for human-in-loop."
+    },
+    {
+      "id": "hermes",
+      "enabled": true,
+      "binary": "hermes",
+      "trustTier": "experiment",
+      "_note": "Requires `hermes --version`. Missing binary → slot unavailable."
+    },
+    {
+      "id": "groq-experiment",
+      "enabled": true,
+      "trustTier": "experiment",
+      "_note": "Requires GROQ_API_KEY via llm router. Off → slot unavailable."
+    },
+    {
+      "id": "human",
+      "enabled": true,
+      "trustTier": "human-in-loop",
+      "_note": "Final L3 escalation when no agent can act."
+    }
+  ]
+}
