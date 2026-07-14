@@ -19,8 +19,12 @@ function ghJson(args) {
   return output ? JSON.parse(output) : null;
 }
 
-function printUiFallback(repo) {
-  process.stderr.write(`
+function printUiFallback(repo, reason) {
+  const privateFreeHint =
+    reason === "skipped_private_free"
+      ? "\nPrivate repos on GitHub Free cannot use the branch protection API — configure rules in the UI (Settings → Branches). Do not make the repo public.\n"
+      : "";
+  process.stderr.write(`${privateFreeHint}
 Branch protection could not be applied via API (missing admin scope or SSO).
 
 Do this in the GitHub UI:
@@ -82,14 +86,20 @@ export function enableBranchProtection() {
     );
     return { ok: true, status: "enabled", repo, checks: REQUIRED_CHECKS };
   } catch (error) {
-    printUiFallback(repo);
     const message =
       error instanceof Error ? error.message : String(error);
+    const privateFree =
+      /upgrade to github pro|private repositories/i.test(message) &&
+      /403/i.test(message);
     const needsAdmin = /403|404|admin|sso/i.test(message);
+    let status = "failed";
+    if (privateFree) status = "skipped_private_free";
+    else if (needsAdmin) status = "skipped_needs_admin";
+    printUiFallback(repo, status);
     return {
-      ok: true,
-      skipped: true,
-      status: needsAdmin ? "skipped_needs_admin" : "failed",
+      ok: status !== "failed",
+      skipped: status !== "failed",
+      status,
       repo,
       checks: REQUIRED_CHECKS,
       error: message,
