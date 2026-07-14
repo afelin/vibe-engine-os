@@ -100,18 +100,16 @@ async function triggerAndPollLaunchProof() {
 
     const started = Date.now();
     while (Date.now() - started < 120_000) {
-    await sleep(5_000);
-    const runs = ghJson(
-      `run list --workflow=launch-proof.yml --branch=${ref} --limit=3 --json databaseId,status,conclusion,createdAt`,
-    );
-    const queued = runs?.find((run) => run.status !== "completed");
-    const latest = queued ?? runs?.[0];
-    if (latest?.databaseId) {
-      runId = latest.databaseId;
-      if (latest.status === "completed") break;
-    }
-  }
-
+      await sleep(5_000);
+      const runs = ghJson(
+        `run list --workflow=launch-proof.yml --branch=${ref} --limit=3 --json databaseId,status,conclusion,createdAt`,
+      );
+      const queued = runs?.find((run) => run.status !== "completed");
+      const latest = queued ?? runs?.[0];
+      if (latest?.databaseId) {
+        runId = latest.databaseId;
+        if (latest.status === "completed") break;
+      }
     }
   }
 
