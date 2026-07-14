@@ -219,7 +219,14 @@ export function renderScoreboardSummary(
   manifest?: CockpitManifest,
 ): string {
   const entries = readScoreboardEntries(rootDir, 20);
-  if (entries.length === 0) return "No runs recorded yet.";
+  if (entries.length === 0) {
+    if (manifest?.metrics?.firstPassGreen !== undefined) {
+      return `- **This run first-pass:** ${manifest.metrics.firstPassGreen ? "yes" : "no"}${
+        manifest.metrics.hallucinationBlocked ? " (hallucination blocked)" : ""
+      }`;
+    }
+    return "No runs recorded yet.";
+  }
 
   const successCount = entries.filter((entry) => entry.success).length;
   const firstPassCount = entries.filter(
