@@ -5,14 +5,17 @@ import {
   executionDagSchema,
   gateFailureSchema,
   gateFeedbackEntrySchema,
+  healResultSchema,
   mandateEvalSchema,
   mandatesSchema,
+  orchestratorIntentSchema,
   recallResultSchema,
   runManifestSchema,
   scopedContextBundleSchema,
   scoreboardEntrySchema,
   taskBondEvalSchema,
   taskBondSchema,
+  troubleshootPacketSchema,
   vowAttestationSchema,
 } from "./catalog.js";
 
@@ -89,6 +92,18 @@ export function parseRecallResult(data: unknown) {
 
 export function parseGateFeedbackEntry(data: unknown) {
   return parseWith("GateFeedbackEntry", gateFeedbackEntrySchema, data);
+}
+
+export function parseOrchestratorIntent(data: unknown) {
+  return parseWith("OrchestratorIntent", orchestratorIntentSchema, data);
+}
+
+export function parseTroubleshootPacket(data: unknown) {
+  return parseWith("TroubleshootPacket", troubleshootPacketSchema, data);
+}
+
+export function parseHealResult(data: unknown) {
+  return parseWith("HealResult", healResultSchema, data);
 }
 
 export function exportCatalogJsonSchema(): Record<string, unknown> {

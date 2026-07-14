@@ -7,10 +7,12 @@ export type OperatorCommand =
   | { type: "status" }
   | { type: "deploy" }
   | { type: "details" }
+  | { type: "troubleshoot"; symptom: string }
   | { type: "unknown"; raw: string };
 
 export function parseOperatorCommand(input: string): OperatorCommand {
-  const command = input.trim().split(/\s+/)[0]?.toLowerCase();
+  const trimmed = input.trim();
+  const command = trimmed.split(/\s+/)[0]?.toLowerCase();
 
   switch (command) {
     case "/plan":
@@ -29,6 +31,10 @@ export function parseOperatorCommand(input: string): OperatorCommand {
       return { type: "deploy" };
     case "/details":
       return { type: "details" };
+    case "/troubleshoot": {
+      const symptom = trimmed.slice("/troubleshoot".length).trim();
+      return { type: "troubleshoot", symptom: symptom || "unspecified issue" };
+    }
     default:
       return { type: "unknown", raw: input };
   }

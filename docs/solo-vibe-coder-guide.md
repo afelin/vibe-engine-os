@@ -267,6 +267,8 @@ npm run check                 # full CI parity locally
 
 ## Further reading
 
+- [AI Providers](./ai-providers.md) — strict compliance, Groq experiment, corp Claude, banned list
+- [Orchestrator](./orchestrator.md) — troubleshoot DAG, heal ladder, agent slots
 - [Plain-Language Briefing](./plain-language-briefing.md) — capabilities, problems solved, VFA assessment
 - [Agent Protocol](./agent-protocol.md) — MCP tools, TaskBond, schemas, gates
 - [OS Phases](./os-phases.md) — promotion phase diagram (auto-derived)

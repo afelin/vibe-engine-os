@@ -158,5 +158,13 @@ function responseBodyForCommand(
         "",
         renderCockpitComment(input.state, input.context, input.rootDir, undefined, cockpitOptions),
       ].join("\n");
+    case "troubleshoot":
+      return [
+        "## Troubleshoot requested",
+        "",
+        "Routing through the orchestrator DAG (resolve_gate → diagnostics → heal ladder).",
+        "",
+        renderCockpitComment(input.state, input.context, input.rootDir, undefined, cockpitOptions),
+      ].join("\n");
   }
 }

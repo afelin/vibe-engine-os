@@ -107,10 +107,23 @@ export type OSEvent =
         | "operator.status_requested"
         | "operator.deploy_requested"
         | "operator.continue_requested"
-        | "operator.details_requested";
+        | "operator.details_requested"
+        | "operator.troubleshoot_requested";
       protocolVersion: "os.operator.v1";
       actor: string;
       commentId: string;
+      symptom?: string;
+    }
+  | {
+      type: "troubleshoot.requested" | "troubleshoot.completed";
+      protocolVersion: "os.orchestrator.v1";
+      actor: string;
+      symptom?: string;
+      domain?: string;
+      healLevel?: number;
+      agentSlot?: string;
+      deterministicFix?: boolean;
+      healed?: boolean;
     };
 
 export function normalizeOsReceivedEvent(input: {

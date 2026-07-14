@@ -11,6 +11,10 @@ describe("operator commands", () => {
     expect(parseOperatorCommand("/deploy")).toEqual({ type: "deploy" });
     expect(parseOperatorCommand("/continue")).toEqual({ type: "continue" });
     expect(parseOperatorCommand("/details")).toEqual({ type: "details" });
+    expect(parseOperatorCommand("/troubleshoot replay mismatch")).toEqual({
+      type: "troubleshoot",
+      symptom: "replay mismatch",
+    });
   });
 
   it("keeps unknown commands non-mutating", () => {

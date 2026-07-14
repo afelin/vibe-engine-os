@@ -70,6 +70,28 @@ export const DECISION_CATALOG: Record<string, DecisionExplainEntry> = {
     expand:
       "Receipts are how you audit agent work later: same hashes appear in `.runs/<runId>/` artifacts. For private repos the public proof URL may 404 until Pages is public — use local `proof/index.html` with the hash from the comment.",
   },
+  "orchestrator.troubleshoot": {
+    short:
+      "`/troubleshoot` runs the heal ladder: gates first, then npm diagnostics, then one bounded LLM pass.",
+    long:
+      "The orchestrator calls `resolve_gate` and `bond:preflight` before any LLM. Corp repos route to corp-claude; M365 issues open BizChat; side projects may use groq-experiment.",
+    expand:
+      "Heal levels: L0 deterministic (gates, cache, lessons), L1 cached remediation, L2 one LLM pass with critic bounds, L3 human (m365-guide or `/approve`). Events append to `.runs/<id>/events.ndjson` — not a separate ledger. Run locally: `npm run orchestrate -- troubleshoot \"…\"`.",
+  },
+  "orchestrator.route_corp_claude": {
+    short: "Code/build/test failures route to the official Claude CLI with corp `CLAUDE_CONFIG_DIR`.",
+    long:
+      "Corp-claude uses `build_scoped_context` for capped file context. No file writes without mandate check.",
+    expand:
+      "Discover your org path with `claude /status`. Set `CLAUDE_CONFIG_DIR=~/.claude/profiles/corp` or rely on auto-detection. Never route corp OAuth through OmniRoute or web-cookie providers.",
+  },
+  "orchestrator.route_m365": {
+    short: "Microsoft stack issues route to BizChat — human opens the official M365 UI.",
+    long:
+      "m365-guide builds a prompt block and link to m365.cloud.microsoft/chat. No API proxy.",
+    expand:
+      "Use for Teams, SharePoint, Entra questions. Copy the prompt into BizChat manually. This path is always human-in-loop for compliance.",
+  },
 };
 
 function parseDepth(raw: string | undefined): ExplainDepth | null {
