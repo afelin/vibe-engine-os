@@ -10,6 +10,57 @@ vibe-engine-os is a **promotion gate**, not a codegen toy. Models propose JSON-s
 
 Truth-driven gates (TDD): **deterministic replay** from `events.ndjson`, **Assisted-by** attribution on PRs, and an **adversarial gauntlet** that proves guardrails block forbidden changes.
 
+## Capabilities
+
+vibe-engine-os is a **promotion gate**, not a codegen toy. Models propose JSON-shaped artifacts; the constitution catalog and OS machine guards reject bad input before disk write. Only verified snapshots promote to Git. Walkthroughs: [Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md) · [Nocode Quickstart](docs/nocode-quickstart.md) · [Agent Protocol](docs/agent-protocol.md).
+
+| Capability | What you get | How to activate | Status |
+| --- | --- | --- | --- |
+| **TaskBond** | Signed work order — intent, outcomes, bound files (max 16); scope creep blocked at seal time | [Vibe Request](.github/ISSUE_TEMPLATE/vibe-request.yml) issue with 2–4 paths; MCP `seal_bond` / `validate_bond` | Built-in |
+| **Mandates** | House rules: forbidden prefixes, approval prefixes, max attempts, approver allowlist | Edit `src/policy/mandates.json`; MCP `evaluate_mandate` before proposing paths | Built-in |
+| **Zero-token gates** | Deterministic patch templates — no LLM, $0 cost for templated chores | Match issue title/body to `src/release-gate/gates.json`; MCP `resolve_gate` / `list_gates` | Built-in |
+| **VIBE_DEPTH dial** | Volume knob 0–5: explain → plan → safe files → tests → deploy → protected `/approve` | `VIBE_DEPTH` env or labels `vibe:plan-only` / `vibe:safe` / `vibe:ship` | Built-in |
+| **Capsule + receipt** | Tamper-proof run fingerprint (`capsuleHash`, `vowsHash`) + **View proof** HPURL in issue comment | Runs automatically; inspect `proof/index.html` or MCP `validate_capsule` | Built-in |
+| **TaskBond gauntlet** | 32/32 adversarial bond + mandate scenarios; baseline ratchet blocks guard drift | `npm run eval:bond`; wired into **Vibe Promotion Gate** preflight | Built-in |
+| **Replay gate** | Flight recorder — re-run `events.ndjson`; mismatch blocks promotion | `npm run replay -- . <runId>`; CI replay determinism check on PRs | Built-in |
+| **Anti-rot** | Scoped context (capped snippets, no repomix fallback), bond compliance (paths outside plan ∪ bound blocked), evidence-linked lessons | MCP `build_scoped_context`, `recall_lessons`; lessons in `.evomem/lessons.ndjson` | Built-in |
+| **MCP tools** | Live rulebook in Cursor: gates, bonds, mandates, schemas, capsule verify | Enable `vibe-release-gates` in `mcp.json`; `npm run gate:mcp` smoke | Built-in |
+| **Forever loop** | GitHub issue → plan → codegen → verify → PR + cockpit comment; runs while you sleep | Label `vibe/run` on issue; **Sovereign OS Event Bus** workflow | Built-in |
+| **Cockpit + explain dial** | Issue/PR comment dashboard: depth, hashes, next action, decision explain (off/short/long/expand) | Auto-posted on runs; labels `vibe:explain-short` / `vibe:explain-long` or `VIBE_EXPLAIN` | Built-in |
+| **Operator commands** | Human steering without terminal: `/status`, `/approve`, `/continue`, `/retry`, `/rollback`, `/details`, `/troubleshoot` | Reply on the issue; see [Agent Protocol](docs/agent-protocol.md) | Built-in |
+| **Promotion gate** | **Vibe Promotion Gate** — gauntlet green, bond valid, capsule/replay OK before merge | Require check on `main`; runs on vibe PRs via `vibe-pr-gate.yml` | Built-in |
+| **Assisted-by attribution** | PR blocked if commits mention AI tools without `Assisted-by:` trailer | Automatic on PRs; engine tags its own commits | Built-in |
+| **Auto-merge** | Squash-merge when branch protection + promotion gate green | Label `vibe/auto-merge` or repo var `VIBE_AUTO_MERGE=1` | Built-in |
+| **Activate / adopt** | One-command bootstrap: check, zero-token smoke, MCP smoke, schema export, vows attestation | `npm run activate` or `bash runs/adopt.sh /path/to/repo` | Built-in |
+| **`launch:readiness`** | Local preflight: workflows, gauntlet vs baseline, MCP smoke, proof page | `npm run launch:readiness` on `main` | Built-in |
+| **`launch:ship`** | One-command ship after readiness green | `npm run launch:ship` — see [Launch Proof runbook](docs/launch-proof.md) | Built-in |
+| **Launch proof E2E** | Zero-token cloud proof: issue → PR → receipt → green checks; writes `.vibe/launch-proof.json` | Actions → **Launch Proof (zero-token E2E)**; [green run](https://github.com/afelin/vibe-engine-os/actions/runs/29318253641) on [issue #34](https://github.com/afelin/vibe-engine-os/issues/34) | **Claimable** |
+
+### Powerful combinations
+
+| Combo | Flow |
+| --- | --- |
+| **Nocode loop** | [Nocode Quickstart](docs/nocode-quickstart.md) → Vibe Request issue → forever loop → receipt → merge (optional `vibe/auto-merge`) — no terminal |
+| **Cursor + MCP** | `npm run activate` + MCP + `.cursor/skills/vibe-engine` → live mandate/gate checks while you edit |
+| **Zero-token chores** | Match gate in `gates.json` + depth 0–2 → deterministic patch, no API keys |
+| **High-trust ship** | TaskBond + gauntlet + replay + promotion gate + attribution → audit-ready PR with capsule proof |
+
+### Who it's for
+
+| Persona | Why |
+| --- | --- |
+| **Solo vibe coder** | Delegate bounded changes overnight; review 2–4 files instead of whole-repo diffs |
+| **Agentic engineer** | One constitution catalog + MCP — same rules in Cursor, Actions, and custom agents |
+| **Compliance / security MVP** | Capsule hashes, replay, and gauntlet turn “the AI did it” into evidence |
+| **Enterprise operator** | Mandates, approvers, depth dial, and required checks on `main` |
+
+See also the [Persona matrix](#persona-matrix) below for one-step activation paths.
+
+### Honest limits
+
+- **Branch protection on private free repos** — enabling required checks on `main` needs admin scope; use GitHub UI (Settings → Branches) when the API returns 403. See [Launch Proof runbook](docs/launch-proof.md#manual-ops-after-proof-passes).
+- **Hosted Pages receipts** — public proof URLs (`DEFAULT_PROOF_BASE`) stay deferred until the repo goes public and Pages is enabled; use local `proof/index.html` or comment hashes on private repos today.
+
 ## One-step activation
 
 Requires **Node.js ≥ 22** ([`.nvmrc`](.nvmrc) pins `22`; matches `package.json` `engines`).
