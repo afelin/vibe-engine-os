@@ -364,7 +364,7 @@ jobs:
           STAMP=".vibe/launch-proof-stamp.json"
           mkdir -p .vibe
           node -e "const fs=require('fs');const issue='${{ needs.gate-check.outputs.issue_number }}';const run=process.env.RUN_ID||'';fs.writeFileSync('$STAMP',JSON.stringify({issueNumber:Number(issue),runId:run,recordedAt:new Date().toISOString()},null,2)+'\n')"
-          git add "$STAMP" || true
+          git add -f "$STAMP" || true
           git commit -m "feat(ai): promotion for #${{ needs.gate-check.outputs.issue_number }}" -m "Assisted-by: vibe-engine-os" || echo "No changes"
           git push origin "$BRANCH_NAME" || git push --set-upstream origin "$BRANCH_NAME" || true
           echo "VIBE_HEAD_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
