@@ -27,6 +27,36 @@ function ghJson(args) {
   return output ? JSON.parse(output) : null;
 }
 
+function listInProgressLaunchProofRuns(ref) {
+  try {
+    const runs = ghJson(
+      `run list --workflow=launch-proof.yml --branch=${ref} --limit=10 --json databaseId,status,url,createdAt`,
+    );
+    return (runs ?? []).filter((run) => run.status === "in_progress" || run.status === "queued");
+  } catch {
+    return [];
+  }
+}
+
+async function waitForNoConcurrentLaunchProof(ref) {
+  const active = listInProgressLaunchProofRuns(ref);
+  if (active.length === 0) return null;
+  if (process.env.VIBE_LAUNCH_ALLOW_CONCURRENT === "1") {
+    process.stdout.write(
+      `Warning: ${active.length} launch-proof run(s) already active (allowed by VIBE_LAUNCH_ALLOW_CONCURRENT)
+`,
+    );
+    return active[0]?.url ?? null;
+  }
+  const urls = active.map((r) => r.url).filter(Boolean);
+  throw new Error(
+    `launch-proof already in progress (${active.length} run(s)). ` +
+      `Cancel duplicates in Actions or set VIBE_LAUNCH_ALLOW_CONCURRENT=1. ` +
+      (urls[0] ? `Active: ${urls[0]}` : ""),
+  );
+}
+
+
 function runReadiness() {
   execSync("npm run launch:readiness", {
     stdio: "inherit",
@@ -57,6 +87,7 @@ function assertGitPushOptional() {
 
 async function triggerAndPollLaunchProof() {
   const ref = process.env.VIBE_LAUNCH_REF?.trim() || "main";
+  await waitForNoConcurrentLaunchProof(ref);
   ghText(`workflow run launch-proof.yml --ref ${ref}`);
 
   let runId;
@@ -161,11 +192,16 @@ async function main() {
     }
 
     const bpStatus = bp.status ?? (bp.skipped ? "skipped_needs_admin" : bp.ok ? "enabled" : "failed");
+    if (bpStatus === "skipped_private_free") {
+      process.stderr.write(
+        "Branch protection skipped (private free repo — API requires GitHub Pro). Use Settings → Branches in the UI.\n",
+      );
+    }
     state.ok = state.workflow.ok && bpStatus !== "failed";
     state.finishedAt = new Date().toISOString();
     writeState(state);
 
-    if (bpStatus === "skipped_needs_admin") {
+    if (bpStatus === "skipped_needs_admin" || bpStatus === "skipped_private_free") {
       process.stderr.write(
         "Branch protection skipped (needs admin PAT or UI). One-liner when you have admin scope:\n" +
           "  gh api -X PUT repos/$(gh repo view -q .nameWithOwner)/branches/main/protection --input scripts/.branch-protection-payload.json\n" +

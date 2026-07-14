@@ -9,7 +9,9 @@ import * as os from "node:os";
 import * as path from "node:path";
 
 const POLL_INTERVAL_MS = 15_000;
-const MAX_WAIT_MS = 45 * 60 * 1000;
+const FOREVER_MAX_WAIT_MS = 25 * 60 * 1000;
+const PROOF_MAX_WAIT_MS = 30 * 60 * 1000;
+const CHECKS_MAX_WAIT_MS = 25 * 60 * 1000;
 
 const ISSUE_BODY = `### Intent
 Launch proof zero-token cloud loop
@@ -40,7 +42,6 @@ function ghText(args) {
   }).trim();
 }
 
-
 const REQUIRED_LABELS = [
   { name: "vibe/run", color: "1D76DB", description: "Trigger vibe-engine sovereign loop" },
   { name: "vibe:safe", color: "0E8A16", description: "Safe depth codegen" },
@@ -63,8 +64,15 @@ function sleep(ms) {
 }
 
 function extractPrUrl(text) {
-  const match = text.match(/https:\/\/github\.com\/[^\s)]+\/pull\/\d+/i);
-  return match?.[0];
+  const patterns = [
+    /https:\/\/github\.com\/[^\s)]+\/pull\/\d+/i,
+    /\[Open PR\]\((https:\/\/github\.com\/[^)]+)\)/i,
+  ];
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match) return match[1] ?? match[0];
+  }
+  return undefined;
 }
 
 function extractCapsuleHash(text) {
@@ -72,35 +80,90 @@ function extractCapsuleHash(text) {
   return match?.[1];
 }
 
-
-function dispatchForeverLoop(issueNumber) {
-  const ref = process.env.VIBE_LAUNCH_REF?.trim() || "main";
+function resolvePrUrlForIssue(issueNumber, repo) {
+  const owner = repo.split("/")[0];
+  const branch = `vibe/issue-${issueNumber}`;
   try {
-    ghText(`workflow run forever.yml --ref ${ref} -f issue_number=${issueNumber}`);
-    process.stdout.write(
-      `Dispatched forever.yml for issue #${issueNumber} (GITHUB_TOKEN-created issues do not auto-trigger workflows)\n`,
+    const prs = ghJson(
+      `pr list --head ${owner}:${branch} --state open --json url --limit 1`,
     );
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    process.stderr.write(
-      `Could not dispatch forever.yml: ${message}\nIf issue was created in Actions, add workflow_dispatch on forever.yml or use a PAT for issue create.\n`,
-    );
+    return prs?.[0]?.url;
+  } catch {
+    return undefined;
   }
 }
 
-async function waitForIssueProof(issueNumber) {
+async function dispatchAndWatchForever(issueNumber) {
+  const ref = process.env.VIBE_LAUNCH_REF?.trim() || "main";
+  const beforeRuns = ghJson(
+    "run list --workflow=forever.yml --limit=3 --json databaseId",
+  );
+  const beforeId = beforeRuns?.[0]?.databaseId ?? 0;
+
+  ghText(`workflow run forever.yml --ref ${ref} -f issue_number=${issueNumber}`);
+  process.stdout.write(
+    `Dispatched forever.yml for issue #${issueNumber} (GITHUB_TOKEN-created issues do not auto-trigger workflows)\n`,
+  );
+
+  const started = Date.now();
+  let runId;
+  while (Date.now() - started < 120_000) {
+    await sleep(5_000);
+    const runs = ghJson(
+      "run list --workflow=forever.yml --limit=8 --json databaseId,status,conclusion,event,createdAt",
+    );
+    const fresh = runs?.find(
+      (run) =>
+        run.event === "workflow_dispatch" && run.databaseId > beforeId,
+    );
+    if (fresh?.databaseId) {
+      runId = fresh.databaseId;
+      if (fresh.status === "completed") break;
+    }
+  }
+
+  if (!runId) {
+    throw new Error(
+      `forever.yml did not start within 2 minutes for issue #${issueNumber}`,
+    );
+  }
+
+  process.stdout.write(`Watching forever.yml run ${runId}…\n`);
+  const watchStarted = Date.now();
+  try {
+    execSync(`gh run watch ${runId} --exit-status`, {
+      stdio: "inherit",
+      env: process.env,
+    });
+  } catch {
+    const run = ghJson(`run view ${runId} --json conclusion,url`);
+    throw new Error(
+      `forever.yml run ${runId} failed (${run?.conclusion ?? "unknown"}). ` +
+        `Check vibe-promote (often missing .runs artifact — include-hidden-files). ${run?.url ?? ""}`,
+    );
+  }
+
+  if (Date.now() - watchStarted > FOREVER_MAX_WAIT_MS) {
+    throw new Error(`forever.yml run ${runId} exceeded ${FOREVER_MAX_WAIT_MS / 60000}m`);
+  }
+
+  return runId;
+}
+
+async function waitForIssueProof(issueNumber, repo) {
   const started = Date.now();
   let prUrl;
   let capsuleHash;
   let receiptLink;
+  let lastStatus = "";
 
-  while (Date.now() - started < MAX_WAIT_MS) {
+  while (Date.now() - started < PROOF_MAX_WAIT_MS) {
     const payload = ghJson(`issue view ${issueNumber} --json comments`);
     const bodies = (payload.comments ?? [])
       .map((comment) => comment.body ?? "")
       .join("\n");
 
-    prUrl = prUrl ?? extractPrUrl(bodies);
+    prUrl = prUrl ?? extractPrUrl(bodies) ?? resolvePrUrlForIssue(issueNumber, repo);
     capsuleHash = capsuleHash ?? extractCapsuleHash(bodies);
     if (/View proof/i.test(bodies)) {
       const linkMatch = bodies.match(/\[View proof\]\(([^)]+)\)/i);
@@ -111,14 +174,21 @@ async function waitForIssueProof(issueNumber) {
       return { prUrl, capsuleHash, receiptLink };
     }
 
-    process.stdout.write(
-      `… waiting for PR + receipt on issue #${issueNumber}\n`,
-    );
+    const missing = [];
+    if (!prUrl) missing.push("PR (comment or vibe/issue-* branch)");
+    if (!capsuleHash && !receiptLink) missing.push("receipt/capsule in comments");
+    const status = `… waiting on issue #${issueNumber}: ${missing.join(", ")}`;
+    if (status !== lastStatus) {
+      process.stdout.write(`${status}\n`);
+      lastStatus = status;
+    }
     await sleep(POLL_INTERVAL_MS);
   }
 
   throw new Error(
-    `Timed out waiting for PR + receipt on issue #${issueNumber}`,
+    `Timed out after ${PROOF_MAX_WAIT_MS / 60000}m waiting for PR + receipt on issue #${issueNumber}. ` +
+      `Have: pr=${Boolean(prUrl)} receipt=${Boolean(receiptLink)} capsule=${Boolean(capsuleHash)}. ` +
+      "If receipt exists but no PR, vibe-promote likely failed (see forever.yml artifact upload).",
   );
 }
 
@@ -127,7 +197,7 @@ async function waitForPrChecks(prUrl) {
   const prNumber = prUrl.match(/\/pull\/(\d+)/)?.[1];
   if (!prNumber) throw new Error(`Cannot parse PR number from ${prUrl}`);
 
-  while (Date.now() - started < MAX_WAIT_MS) {
+  while (Date.now() - started < CHECKS_MAX_WAIT_MS) {
     const checks = ghJson(`pr checks ${prNumber} --json name,state,bucket`);
     const checkList = Array.isArray(checks) ? checks : checks?.checks ?? [];
     const gate = checkList.find((check) => check.name === "Vibe Promotion Gate");
@@ -157,7 +227,9 @@ async function waitForPrChecks(prUrl) {
     await sleep(POLL_INTERVAL_MS);
   }
 
-  throw new Error(`Timed out waiting for green checks on ${prUrl}`);
+  throw new Error(
+    `Timed out after ${CHECKS_MAX_WAIT_MS / 60000}m waiting for green checks on ${prUrl}`,
+  );
 }
 
 async function main() {
@@ -186,11 +258,12 @@ async function main() {
   process.stdout.write(`Created issue #${issueNumber}\n`);
 
   if (process.env.GITHUB_ACTIONS === "true") {
-    dispatchForeverLoop(issueNumber);
+    await dispatchAndWatchForever(issueNumber);
   }
 
   const { prUrl, capsuleHash, receiptLink } = await waitForIssueProof(
     issueNumber,
+    repo,
   );
   process.stdout.write(`PR: ${prUrl}\n`);
 
