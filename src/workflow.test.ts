@@ -20,10 +20,10 @@ describe("GitHub Actions workflow", () => {
     );
 
     expect(workflow).toContain("Post promotion gate on branch head");
-    expect(workflow).toContain("VIBE_HEAD_SHA=$(git rev-parse HEAD)");
+    expect(workflow).toContain("VIBE_HEAD_SHA=${HEAD_SHA}");
     expect(workflow).toContain("VIBE_SKIP_CHECK");
     expect(workflow).toContain("VIBE_CHECK_ONLY");
-    expect(workflow.indexOf("git rev-parse HEAD")).toBeLessThan(
+    expect(workflow.indexOf("origin/${BRANCH_NAME}")).toBeLessThan(
       workflow.indexOf("Post promotion gate on branch head"),
     );
   });
@@ -248,12 +248,15 @@ describe("GitHub Actions workflow", () => {
     );
 
     expect(workflow).toContain("Ensure PR exists");
-    expect(workflow).toContain("scripts/create-pr.mjs");
+    expect(workflow).toContain("create-pr-cli.ts");
+    expect(workflow).toContain(".vibe/promotion-stamp.json");
     expect(workflow).toContain(".runs/pr-url.txt");
     expect(workflow).toContain("VIBE_PR_URL");
     expect(workflow.indexOf("Git sync and PR")).toBeLessThan(
       workflow.indexOf("Ensure PR exists"),
     );
+    expect(workflow).toContain("set -euo pipefail");
+    expect(workflow).toMatch(/BASE_SHA.*HEAD_SHA/s);
   });
 
   it("gates deploy-from-capsule on VIBE_DEPLOY variable", () => {

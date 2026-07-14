@@ -350,10 +350,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
           git config --global user.name "Vibe Engine OS"
           git config --global user.email "ai@vibe-engine.local"
-          BRANCH_NAME="vibe/issue-${{ needs.gate-check.outputs.issue_number }}"
-          git checkout "$BRANCH_NAME" || git checkout -b "$BRANCH_NAME"
+          ISSUE_NUM="${{ needs.gate-check.outputs.issue_number }}"
+          BRANCH_NAME="vibe/issue-${ISSUE_NUM}"
+          BASE_BRANCH="${GITHUB_REF_NAME:-main}"
+          git checkout "$BRANCH_NAME" 2>/dev/null || git checkout -b "$BRANCH_NAME"
+          git restore bun.lock 2>/dev/null || true
           if [ -n "${RUN_ID:-}" ] && [ -f ".runs/$RUN_ID/manifest.json" ]; then
             while IFS= read -r file_path; do
               if [ -n "$file_path" ] && [ -f "$file_path" ]; then
@@ -361,39 +365,49 @@ jobs:
               fi
             done < <(node -e "JSON.parse(require('fs').readFileSync('.runs/$RUN_ID/manifest.json','utf8')).generatedFiles.forEach(f=>console.log(f))")
           fi
-          STAMP=".vibe/launch-proof-stamp.json"
+          STAMP=".vibe/promotion-stamp.json"
           mkdir -p .vibe
-          node -e "const fs=require('fs');const issue='${{ needs.gate-check.outputs.issue_number }}';const run=process.env.RUN_ID||'';fs.writeFileSync('$STAMP',JSON.stringify({issueNumber:Number(issue),runId:run,recordedAt:new Date().toISOString()},null,2)+'\n')"
-          git add -f "$STAMP" || true
-          git commit -m "feat(ai): promotion for #${{ needs.gate-check.outputs.issue_number }}" -m "Assisted-by: vibe-engine-os" || echo "No changes"
-          git push origin "$BRANCH_NAME" || git push --set-upstream origin "$BRANCH_NAME" || true
-          echo "VIBE_HEAD_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          node -e "const fs=require('fs');const issue='${ISSUE_NUM}';const run=process.env.RUN_ID||'';fs.writeFileSync('$STAMP',JSON.stringify({issueNumber:Number(issue),runId:run,recordedAt:new Date().toISOString(),workflowRunId:process.env.GITHUB_RUN_ID||null},null,2)+'\n')"
+          git add -f "$STAMP"
+          if git diff --cached --quiet; then
+            git commit --allow-empty -m "chore(ai): promotion receipt for #${ISSUE_NUM}" -m "Assisted-by: vibe-engine-os"
+          else
+            git commit -m "feat(ai): promotion for #${ISSUE_NUM}" -m "Assisted-by: vibe-engine-os"
+          fi
+          git push origin "HEAD:${BRANCH_NAME}"
+          git fetch origin "${BASE_BRANCH}" "${BRANCH_NAME}"
+          BASE_SHA="$(git rev-parse "origin/${BASE_BRANCH}")"
+          HEAD_SHA="$(git rev-parse "origin/${BRANCH_NAME}")"
+          if [ "$BASE_SHA" = "$HEAD_SHA" ]; then
+            echo "::error::Head branch ${BRANCH_NAME} matches ${BASE_BRANCH} (${BASE_SHA}) — cannot open PR"
+            exit 1
+          fi
+          echo "VIBE_HEAD_SHA=${HEAD_SHA}" >> "$GITHUB_ENV"
+          echo "Promotion branch ${BRANCH_NAME} at ${HEAD_SHA} (${BASE_SHA}..${HEAD_SHA})"
 
       - name: Ensure PR exists
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
           BRANCH_NAME="vibe/issue-${{ needs.gate-check.outputs.issue_number }}"
           ISSUE_NUM="${{ needs.gate-check.outputs.issue_number }}"
-          OWNER="${GITHUB_REPOSITORY%%/*}"
-          EXISTING=$(curl -sS \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls?head=${OWNER}:${BRANCH_NAME}&state=open" \
-            | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8')); process.stdout.write(d[0]?.html_url ?? '')")
-          if [ -n "$EXISTING" ]; then
-            echo "PR already open: $EXISTING"
-            PR_URL="$EXISTING"
-          else
-            PR_URL=$(node scripts/create-pr.mjs \
-              --title "feat(ai): promotion for #${ISSUE_NUM}" \
-              --head "$BRANCH_NAME" \
-              --body "Automated promotion for issue #${ISSUE_NUM}. Assisted-by: vibe-engine-os")
+          BASE_BRANCH="${GITHUB_REF_NAME:-main}"
+          PR_URL="$(npx tsx src/promote/create-pr-cli.ts \
+            --title "feat(ai): promotion for #${ISSUE_NUM}" \
+            --head "$BRANCH_NAME" \
+            --base "$BASE_BRANCH" \
+            --body "Automated promotion for issue #${ISSUE_NUM}. Assisted-by: vibe-engine-os" \
+            2>&1 | tail -1)"
+          if [ -z "$PR_URL" ] || ! echo "$PR_URL" | grep -q '^https://github.com/.*/pull/[0-9]\+$'; then
+            echo "::error::PR creation did not return a URL (got: ${PR_URL:-empty})"
+            exit 1
           fi
           echo "VIBE_PR_URL=$PR_URL" >> "$GITHUB_ENV"
           mkdir -p .runs
           printf '%s\n' "$PR_URL" > .runs/pr-url.txt
+          echo "PR ready: $PR_URL"
 
       - name: Update cockpit with PR link
         if: ${{ env.VIBE_PR_URL != '' && env.RUN_ID != '' }}
