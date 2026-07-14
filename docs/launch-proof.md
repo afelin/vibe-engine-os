@@ -6,12 +6,29 @@ Canonical zero-token E2E proof: **issue → PR → receipt → green checks** on
 
 After `npm run launch:readiness` passes on `main`, trigger **Launch Proof (zero-token E2E)** via Actions → `workflow_dispatch`.
 
+## Expected durations
+
+Runs feel slow when healthy — this is normal. Use the table below so you know when to wait vs. investigate.
+
+| Phase | Typical | Max (script timeout) | Stuck if… |
+| --- | --- | --- | --- |
+| `npm run launch:readiness` (local) | 3–30 s | — | Gauntlet or MCP smoke fails locally |
+| Launch Proof workflow queued | 0–2 min | — | Queue backlog on GitHub Free |
+| Create issue + dispatch `forever.yml` | ~30–90 s | — | `gh` auth or label missing |
+| `forever.yml` (gate-check → vibe-run → vibe-promote) | 1–4 min | ~25 min | `vibe-promote` failed — open linked forever run |
+| Poll issue for PR + receipt | 1–5 min | **30 min** | No PR comment after promote succeeded |
+| Wait for PR checks green | 2–6 min | **25 min** | Promotion gate or attribution pending |
+| **Total (happy path)** | **~5–12 min** | **~45–75 min** | Exceeds max column → see Troubleshooting |
+
+**Tips:** Run **one** proof at a time (`npm run launch:ship` dedupes concurrent runs). Use `npm run launch:ship -- --dry-run` for a fast local preflight without cloud polling.
+
 ## What it does
 
 1. Creates a Vibe Request issue with cloud-loop smoke paths (no LLM secrets)
-2. Polls issue comments for PR link + capsule receipt
-3. Polls PR checks for **Vibe Promotion Gate** (+ attribution when present)
-4. Writes `.vibe/launch-proof.json`
+2. Dispatches `forever.yml` (Actions-created issues do not auto-trigger workflows)
+3. Polls issue comments for PR link + capsule receipt
+4. Polls PR checks for **Vibe Promotion Gate** (+ attribution when present)
+5. Writes `.vibe/launch-proof.json`
 
 Local dry-run (requires `gh` auth): `node scripts/launch-e2e.mjs`
 
