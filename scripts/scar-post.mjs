@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Export last gauntlet regression or gate failure as a GTM scar-post snippet.
+ * Export L0 heal win (preferred) or last gauntlet/launch-proof as a GTM scar-post snippet.
  */
 import { execSync } from "node:child_process";
 import * as fs from "node:fs";
@@ -12,6 +12,33 @@ function readLaunchProof() {
   const proofPath = path.join(root, ".vibe/launch-proof.json");
   if (!fs.existsSync(proofPath)) return null;
   return JSON.parse(fs.readFileSync(proofPath, "utf8"));
+}
+
+/** Newest scoreboard row with deterministicFix + healed L0. */
+function readL0HealWin() {
+  const scoreboardPath = path.join(root, ".runs", "scoreboard.ndjson");
+  if (!fs.existsSync(scoreboardPath)) return null;
+  const lines = fs
+    .readFileSync(scoreboardPath, "utf8")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  for (let i = lines.length - 1; i >= 0; i--) {
+    try {
+      const entry = JSON.parse(lines[i]);
+      const metrics = entry.metrics ?? {};
+      if (
+        entry.success === true &&
+        metrics.deterministicFix === true &&
+        metrics.healLevel === 0
+      ) {
+        return entry;
+      }
+    } catch {
+      // skip malformed rows
+    }
+  }
+  return null;
 }
 
 function runGauntletCapture() {
@@ -34,13 +61,25 @@ function runGauntletCapture() {
   }
 }
 
-function formatScarPost({ proof, gauntletOutput }) {
+function formatScarPost({ l0Win, proof, gauntletOutput }) {
   const lines = [
     "## Scar post snippet (vibe-engine-os)",
     "",
   ];
 
-  if (proof) {
+  if (l0Win) {
+    const m = l0Win.metrics ?? {};
+    lines.push(
+      `**L0 heal win:** \`${l0Win.runId}\` — ${l0Win.issueTitle || "troubleshoot"}`,
+      `**Deterministic:** yes · **healLevel:** 0 · **slot:** \`${m.agentSlot ?? "unknown"}\``,
+      l0Win.state ? `**State:** ${l0Win.state}` : "",
+      "",
+      "### Hook",
+      "",
+      "Zero-token L0 heal from scoreboard — no agent slot burned. Promote the pattern into classify/feedback cache.",
+      "",
+    );
+  } else if (proof) {
     lines.push(
       `**Launch proof:** issue #${proof.issueNumber} → [PR](${proof.prUrl})`,
       proof.capsuleHash ? `**Capsule:** \`sha256:${proof.capsuleHash}\`` : "",
@@ -60,14 +99,14 @@ function formatScarPost({ proof, gauntletOutput }) {
       "```",
       "",
     );
-  } else if (proof) {
+  } else if (!l0Win && proof) {
     lines.push(
       "### Hook",
       "",
       "Zero-token issue → PR + tamper-evident receipt. No terminal. Promotion only when the capsule validates.",
       "",
     );
-  } else {
+  } else if (!l0Win && !proof) {
     lines.push(
       "### Hook",
       "",
@@ -85,9 +124,10 @@ function formatScarPost({ proof, gauntletOutput }) {
   return lines.filter(Boolean).join("\n");
 }
 
-const proof = readLaunchProof();
+const l0Win = readL0HealWin();
+const proof = l0Win ? null : readLaunchProof();
 const gauntletOutput = runGauntletCapture();
-const markdown = formatScarPost({ proof, gauntletOutput });
+const markdown = formatScarPost({ l0Win, proof, gauntletOutput });
 
 process.stdout.write(`${markdown}\n`);
 

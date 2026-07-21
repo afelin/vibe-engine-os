@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   checks: write
+  pull-requests: write
 
 jobs:
   promotion-gate:
@@ -29,6 +30,23 @@ jobs:
         id: check
         run: npm run check
         continue-on-error: true
+
+      - name: Troubleshoot hint on npm check failure
+        if: steps.check.outcome != 'success'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VIBE_PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          HINT='npm run orchestrate -- troubleshoot "npm check failing" --max-level 1'
+          {
+            echo "## Troubleshoot"
+            echo ""
+            echo "\`$HINT\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if command -v gh >/dev/null 2>&1 && [ -n "${VIBE_PR_NUMBER:-}" ]; then
+            gh pr comment "$VIBE_PR_NUMBER" --body "Promotion gate \`npm check\` failed. Local heal: \`$HINT\`" || true
+          fi
 
       - name: Post Vibe Promotion Gate on PR head
         if: always()

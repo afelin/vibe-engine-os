@@ -3,6 +3,7 @@ import {
   classifyFromSymptom,
   classifyPreflightOutput,
   classifyReplayOutput,
+  extractGauntletCaseId,
   packetFieldsFromFailedCheck,
   packetFromFailedCheck,
 } from "./diagnose.js";
@@ -58,5 +59,29 @@ describe("orchestrator diagnose", () => {
     expect(packet.symptom).toContain("failing");
     expect(packet.gateId).toBe("promotion_gate");
     expect(packet.trustTier).toBe("experiment");
+  });
+
+  it("classifies top gateIdsFailed-style symptoms via static table", () => {
+    expect(classifyFromSymptom("vitest suite failed")).toMatchObject({
+      gateId: "vitest",
+      failureClass: "preflight",
+    });
+    expect(classifyFromSymptom("tsc type error in src/foo.ts")).toMatchObject({
+      gateId: "typescript_compiler",
+    });
+  });
+
+  it("extracts gauntlet case ids from FAIL lines", () => {
+    expect(
+      extractGauntletCaseId(
+        'FAIL missing_intent_01 (missing_intent): expected {"ok":false}',
+      ),
+    ).toBe("missing_intent_01");
+    const classified = classifyPreflightOutput(
+      "[FAIL] taskbond.gauntlet: FAIL forbidden_01 (forbidden): expected",
+    );
+    expect(classified.failureClass).toBe("gauntlet");
+    expect(classified.gauntletCaseId).toBe("forbidden_01");
+    expect(classified.summary).toContain("gauntlet case: forbidden_01");
   });
 });

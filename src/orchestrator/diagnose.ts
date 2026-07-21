@@ -16,6 +16,8 @@ export type DiagnosticClassification = {
     | "bond"
     | "unknown";
   gateId?: string;
+  /** Matched TaskBond gauntlet case id when FAIL output cites one. */
+  gauntletCaseId?: string;
   summary: string;
   checks: DiagnosticCheck[];
 };
@@ -32,6 +34,53 @@ const BOND_PATTERNS = /bond|bound.?file/i;
 const READINESS_PATTERNS = /readiness|workflow|proof page|launch/i;
 const PROMOTION_PATTERNS =
   /promotion\s*gate|vibe\s*promotion|promotion\s*check|pr.?promotion|preflight.*promot/i;
+
+/**
+ * Static classify rows from top scoreboard `gateIdsFailed` + known gate cache ids.
+ * Table growth only — no LLM.
+ */
+const GATE_SYMPTOM_TABLE: Array<{
+  pattern: RegExp;
+  failureClass: DiagnosticClassification["failureClass"];
+  gateId: string;
+}> = [
+  { pattern: /\bvitest\b|test\s*suite\s*fail/i, failureClass: "preflight", gateId: "vitest" },
+  {
+    pattern: /\btsc\b|typescript|type.?error/i,
+    failureClass: "preflight",
+    gateId: "typescript_compiler",
+  },
+  { pattern: NPM_CHECK_PATTERNS, failureClass: "preflight", gateId: "npm_check" },
+  {
+    pattern: ATTRIBUTION_CHECK_PATTERNS,
+    failureClass: "preflight",
+    gateId: "attribution",
+  },
+  {
+    pattern: /esm.?import|import.?extension/i,
+    failureClass: "preflight",
+    gateId: "esm_import_extensions",
+  },
+  { pattern: /no.?secrets|secret\s*leak/i, failureClass: "preflight", gateId: "no_secrets" },
+  {
+    pattern: /path.?traversal/i,
+    failureClass: "preflight",
+    gateId: "path_traversal",
+  },
+  {
+    pattern: /protected.?files/i,
+    failureClass: "preflight",
+    gateId: "protected_files",
+  },
+];
+
+/** Extract `FAIL <case_id> (` or regression `id: was pass` from gauntlet stdout. */
+export function extractGauntletCaseId(output: string): string | undefined {
+  const fail = output.match(/\bFAIL\s+([a-z][a-z0-9_]*)\s*\(/i);
+  if (fail?.[1]) return fail[1];
+  const regression = output.match(/\b([a-z][a-z0-9_]*):\s*was pass,/i);
+  return regression?.[1];
+}
 
 export function classifyPreflightOutput(stdout: string): DiagnosticClassification {
   const checks = parsePreflightChecks(stdout);
@@ -52,10 +101,18 @@ export function classifyPreflightOutput(stdout: string): DiagnosticClassificatio
   else if (primary.name.includes("gauntlet")) failureClass = "gauntlet";
   else if (primary.name.includes("bond")) failureClass = "bond";
 
+  const detailBlob = failed.map((c) => c.detail ?? "").join("\n");
+  const gauntletCaseId =
+    failureClass === "gauntlet" ? extractGauntletCaseId(detailBlob) : undefined;
+  const baseSummary = `${primary.name}: ${primary.detail ?? "failed"}`;
+
   return {
     failureClass,
     gateId: inferGateId(primary),
-    summary: `${primary.name}: ${primary.detail ?? "failed"}`,
+    gauntletCaseId,
+    summary: gauntletCaseId
+      ? `${baseSummary} (gauntlet case: ${gauntletCaseId})`
+      : baseSummary,
     checks,
   };
 }
@@ -105,10 +162,14 @@ export function classifyFromSymptom(symptom: string): DiagnosticClassification {
     };
   }
   if (GAUNTLET_PATTERNS.test(symptom)) {
+    const gauntletCaseId = extractGauntletCaseId(symptom);
     return {
       failureClass: "gauntlet",
       gateId: "bond_compliance",
-      summary: symptom,
+      gauntletCaseId,
+      summary: gauntletCaseId
+        ? `${symptom} (gauntlet case: ${gauntletCaseId})`
+        : symptom,
       checks: [],
     };
   }
@@ -134,6 +195,16 @@ export function classifyFromSymptom(symptom: string): DiagnosticClassification {
       summary: symptom,
       checks: [],
     };
+  }
+  for (const row of GATE_SYMPTOM_TABLE) {
+    if (row.pattern.test(symptom)) {
+      return {
+        failureClass: row.failureClass,
+        gateId: row.gateId,
+        summary: symptom,
+        checks: [],
+      };
+    }
   }
   return { failureClass: "unknown", summary: symptom, checks: [] };
 }

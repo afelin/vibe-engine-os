@@ -64,16 +64,19 @@ function runReadiness() {
   });
 }
 
-function runOptionalTroubleshoot() {
-  if (process.env.VIBE_LAUNCH_TROUBLESHOOT !== "1") {
+/** Fail-open troubleshoot when readiness fails. Set VIBE_LAUNCH_TROUBLESHOOT=0 to skip. */
+function runTroubleshootOnReadinessFail() {
+  if (process.env.VIBE_LAUNCH_TROUBLESHOOT === "0") {
     return { skipped: true };
   }
 
   const symptom =
     process.env.VIBE_LAUNCH_TROUBLESHOOT_SYMPTOM?.trim() ||
-    "Vibe Promotion Gate preflight";
+    "launch readiness failing";
 
-  process.stdout.write(`launch:ship troubleshoot preflight (${symptom})…\n`);
+  process.stdout.write(
+    `launch:ship troubleshoot preflight after readiness fail (${symptom})…\n`,
+  );
   try {
     execSync(`npm run orchestrate -- troubleshoot "${symptom}" --skip-llm`, {
       stdio: "inherit",
@@ -180,9 +183,21 @@ async function main() {
 
   try {
     printExplain("launch.readiness");
-    state.troubleshoot = runOptionalTroubleshoot();
-    runReadiness();
-    state.readiness = { ok: true, at: new Date().toISOString() };
+    try {
+      runReadiness();
+      state.readiness = { ok: true, at: new Date().toISOString() };
+    } catch (readinessError) {
+      state.readiness = {
+        ok: false,
+        at: new Date().toISOString(),
+        error:
+          readinessError instanceof Error
+            ? readinessError.message
+            : String(readinessError),
+      };
+      state.troubleshoot = runTroubleshootOnReadinessFail();
+      throw readinessError;
+    }
 
     if (dryRun) {
       try {
