@@ -7,6 +7,10 @@ import { parseTroubleshootPacket } from "../../constitution/parse.js";
 
 import type { AgentResult } from "../types.js";
 
+/**
+ * Org Claude config path (documented discovery: `claude /status`, then profiles).
+ * Priority: CLAUDE_CONFIG_DIR → ~/.claude/profiles/corp → ~/.claude
+ */
 export function resolveCorpClaudeConfigDir(): string {
   if (process.env.CLAUDE_CONFIG_DIR?.trim()) {
     return process.env.CLAUDE_CONFIG_DIR.trim();

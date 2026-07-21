@@ -45,12 +45,35 @@ Configure `.vibe/orchestrator/agents.json` (see `agents.json.example`). Slots **
 
 | Slot | Detect | Trust |
 |------|--------|-------|
-| `corp-claude` | `claude --version` | corporate |
-| `m365-guide` | always | human-in-loop |
+| `corp-claude` | `claude --version`; config via `CLAUDE_CONFIG_DIR` or `~/.claude/profiles/corp` | corporate |
+| `m365-guide` | always (BizChat prompt + link; no API) | human-in-loop |
 | `hermes` | `hermes --version` | experiment |
-| `groq-experiment` | `GROQ_API_KEY` + router | experiment |
+| `groq-experiment` | `resolveCodegenEndpoint()` / Groq via `router.ts` | experiment |
 
 Missing `corp-claude` / `hermes` CLIs or groq keys → slot unavailable; troubleshoot continues at L0–L1 or escalates to `m365-guide` / human.
+
+### Corp Claude discovery
+
+```bash
+claude /status   # skip if CLI missing — slot stays unavailable
+export CLAUDE_CONFIG_DIR=~/.claude/profiles/corp   # or rely on auto-detect
+```
+
+Details and managed-settings checks: [ai-providers.md](./ai-providers.md#discover-corporate-claude).
+
+### Optional Hermes install
+
+```bash
+# Official agent: https://github.com/NousResearch/hermes-agent
+hermes --version
+# Copy .vibe/orchestrator/agents.json.example → agents.json and keep hermes.enabled
+```
+
+If the binary is absent, `invokeHermes` returns `{ ok: false, reason: "hermes_not_installed" }`.
+
+### Groq experiment (Phase 1)
+
+Uses existing [`src/llm/router.ts`](../src/llm/router.ts) (`resolveCodegenEndpoint`). Copy `.env.experiment.example` on personal repos only. OmniRoute is **not** required — see [ai-providers.md](./ai-providers.md#omniroute-optional-phase-2).
 
 ## MCP tools used (via `callReleaseGateTool`)
 

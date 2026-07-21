@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import type { TroubleshootPacket } from "../../constitution/catalog.js";
 import { parseTroubleshootPacket } from "../../constitution/parse.js";
-import type { AgentResult, AgentSlotId } from "../types.js";
+import type { AgentResult } from "../types.js";
 
 export type HermesConfig = {
   id: "hermes";

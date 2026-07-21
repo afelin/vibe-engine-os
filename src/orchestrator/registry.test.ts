@@ -1,17 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { invokeM365Guide, buildM365Prompt } from "./primitives/invokeM365Guide.js";
 import { resolveCorpClaudeConfigDir } from "./primitives/invokeCorpClaude.js";
+import { detectHermes, invokeHermes } from "./primitives/invokeHermes.js";
 import { listDetectedAgents, loadAgentsRegistry } from "./registry.js";
 
 describe("orchestrator primitives", () => {
-  it("m365 guide returns BizChat link and human step", async () => {
+  it("m365 guide returns BizChat link and human step (no API proxy)", async () => {
     const result = await invokeM365Guide({
       symptom: "SharePoint list sync broken",
       context: "Site collection ABC",
     });
     expect(result.humanStep).toBe(true);
-    expect(result.bizChatUrl).toContain("m365.cloud.microsoft/chat");
+    expect(result.agentSlot).toBe("m365-guide");
+    expect(result.bizChatUrl).toBe("https://m365.cloud.microsoft/chat");
     expect(result.promptBlock).toContain("SharePoint");
+    expect(result.promptBlock).toMatch(/no third-party proxies/i);
   });
 
   it("buildM365Prompt includes category", () => {
@@ -29,6 +32,21 @@ describe("orchestrator primitives", () => {
     expect(resolveCorpClaudeConfigDir()).toBe("/tmp/corp-claude");
     if (previous === undefined) delete process.env.CLAUDE_CONFIG_DIR;
     else process.env.CLAUDE_CONFIG_DIR = previous;
+  });
+
+  it("invokeHermes degrades when CLI missing", async () => {
+    expect(detectHermes("hermes-binary-that-does-not-exist-xyz")).toBe(false);
+    const result = await invokeHermes(
+      {
+        symptom: "research topic",
+        title: "research",
+        trustTier: "experiment",
+        domain: "research",
+      },
+      "hermes-binary-that-does-not-exist-xyz",
+    );
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe("hermes_not_installed");
   });
 });
 
