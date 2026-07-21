@@ -7,7 +7,7 @@ import {
 import type { OSContext } from "../os/events.js";
 import { getVibeDepth, renderDepthStatus, type VibeDepth } from "../os/depth.js";
 import { readTaskBond } from "../bond/store.js";
-import { readScoreboardEntries } from "../run/manifest.js";
+import { readScoreboardEntries, summarizeHealMix } from "../run/manifest.js";
 import { countGauntletCases } from "../launch/readiness.js";
 import { readInterventions } from "../research/interventions.js";
 import {
@@ -243,6 +243,7 @@ export function renderScoreboardSummary(
   ).length;
   const tokensSavedEstimate = gateRuns * 4000;
   const interventions = readInterventions(rootDir, 50);
+  const healMix = summarizeHealMix(entries);
 
   const lines = [
     `- **Success rate:** ${((successCount / entries.length) * 100).toFixed(0)}% (${successCount}/${entries.length})`,
@@ -252,6 +253,14 @@ export function renderScoreboardSummary(
     `- **Tokens saved (est.):** ~${tokensSavedEstimate} (gate vs LLM path)`,
     `- **Policy interventions:** ${interventions.length} recorded`,
   ];
+
+  if (healMix.withHealLevel > 0) {
+    lines.push(
+      `- **Heal mix:** L0 ${healMix.pct.l0}% · L1 ${healMix.pct.l1}% · L2 ${healMix.pct.l2}% · L3 ${healMix.pct.l3}% (n=${healMix.withHealLevel})`,
+      `- **Last healLevel:** L${healMix.lastHealLevel}`,
+      `- **Avg tokensEstimate (heal rows):** ${healMix.avgTokensEstimate.toFixed(0)}`,
+    );
+  }
 
   if (manifest?.metrics?.firstPassGreen !== undefined) {
     lines.unshift(

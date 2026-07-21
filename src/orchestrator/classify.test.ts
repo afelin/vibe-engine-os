@@ -7,9 +7,13 @@ describe("orchestrator classify", () => {
     expect(domainToAgentSlot("m365", "corporate")).toBe("m365-guide");
   });
 
-  it("routes build/test symptoms to code domain", () => {
+  it("routes corporate code to corp-claude", () => {
     expect(classifyProblem("vitest failing on replay gate")).toBe("code");
     expect(domainToAgentSlot("code", "corporate")).toBe("corp-claude");
+  });
+
+  it("routes experiment code to groq-experiment", () => {
+    expect(domainToAgentSlot("code", "experiment")).toBe("groq-experiment");
   });
 
   it("routes research symptoms to research domain", () => {

@@ -6,6 +6,7 @@ import {
   appendScoreboardEntry,
   readScoreboardEntries,
   renderRollbackInstructions,
+  summarizeHealMix,
   writeRunManifest,
 } from "./manifest.js";
 
@@ -92,6 +93,43 @@ describe("run manifest", () => {
     expect(entries).toHaveLength(2);
     expect(entries[0]?.runId).toBe("run_b");
     expect(entries[1]?.metrics.firstPassGreen).toBe(true);
+  });
+
+  it("summarizes heal mix percentages from scoreboard rows", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "vibe-heal-mix-"));
+    tmpDirs.push(root);
+
+    for (const [runId, healLevel] of [
+      ["r0", 0],
+      ["r1", 1],
+      ["r2", 1],
+      ["r3", 3],
+    ] as const) {
+      appendScoreboardEntry(root, {
+        runId,
+        issueNumber: "1",
+        issueTitle: runId,
+        success: healLevel <= 1,
+        state: "troubleshoot.healed",
+        createdAt: "2026-07-04T00:00:00.000Z",
+        metrics: {
+          attempts: 1,
+          firstPassGreen: healLevel <= 1,
+          gateIdsFailed: [],
+          durationMs: 1,
+          tokensEstimate: healLevel,
+          healLevel,
+          deterministicFix: healLevel <= 1,
+        },
+      });
+    }
+
+    const mix = summarizeHealMix(readScoreboardEntries(root, 20));
+    expect(mix.withHealLevel).toBe(4);
+    expect(mix.pct.l0).toBe(25);
+    expect(mix.pct.l1).toBe(50);
+    expect(mix.pct.l3).toBe(25);
+    expect(mix.lastHealLevel).toBe(3);
   });
 
   it("renders rollback instructions with the base sha and branch", () => {

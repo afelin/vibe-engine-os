@@ -16,6 +16,9 @@ export type RunMetrics = {
   contextChars?: number;
   truncated?: boolean;
   hallucinationBlocked?: boolean;
+  healLevel?: number;
+  agentSlot?: string;
+  deterministicFix?: boolean;
 };
 
 export type RunManifest = {
@@ -115,6 +118,57 @@ export function readScoreboardEntries(
     .slice(-limit)
     .map((line) => parseScoreboardEntry(JSON.parse(line)))
     .reverse();
+}
+
+export type HealMixSummary = {
+  total: number;
+  withHealLevel: number;
+  counts: { l0: number; l1: number; l2: number; l3: number };
+  pct: { l0: number; l1: number; l2: number; l3: number };
+  lastHealLevel?: number;
+  avgTokensEstimate: number;
+};
+
+/** % heals at L0/L1/L2/L3 from scoreboard rows that carry healLevel. */
+export function summarizeHealMix(
+  entries: ScoreboardEntry[],
+): HealMixSummary {
+  const counts = { l0: 0, l1: 0, l2: 0, l3: 0 };
+  let tokenSum = 0;
+  let tokenN = 0;
+  let lastHealLevel: number | undefined;
+
+  for (const entry of entries) {
+    const level = entry.metrics.healLevel;
+    if (level === undefined || level === null) continue;
+    if (lastHealLevel === undefined) lastHealLevel = level;
+    if (level === 0) counts.l0++;
+    else if (level === 1) counts.l1++;
+    else if (level === 2) counts.l2++;
+    else if (level >= 3) counts.l3++;
+    if (typeof entry.metrics.tokensEstimate === "number") {
+      tokenSum += entry.metrics.tokensEstimate;
+      tokenN++;
+    }
+  }
+
+  const withHealLevel = counts.l0 + counts.l1 + counts.l2 + counts.l3;
+  const pctOf = (n: number) =>
+    withHealLevel === 0 ? 0 : Math.round((n / withHealLevel) * 100);
+
+  return {
+    total: entries.length,
+    withHealLevel,
+    counts,
+    pct: {
+      l0: pctOf(counts.l0),
+      l1: pctOf(counts.l1),
+      l2: pctOf(counts.l2),
+      l3: pctOf(counts.l3),
+    },
+    lastHealLevel,
+    avgTokensEstimate: tokenN === 0 ? 0 : tokenSum / tokenN,
+  };
 }
 
 export function renderRollbackInstructions(manifest: RunManifest) {

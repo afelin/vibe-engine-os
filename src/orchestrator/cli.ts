@@ -3,20 +3,55 @@ import { execSync } from "node:child_process";
 import * as path from "node:path";
 import { parseOrchestratorIntent } from "../constitution/parse.js";
 import {
+  parseHealMaxLevel,
+  type HealMaxLevel,
+} from "./heal.js";
+import {
   intentToPacket,
   listDetectedAgents,
   routeIntent,
   runTroubleshootDag,
 } from "./troubleshoot.js";
 
-function resolveSkipLlm(argv: string[]): { skipLlm: boolean; args: string[] } {
+function resolveHealFlags(argv: string[]): {
+  skipLlm: boolean;
+  maxLevel?: HealMaxLevel;
+  args: string[];
+} {
   const envSkip =
     process.env.ORCHESTRATOR_SKIP_LLM === "1" ||
     process.env.ORCHESTRATOR_SKIP_LLM === "true";
   const flagSkip = argv.includes("--skip-llm");
+
+  let maxLevel = parseHealMaxLevel(process.env.VIBE_HEAL_MAX_LEVEL);
+  const maxIdx = argv.indexOf("--max-level");
+  const filtered: string[] = [];
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === "--skip-llm") continue;
+    if (arg === "--max-level") {
+      const next = argv[i + 1];
+      const parsed = parseHealMaxLevel(next);
+      if (parsed !== undefined) {
+        maxLevel = parsed;
+        i++;
+        continue;
+      }
+    }
+    if (arg.startsWith("--max-level=")) {
+      const parsed = parseHealMaxLevel(arg.slice("--max-level=".length));
+      if (parsed !== undefined) {
+        maxLevel = parsed;
+        continue;
+      }
+    }
+    filtered.push(arg);
+  }
+
   return {
     skipLlm: envSkip || flagSkip,
-    args: argv.filter((arg) => arg !== "--skip-llm"),
+    maxLevel,
+    args: filtered,
   };
 }
 
@@ -26,11 +61,13 @@ async function main(): Promise<void> {
 
   if (!command || command === "--help" || command === "-h") {
     console.log(`Usage:
-  npm run orchestrate -- troubleshoot "<symptom>" [--skip-llm]
+  npm run orchestrate -- troubleshoot "<symptom>" [--skip-llm] [--max-level 0|1|2|3]
   npm run orchestrate -- route --intent "<symptom>"
   npm run orchestrate -- agents
 
-Env: ORCHESTRATOR_SKIP_LLM=1 skips L2+ LLM calls (CI smoke).`);
+Env:
+  ORCHESTRATOR_SKIP_LLM=1  skip L2+ LLM (same as --skip-llm / maxLevel 1)
+  VIBE_HEAL_MAX_LEVEL=0|1|2|3  cap heal ladder (default 3 = full ladder)`);
     process.exit(0);
   }
 
@@ -56,7 +93,7 @@ Env: ORCHESTRATOR_SKIP_LLM=1 skips L2+ LLM calls (CI smoke).`);
   }
 
   if (command === "troubleshoot") {
-    const { skipLlm, args } = resolveSkipLlm(rest);
+    const { skipLlm, maxLevel, args } = resolveHealFlags(rest);
     const symptom = args.join(" ").trim();
     if (!symptom) {
       console.error("troubleshoot requires a symptom string");
@@ -74,6 +111,7 @@ Env: ORCHESTRATOR_SKIP_LLM=1 skips L2+ LLM calls (CI smoke).`);
       rootDir,
       actor: "cli",
       skipLlm,
+      maxLevel,
       trustCheck: () => {
         const script = path.join(rootDir, "scripts", "ai-trust-check.sh");
         try {

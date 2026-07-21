@@ -56,6 +56,7 @@ export function seedGateFeedbackCache(rootDir: string): void {
   ];
 
   for (const seed of seeds) {
+    if (readGateFeedbackEntry(rootDir, seed.gate_id)) continue;
     writeGateFeedbackEntry(rootDir, seed);
   }
 }

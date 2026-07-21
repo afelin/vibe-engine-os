@@ -60,8 +60,11 @@ import {
 } from "../context/bundle.js";
 import { capContext } from "../context/cap.js";
 import { recallLessons } from "../memory/recall.js";
+import {
+  seedGateFeedbackCache,
+  writeGateFeedbackEntry,
+} from "../memory/feedback-cache.js";
 import { appendLesson, writeEvoMemExport } from "../memory/lesson.js";
-import { seedGateFeedbackCache } from "../memory/feedback-cache.js";
 import {
   buildVitestSubgraphCommand,
   mapChangedFilesToVitest,
@@ -1201,6 +1204,16 @@ function recordLessonFromGateFailure(args: {
     traceSpanTs: new Date().toISOString(),
   });
   writeEvoMemExport(args.rootDir);
+
+  // Live L1 seed: grow feedback-cache from production gate failures (not only static seeds).
+  // Never writes mandates/gates/VOWS — cache only.
+  writeGateFeedbackEntry(args.rootDir, {
+    gate_id: failure.gate_id,
+    remediation_instruction: failure.remediation_instruction,
+    examples: [
+      `${failure.analysis.path}: ${failure.analysis.detail.slice(0, 240)}`,
+    ],
+  });
 }
 
 export { dedupeLines, capContext } from "../context/cap.js";

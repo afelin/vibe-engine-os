@@ -29,7 +29,7 @@ export function domainToAgentSlot(
 ): string {
   if (domain === "m365") return "m365-guide";
   if (domain === "research") return "hermes";
-  if (trustTier === "corporate" || domain === "code") return "corp-claude";
-  if (domain === "experiment") return "groq-experiment";
+  if (trustTier === "corporate") return "corp-claude";
+  if (domain === "code") return "groq-experiment";
   return "groq-experiment";
 }

@@ -7,7 +7,9 @@ Thin routing layer over the existing vibe-engine-os stack — no duplicate gate 
 ```bash
 npm run orchestrate -- troubleshoot "Vibe Promotion Gate failing on replay mismatch"
 npm run orchestrate -- troubleshoot "Vibe Promotion Gate failing" --skip-llm
+npm run orchestrate -- troubleshoot "…" --max-level 1
 ORCHESTRATOR_SKIP_LLM=1 npm run orchestrate -- troubleshoot "<symptom>"
+VIBE_HEAL_MAX_LEVEL=2 npm run orchestrate -- troubleshoot "<symptom>"
 npm run orchestrate:smoke
 npm run orchestrate -- route --intent "debug M365 Teams webhook"
 npm run orchestrate -- agents
@@ -33,11 +35,13 @@ Intent → resolve_gate (MCP) → feedback-cache → npm diagnostics
 | L3 | `m365-guide`, human `/approve`, cockpit escalate | varies |
 | L4 | Offline `autoresearch` + interventions — never hot path | 0 in prod |
 
+**Dial:** `VIBE_HEAL_MAX_LEVEL=0|1|2|3` (or `--max-level`) caps the ladder. Default **3** preserves the full ladder. `--skip-llm` / `ORCHESTRATOR_SKIP_LLM=1` / GitHub `/troubleshoot` cap at **1**. OS gate failures also call `writeGateFeedbackEntry` so L1 grows from production (not only static seeds).
+
 **Constitutional cage:** orchestrator never auto-modifies `mandates.json`, `gates.json`, `VOWS.md`, credentials, or workflow permissions.
 
 **CI smoke:** pass `--skip-llm` or set `ORCHESTRATOR_SKIP_LLM=1` to stop at L0–L1 without corp-claude / groq calls. `npm run orchestrate:smoke` runs a deterministic promotion-gate symptom.
 
-**Feedback cache:** `seedGateFeedbackCache` writes `.vibe/cache/gates/<gateId>.json`. Symptom signatures (e.g. "Vibe Promotion Gate") map to `promotion_gate` via `classifyFromSymptom`. Re-seed on activate or at troubleshoot start.
+**Feedback cache:** `seedGateFeedbackCache` writes `.vibe/cache/gates/<gateId>.json`. Live OS gate failures append/update the same cache via `writeGateFeedbackEntry`. Symptom signatures (e.g. "Vibe Promotion Gate") map to `promotion_gate` via `classifyFromSymptom`.
 
 ## External agent slots
 
@@ -45,16 +49,41 @@ Configure `.vibe/orchestrator/agents.json` (see `agents.json.example`). Slots **
 
 | Slot | Detect | Trust |
 |------|--------|-------|
-| `corp-claude` | `claude --version` | corporate |
-| `m365-guide` | always | human-in-loop |
+| `corp-claude` | `claude --version`; config via `CLAUDE_CONFIG_DIR` or `~/.claude/profiles/corp` | corporate |
+| `m365-guide` | always (BizChat prompt + link; no API) | human-in-loop |
 | `hermes` | `hermes --version` | experiment |
-| `groq-experiment` | `GROQ_API_KEY` + router | experiment |
+| `groq-experiment` | `resolveCodegenEndpoint()` / Groq via `router.ts` | experiment |
 
 Missing `corp-claude` / `hermes` CLIs or groq keys → slot unavailable; troubleshoot continues at L0–L1 or escalates to `m365-guide` / human.
 
-## MCP tools used (via `callReleaseGateTool`)
+### Corp Claude discovery
 
-`list_gates`, `resolve_gate`, `preview_gate`, `evaluate_mandate`, `constitution_schemas`, `validate_capsule`, `seal_bond`, `validate_bond`, `build_scoped_context`, `recall_lessons`
+```bash
+claude /status   # skip if CLI missing — slot stays unavailable
+export CLAUDE_CONFIG_DIR=~/.claude/profiles/corp   # or rely on auto-detect
+```
+
+Details and managed-settings checks: [ai-providers.md](./ai-providers.md#discover-corporate-claude).
+
+### Optional Hermes install
+
+```bash
+# Official agent: https://github.com/NousResearch/hermes-agent
+hermes --version
+# Copy .vibe/orchestrator/agents.json.example → agents.json and keep hermes.enabled
+```
+
+If the binary is absent, `invokeHermes` returns `{ ok: false, reason: "hermes_not_installed" }`.
+
+### Groq experiment (Phase 1)
+
+Uses existing [`src/llm/router.ts`](../src/llm/router.ts) (`resolveCodegenEndpoint`). Copy `.env.experiment.example` on personal repos only. OmniRoute is **not** required — see [ai-providers.md](./ai-providers.md#omniroute-optional-phase-2).
+
+## MCP tools on the heal hot path (via `callReleaseGateTool`)
+
+`resolve_gate`, `build_scoped_context`, `validate_capsule`
+
+Other MCP tools (`list_gates`, `preview_gate`, `evaluate_mandate`, `seal_bond`, `validate_bond`, `constitution_schemas`, `recall_lessons`) remain available for operators/agents; heal uses direct library calls for mandates/recall where noted.
 
 ## npm diagnostics (verify step)
 
@@ -66,7 +95,7 @@ Troubleshoot spans append to `.runs/<runId>/events.ndjson` via `appendOsEvent` �
 
 ## Metrics (Pearl)
 
-`runMetricsSchema` extended with `healLevel`, `agentSlot`, `deterministicFix`. Scored offline by `npm run autoresearch`.
+`runMetricsSchema` extended with `healLevel`, `agentSlot`, `deterministicFix`. `npm run scoreboard` prints %L0–L3. Offline `npm run autoresearch` scores heal routing from real `scoreboard.ndjson` plus gate fixtures. Heal wins append to `.runs/interventions.ndjson`.
 
 ## Compliance
 
@@ -77,7 +106,7 @@ Run `scripts/ai-trust-check.sh` before local LLM runs. See [ai-providers.md](./a
 | File | Role |
 |------|------|
 | `src/orchestrator/troubleshoot.ts` | DAG wiring |
-| `src/orchestrator/heal.ts` | L0–L3 dispatcher |
+| `src/orchestrator/heal.ts` | L0–L3 dispatcher + `VIBE_HEAL_MAX_LEVEL` |
 | `src/orchestrator/diagnose.ts` | Failure classification |
 | `src/orchestrator/registry.ts` | Agent slots |
 | `src/orchestrator/primitives/*` | corp-claude, m365, hermes only |
