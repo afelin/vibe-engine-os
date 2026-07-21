@@ -1,10 +1,12 @@
 import type { OSContext, OSEvent } from "../os/events.js";
 import type { RollbackInstructions } from "../run/rollback.js";
+import { readTaskBond } from "../bond/store.js";
 import { isApproverAllowed } from "../policy/approvers.js";
 import { parseOperatorCommand } from "./commands.js";
 import { mapCommandToEvent } from "./events.js";
 import { renderCockpitComment } from "./cockpit.js";
 import { detectShipWork } from "./ship-heuristic.js";
+import { intentToPacket, runTroubleshootDag } from "../orchestrator/troubleshoot.js";
 
 export type GitHubCommentRouteInput = {
   body: string;
@@ -36,9 +38,9 @@ export type GitHubCommentRouteResult =
       responseBody: null;
     };
 
-export function routeGitHubComment(
+export async function routeGitHubComment(
   input: GitHubCommentRouteInput,
-): GitHubCommentRouteResult {
+): Promise<GitHubCommentRouteResult> {
   const command = parseOperatorCommand(input.body);
   if (command.type === "unknown") {
     const ship = detectShipWork({
@@ -82,6 +84,36 @@ export function routeGitHubComment(
     return { handled: false, event: null, responseBody: null };
   }
 
+  if (command.type === "troubleshoot") {
+    const rootDir = input.rootDir ?? ".";
+    const bond = readTaskBond(rootDir, input.context.issueNumber);
+    const packet = intentToPacket(
+      {
+        action: "troubleshoot",
+        symptom: command.symptom,
+        title: command.symptom,
+        body: input.body,
+        boundFiles: bond?.boundFiles,
+        runId: undefined,
+      },
+      rootDir,
+    );
+
+    const outcome = await runTroubleshootDag(packet, {
+      rootDir,
+      actor: input.actor,
+      // Zero-token first on GitHub/CI; L2 requires explicit CLI + trust check
+      skipLlm: true,
+      issueNumber: input.context.issueNumber,
+    });
+
+    return {
+      handled: true,
+      event,
+      responseBody: outcome.cockpit,
+    };
+  }
+
   return {
     handled: true,
     event,
@@ -90,7 +122,10 @@ export function routeGitHubComment(
 }
 
 function responseBodyForCommand(
-  commandType: Exclude<ReturnType<typeof parseOperatorCommand>["type"], "unknown">,
+  commandType: Exclude<
+    ReturnType<typeof parseOperatorCommand>["type"],
+    "unknown" | "troubleshoot"
+  >,
   input: GitHubCommentRouteInput,
 ): string {
   const cockpitOptions = {
@@ -155,14 +190,6 @@ function responseBodyForCommand(
         "## Deploy requested",
         "",
         "The deploy request was recorded as a typed OS event. Deployment remains gated until the actor reaches a deployable state.",
-        "",
-        renderCockpitComment(input.state, input.context, input.rootDir, undefined, cockpitOptions),
-      ].join("\n");
-    case "troubleshoot":
-      return [
-        "## Troubleshoot requested",
-        "",
-        "Routing through the orchestrator DAG (resolve_gate → diagnostics → heal ladder).",
         "",
         renderCockpitComment(input.state, input.context, input.rootDir, undefined, cockpitOptions),
       ].join("\n");

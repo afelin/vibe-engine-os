@@ -49,7 +49,7 @@ async function runOS() {
 
   if (isOperatorCommentEvent()) {
     const command = parseOperatorCommand(ISSUE_BODY);
-    const route = routeGitHubComment({
+    const route = await routeGitHubComment({
       body: ISSUE_BODY,
       actor: GITHUB_ACTOR,
       commentId: GITHUB_COMMENT_ID,

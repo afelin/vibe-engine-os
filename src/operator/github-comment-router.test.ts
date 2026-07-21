@@ -1,6 +1,17 @@
-import { describe, expect, it } from "vitest";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
 import { routeGitHubComment } from "./github-comment-router.js";
 import type { OSContext } from "../os/events.js";
+
+const tempDirs: string[] = [];
+
+afterEach(() => {
+  for (const dir of tempDirs.splice(0)) {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
 
 const context: OSContext = {
   issueNumber: "9",
@@ -17,14 +28,14 @@ const context: OSContext = {
 };
 
 describe("GitHub comment router", () => {
-  it("routes /approve into an approval event and acknowledgement", () => {
+  it("routes /approve into an approval event and acknowledgement", async () => {
     const previous = process.env.GITHUB_ACTIONS;
     const previousApprovers = process.env.VIBE_APPROVERS;
     delete process.env.GITHUB_ACTIONS;
     delete process.env.VIBE_APPROVERS;
 
     try {
-      const result = routeGitHubComment({
+      const result = await routeGitHubComment({
         body: "/approve",
         actor: "afelin",
         commentId: "comment-1",
@@ -48,14 +59,14 @@ describe("GitHub comment router", () => {
     }
   });
 
-  it("denies /approve from actors outside the allowlist in CI", () => {
+  it("denies /approve from actors outside the allowlist in CI", async () => {
     const previous = process.env.GITHUB_ACTIONS;
     const previousApprovers = process.env.VIBE_APPROVERS;
     process.env.GITHUB_ACTIONS = "true";
     process.env.VIBE_APPROVERS = "trusted-operator";
 
     try {
-      const result = routeGitHubComment({
+      const result = await routeGitHubComment({
         body: "/approve",
         actor: "alice",
         commentId: "comment-deny",
@@ -76,8 +87,8 @@ describe("GitHub comment router", () => {
     }
   });
 
-  it("routes /status to a cockpit projection", () => {
-    const result = routeGitHubComment({
+  it("routes /status to a cockpit projection", async () => {
+    const result = await routeGitHubComment({
       body: "/status",
       actor: "alice",
       commentId: "comment-2",
@@ -91,8 +102,8 @@ describe("GitHub comment router", () => {
     expect(result.responseBody).toContain("learning");
   });
 
-  it("routes /rollback to read-only rollback instructions", () => {
-    const result = routeGitHubComment({
+  it("routes /rollback to read-only rollback instructions", async () => {
+    const result = await routeGitHubComment({
       body: "/rollback",
       actor: "alice",
       commentId: "comment-3",
@@ -110,8 +121,8 @@ describe("GitHub comment router", () => {
     expect(result.responseBody).not.toContain("git reset");
   });
 
-  it("ignores unknown comments", () => {
-    const result = routeGitHubComment({
+  it("ignores unknown comments", async () => {
+    const result = await routeGitHubComment({
       body: "looks good",
       actor: "alice",
       commentId: "comment-4",
@@ -127,8 +138,8 @@ describe("GitHub comment router", () => {
     });
   });
 
-  it("nudges Vibe Request when comment looks like ship work", () => {
-    const result = routeGitHubComment({
+  it("nudges Vibe Request when comment looks like ship work", async () => {
+    const result = await routeGitHubComment({
       body: "Please implement src/foo.ts and add tests in src/foo.test.ts",
       actor: "alice",
       commentId: "comment-ship",
@@ -142,5 +153,29 @@ describe("GitHub comment router", () => {
     expect(result.event).toBeNull();
     expect(result.responseBody).toContain("This looks like ship work");
     expect(result.responseBody).toContain("vibe-request.yml");
+  });
+
+  it("wires /troubleshoot through runTroubleshootDag cockpit", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "vibe-gh-ts-"));
+    tempDirs.push(root);
+    fs.mkdirSync(path.join(root, ".runs"), { recursive: true });
+
+    const result = await routeGitHubComment({
+      body: "/troubleshoot Vibe Promotion Gate failing",
+      actor: "alice",
+      commentId: "comment-ts",
+      state: "learning",
+      rootDir: root,
+      context,
+      readRollback: () => ({ found: false, body: "missing" }),
+    });
+
+    expect(result.handled).toBe(true);
+    expect(result.event?.type).toBe("operator.troubleshoot_requested");
+    expect(result.responseBody).toContain("## Troubleshoot result");
+    expect(result.responseBody).not.toContain(
+      "Routing through the orchestrator DAG",
+    );
+    expect(result.responseBody).toMatch(/guidance_delivered|Healed:\s*yes/i);
   });
 });

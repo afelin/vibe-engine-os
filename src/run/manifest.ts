@@ -16,6 +16,9 @@ export type RunMetrics = {
   contextChars?: number;
   truncated?: boolean;
   hallucinationBlocked?: boolean;
+  healLevel?: number;
+  agentSlot?: string;
+  deterministicFix?: boolean;
 };
 
 export type RunManifest = {
