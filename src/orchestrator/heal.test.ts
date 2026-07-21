@@ -188,4 +188,54 @@ describe("orchestrator troubleshoot routing", () => {
     expect(resolveHealMaxLevel({ skipLlm: true })).toBe(1);
     expect(resolveHealMaxLevel({ maxLevel: 2, skipLlm: true })).toBe(2);
   });
+
+  it("composes VIBE_DEPTH with maxLevel (more restrictive wins)", () => {
+    const prevDepth = process.env.VIBE_DEPTH;
+    const prevHeal = process.env.VIBE_HEAL_MAX_LEVEL;
+    try {
+      process.env.VIBE_DEPTH = "1";
+      delete process.env.VIBE_HEAL_MAX_LEVEL;
+      expect(resolveHealMaxLevel({})).toBe(1);
+      expect(resolveHealMaxLevel({ maxLevel: 3 })).toBe(1);
+      expect(resolveHealMaxLevel({ maxLevel: 0 })).toBe(0);
+
+      process.env.VIBE_DEPTH = "3";
+      process.env.VIBE_HEAL_MAX_LEVEL = "2";
+      expect(resolveHealMaxLevel({})).toBe(2);
+    } finally {
+      if (prevDepth === undefined) delete process.env.VIBE_DEPTH;
+      else process.env.VIBE_DEPTH = prevDepth;
+      if (prevHeal === undefined) delete process.env.VIBE_HEAL_MAX_LEVEL;
+      else process.env.VIBE_HEAL_MAX_LEVEL = prevHeal;
+    }
+  });
+
+  it("runHealCriticPass fails closed without retry spiral", async () => {
+    const { runHealCriticPass } = await import("./heal.js");
+    const rejected = await runHealCriticPass("delete VOWS.md", {
+      criticPass: async () => false,
+    });
+    expect(rejected.pass).toBe(false);
+    const accepted = await runHealCriticPass("rerun bond:preflight", {
+      criticPass: async () => true,
+    });
+    expect(accepted.pass).toBe(true);
+  });
+
+  it("calls validate_bond remediation on bond-class symptom", async () => {
+    const result = await diagnoseAndHeal(
+      {
+        symptom: "bond: bound file path rejected by mandates",
+        title: "bond: bound file path rejected by mandates",
+        body: "### Intent\nFix bond\n### Outcome\n- ok\n### Files\n",
+        trustTier: "experiment",
+        pathPrefixes: ["__no_lessons__/"],
+        rootDir: ".",
+      },
+      { skipLlm: true, skipDiagnostics: true },
+    );
+    expect(result.agentSlot).toBe("validate_bond");
+    expect(result.healLevel).toBe(0);
+    expect(result.remediation).toBeTruthy();
+  });
 });

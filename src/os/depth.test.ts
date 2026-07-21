@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   depthCapabilities,
   getVibeDepth,
+  healMaxLevelForDepth,
   renderDepthStatus,
   resolveDepthFromLabels,
 } from "./depth.js";
@@ -59,5 +60,12 @@ describe("vibe depth dial", () => {
   it("renders depth status for cockpit", () => {
     expect(renderDepthStatus(3)).toContain("Vibe Depth");
     expect(renderDepthStatus(3)).toContain("tests + implementation");
+  });
+
+  it("caps heal at L1 for depth 0–1 and allows L2+ at depth ≥ 2", () => {
+    expect(healMaxLevelForDepth(0)).toBe(1);
+    expect(healMaxLevelForDepth(1)).toBe(1);
+    expect(healMaxLevelForDepth(2)).toBe(3);
+    expect(healMaxLevelForDepth(5)).toBe(3);
   });
 });
