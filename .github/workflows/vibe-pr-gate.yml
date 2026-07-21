@@ -45,11 +45,7 @@ jobs:
             echo "\`$HINT\`"
           } >> "$GITHUB_STEP_SUMMARY"
           if command -v gh >/dev/null 2>&1 && [ -n "${VIBE_PR_NUMBER:-}" ]; then
-            gh pr comment "$VIBE_PR_NUMBER" --body "Promotion gate \`npm check\` failed. Local heal:
-
-\`\`\`bash
-$HINT
-\`\`\`" || true
+            gh pr comment "$VIBE_PR_NUMBER" --body "Promotion gate \`npm check\` failed. Local heal: \`$HINT\`" || true
           fi
 
       - name: Post Vibe Promotion Gate on PR head
