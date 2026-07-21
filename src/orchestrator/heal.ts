@@ -14,12 +14,37 @@ import { classifyFromSymptom } from "./diagnose.js";
 import { runTroubleshootDiagnostics } from "./npm-diagnostics.js";
 import { routeExternalAgent, type AgentSlotId } from "./registry.js";
 
+/** Caps the heal ladder at L0–L3. Default 3 preserves full ladder. */
+export type HealMaxLevel = 0 | 1 | 2 | 3;
+
 export type HealOptions = {
   rootDir?: string;
+  /** @deprecated Prefer maxLevel / VIBE_HEAL_MAX_LEVEL. When true, caps at L1. */
   skipLlm?: boolean;
+  /** Hard cap on heal ladder (0|1|2|3). Overrides skipLlm when set. */
+  maxLevel?: HealMaxLevel;
   skipDiagnostics?: boolean;
   trustCheck?: () => void;
 };
+
+export function parseHealMaxLevel(raw: string | undefined): HealMaxLevel | undefined {
+  if (raw === undefined || raw === "") return undefined;
+  const n = Number(raw);
+  if (n === 0 || n === 1 || n === 2 || n === 3) return n;
+  return undefined;
+}
+
+/**
+ * Resolve heal dial: explicit option > VIBE_HEAL_MAX_LEVEL > skipLlm→1 > 3.
+ * Default 3 preserves current full-ladder CLI behavior.
+ */
+export function resolveHealMaxLevel(options: HealOptions = {}): HealMaxLevel {
+  if (options.maxLevel !== undefined) return options.maxLevel;
+  const fromEnv = parseHealMaxLevel(process.env.VIBE_HEAL_MAX_LEVEL);
+  if (fromEnv !== undefined) return fromEnv;
+  if (options.skipLlm) return 1;
+  return 3;
+}
 
 function resolveRootDir(packet: TroubleshootPacket): string {
   return packet.rootDir ?? ".";
@@ -117,6 +142,7 @@ export async function diagnoseAndHeal(
   options: HealOptions = {},
 ): Promise<HealResult> {
   const rootDir = options.rootDir ?? resolveRootDir(packetInput);
+  const maxLevel = resolveHealMaxLevel(options);
   const packet: TroubleshootPacket = {
     ...packetInput,
     rootDir,
@@ -156,20 +182,22 @@ export async function diagnoseAndHeal(
   }
 
   // L1: cached remediation (guidance delivered — not a hard failure)
-  const symptomGateId = classifyFromSymptom(packet.symptom).gateId;
-  const gateId = packet.gateId ?? gate.gateId ?? symptomGateId;
-  if (gateId) {
-    const cached = readGateFeedbackEntry(rootDir, gateId);
-    if (cached) {
-      return parseHealResult({
-        healed: true,
-        level: 1,
-        healLevel: 1,
-        deterministicFix: true,
-        agentSlot: "feedback-cache",
-        remediation: cached.remediation_instruction,
-        reason: "guidance_delivered",
-      });
+  if (maxLevel >= 1) {
+    const symptomGateId = classifyFromSymptom(packet.symptom).gateId;
+    const gateId = packet.gateId ?? gate.gateId ?? symptomGateId;
+    if (gateId) {
+      const cached = readGateFeedbackEntry(rootDir, gateId);
+      if (cached) {
+        return parseHealResult({
+          healed: true,
+          level: 1,
+          healLevel: 1,
+          deterministicFix: true,
+          agentSlot: "feedback-cache",
+          remediation: cached.remediation_instruction,
+          reason: "guidance_delivered",
+        });
+      }
     }
   }
 
@@ -183,7 +211,7 @@ export async function diagnoseAndHeal(
     if (failedDiag?.classification) {
       const symptomClass = classifyFromSymptom(packet.symptom);
       const failureClass = failedDiag.classification.failureClass;
-      if (failureClass !== "unknown" && options.skipLlm) {
+      if (failureClass !== "unknown" && maxLevel < 2) {
         return parseHealResult({
           healed: false,
           level: 0,
@@ -216,13 +244,13 @@ export async function diagnoseAndHeal(
     });
   }
 
-  if (options.skipLlm) {
+  if (maxLevel < 2) {
     return parseHealResult({
       healed: false,
       level: 3,
       healLevel: 3,
       agentSlot: "human",
-      reason: "llm_skipped",
+      reason: maxLevel < 1 ? "max_level_capped" : "llm_skipped",
     });
   }
 
@@ -270,7 +298,7 @@ export async function diagnoseAndHeal(
 
   const agent = agentResult as import("./types.js").AgentResult;
 
-  if (agent.ok && agent.recommendation) {
+  if (agent.ok && agent.recommendation && maxLevel >= 2) {
     return parseHealResult({
       healed: false,
       level: 2,

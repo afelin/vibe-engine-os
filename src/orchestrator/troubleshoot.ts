@@ -7,14 +7,17 @@ import {
   parseOrchestratorIntent,
   parseTroubleshootPacket,
 } from "../constitution/parse.js";
-import { renderCockpitComment } from "../operator/cockpit.js";
 import { appendOsEvent } from "../os/replay.js";
-import type { OSContext } from "../os/events.js";
 import { callReleaseGateTool } from "../release-gate/mcp-handlers.js";
+import { appendIntervention } from "../research/interventions.js";
 import { appendScoreboardEntry } from "../run/manifest.js";
 import { classifyProblem, domainToAgentSlot } from "./classify.js";
 import { classifyFromSymptom } from "./diagnose.js";
-import { diagnoseAndHeal } from "./heal.js";
+import {
+  diagnoseAndHeal,
+  type HealMaxLevel,
+  type HealOptions,
+} from "./heal.js";
 import { listDetectedAgents } from "./registry.js";
 
 export type TroubleshootOptions = {
@@ -22,6 +25,7 @@ export type TroubleshootOptions = {
   runId?: string;
   actor?: string;
   skipLlm?: boolean;
+  maxLevel?: HealMaxLevel;
   trustCheck?: () => void;
   issueNumber?: string;
 };
@@ -66,20 +70,6 @@ export function intentToPacket(
   });
 }
 
-function buildMinimalContext(symptom: string): OSContext {
-  return {
-    issueNumber: "0",
-    issueTitle: "Troubleshoot",
-    issueBody: symptom,
-    attempts: 0,
-    maxAttempts: 1,
-    findings: [],
-    generatedFiles: [],
-    verificationResults: [],
-    failures: [],
-  };
-}
-
 /** HPURL only when validate_capsule succeeds for a real sealed run. */
 export function hpurlFromValidatedCapsule(
   rootDir: string,
@@ -113,17 +103,35 @@ export function hpurlFromValidatedCapsule(
   }
 }
 
+function nextActionForHeal(heal: HealResult): string {
+  if (heal.healed) {
+    return heal.reason === "guidance_delivered"
+      ? "Apply the remediation above, then `/retry` or re-run the failing gate."
+      : "Heal applied. Re-run verification or continue the ship path.";
+  }
+  if (heal.reason === "patch_requires_approval") {
+    return "Protected path — comment `/approve` on this issue to allow the write, then `/retry`.";
+  }
+  if ((heal.healLevel ?? heal.level) >= 3) {
+    return "Escalated to human. Fix manually or comment `/approve` if a protected write is needed, then `/retry`.";
+  }
+  if (heal.remediation) {
+    return "Follow the remediation above, then `/retry`.";
+  }
+  return "Comment `/status` for a scoreboard snapshot or `/retry` after a fix.";
+}
+
 function renderTroubleshootCockpit(
   heal: HealResult,
   packet: TroubleshootPacket,
-  rootDir: string,
   hpurl?: string,
 ): string {
+  const level = heal.healLevel ?? heal.level;
   const lines = [
     "## Troubleshoot result",
     "",
     `**Symptom:** ${packet.symptom}`,
-    `**Heal level:** L${heal.healLevel ?? heal.level}`,
+    `**Heal level:** L${level}`,
     `**Agent slot:** ${heal.agentSlot ?? "none"}`,
     `**Deterministic:** ${heal.deterministicFix ? "yes" : "no"}`,
     `**Healed:** ${heal.healed ? "yes" : "no"}`,
@@ -138,20 +146,55 @@ function renderTroubleshootCockpit(
   if (heal.hints?.length) {
     lines.push("", "### Prior lessons", "", ...heal.hints.map((h: string) => `- ${h}`));
   }
+  if (heal.reason === "patch_requires_approval") {
+    lines.push(
+      "",
+      "### Approval required",
+      "",
+      "This patch touches a protected path. Comment **`/approve`** to unblock, then **`/retry`**.",
+    );
+  }
   if (hpurl) {
     lines.push("", `[View proof](${hpurl})`);
   }
 
+  lines.push("", "### Next step", nextActionForHeal(heal));
   lines.push(
     "",
-    renderCockpitComment(
-      heal.healed ? "completed" : "failed",
-      buildMinimalContext(packet.symptom),
-      rootDir,
-    ),
+    "`/status` · `/approve` · `/retry` · `/troubleshoot <symptom>`",
   );
 
   return lines.join("\n");
+}
+
+/** Record Pearl intervention on L0 patch or L1 guidance win — never constitution paths. */
+function recordHealIntervention(
+  rootDir: string,
+  heal: HealResult,
+  packet: TroubleshootPacket,
+): void {
+  if (!heal.healed) return;
+  const level = heal.healLevel ?? heal.level;
+
+  if (level === 0 && heal.patch && heal.reason === "patched") {
+    const files = Object.keys(heal.patch).filter(
+      (f) =>
+        !f.includes("mandates.json") &&
+        !f.includes("gates.json") &&
+        !f.endsWith("VOWS.md"),
+    );
+    appendIntervention(rootDir, files);
+    return;
+  }
+
+  if (level === 1 && heal.reason === "guidance_delivered") {
+    const gateId = packet.gateId ?? classifyFromSymptom(packet.symptom).gateId;
+    if (gateId) {
+      appendIntervention(rootDir, [
+        `.vibe/cache/gates/${gateId.replace(/[^a-zA-Z0-9_-]/g, "_")}.json`,
+      ]);
+    }
+  }
 }
 
 /**
@@ -176,15 +219,17 @@ export async function runTroubleshootDag(
     domain: packet.domain,
   });
 
-  const heal = await diagnoseAndHeal(packet, {
+  const healOpts: HealOptions = {
     rootDir,
     skipLlm: options.skipLlm,
+    maxLevel: options.maxLevel,
     trustCheck: options.trustCheck,
-  });
+  };
+  const heal = await diagnoseAndHeal(packet, healOpts);
 
   const capsuleRunId = packet.runId ?? options.runId;
   const hpurl = hpurlFromValidatedCapsule(rootDir, capsuleRunId);
-  const cockpit = renderTroubleshootCockpit(heal, packet, rootDir, hpurl);
+  const cockpit = renderTroubleshootCockpit(heal, packet, hpurl);
   const healLevel = heal.healLevel ?? heal.level;
 
   appendOsEvent(rootDir, ledgerRunId, {
@@ -215,6 +260,8 @@ export async function runTroubleshootDag(
       deterministicFix: heal.deterministicFix ?? false,
     },
   });
+
+  recordHealIntervention(rootDir, heal, packet);
 
   return { packet, heal, cockpit, hpurl, runId: ledgerRunId };
 }

@@ -6,12 +6,12 @@ DATE="$(date -u +%Y-%m-%d)"
 OUT_DIR="$ROOT/.runs/research"
 OUT_FILE="$OUT_DIR/$DATE.json"
 GATES_FILE="$ROOT/src/release-gate/gates.json"
+SCOREBOARD="$ROOT/.runs/scoreboard.ndjson"
 
 mkdir -p "$OUT_DIR"
 
 node --input-type=module -e "
 import fs from 'node:fs';
-import path from 'node:path';
 
 const root = '$ROOT';
 const gates = JSON.parse(fs.readFileSync('$GATES_FILE', 'utf8')).gates ?? [];
@@ -65,6 +65,57 @@ const results = fixtures.map((fixture) => {
   };
 });
 
+// Pearl: score heal routing from real scoreboard.ndjson (not only fixtures)
+const scoreboardPath = '$SCOREBOARD';
+let scoreboardHeal = null;
+if (fs.existsSync(scoreboardPath)) {
+  const rows = fs
+    .readFileSync(scoreboardPath, 'utf8')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(-50)
+    .map((line) => JSON.parse(line))
+    .filter((entry) => entry.metrics?.healLevel !== undefined);
+
+  const counts = { l0: 0, l1: 0, l2: 0, l3: 0 };
+  const slots = {};
+  let detFix = 0;
+  let tokenSum = 0;
+  for (const entry of rows) {
+    const level = entry.metrics.healLevel;
+    if (level === 0) counts.l0++;
+    else if (level === 1) counts.l1++;
+    else if (level === 2) counts.l2++;
+    else counts.l3++;
+    const slot = entry.metrics.agentSlot ?? 'unknown';
+    slots[slot] = (slots[slot] ?? 0) + 1;
+    if (entry.metrics.deterministicFix) detFix++;
+    tokenSum += entry.metrics.tokensEstimate ?? 0;
+  }
+  const n = rows.length || 1;
+  scoreboardHeal = {
+    source: 'scoreboard.ndjson',
+    n: rows.length,
+    pctL0: rows.length ? Math.round((counts.l0 / n) * 100) : 0,
+    pctL1: rows.length ? Math.round((counts.l1 / n) * 100) : 0,
+    pctL2: rows.length ? Math.round((counts.l2 / n) * 100) : 0,
+    pctL3: rows.length ? Math.round((counts.l3 / n) * 100) : 0,
+    counts,
+    agentSlots: slots,
+    deterministicFixRate: rows.length ? detFix / rows.length : 0,
+    avgTokensEstimate: rows.length ? tokenSum / rows.length : 0,
+    recent: rows.slice(-10).map((entry) => ({
+      runId: entry.runId,
+      healLevel: entry.metrics.healLevel,
+      agentSlot: entry.metrics.agentSlot,
+      deterministicFix: entry.metrics.deterministicFix ?? false,
+      tokensEstimate: entry.metrics.tokensEstimate ?? 0,
+      success: entry.success,
+    })),
+  };
+}
+
 const report = {
   date: '$DATE',
   mode: hasApi ? 'live' : 'dry-run',
@@ -77,9 +128,29 @@ const report = {
     ]),
   ),
   results,
+  scoreboardHeal,
 };
 
 fs.writeFileSync('$OUT_FILE', JSON.stringify(report, null, 2) + '\n');
 console.log('Wrote autoresearch report to $OUT_FILE');
-console.log(JSON.stringify({ mode: report.mode, fixtures: report.fixtures }, null, 2));
+console.log(
+  JSON.stringify(
+    {
+      mode: report.mode,
+      fixtures: report.fixtures,
+      scoreboardHeal: scoreboardHeal
+        ? {
+            n: scoreboardHeal.n,
+            pctL0: scoreboardHeal.pctL0,
+            pctL1: scoreboardHeal.pctL1,
+            pctL2: scoreboardHeal.pctL2,
+            pctL3: scoreboardHeal.pctL3,
+            deterministicFixRate: scoreboardHeal.deterministicFixRate,
+          }
+        : null,
+    },
+    null,
+    2,
+  ),
+);
 "

@@ -3,7 +3,11 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { seedGateFeedbackCache } from "../memory/feedback-cache.js";
-import { applyGatePatchUnderBond, diagnoseAndHeal } from "./heal.js";
+import {
+  applyGatePatchUnderBond,
+  diagnoseAndHeal,
+  resolveHealMaxLevel,
+} from "./heal.js";
 import {
   hpurlFromValidatedCapsule,
   intentToPacket,
@@ -148,11 +152,40 @@ describe("orchestrator troubleshoot routing", () => {
 
     expect(outcome.hpurl).toBeUndefined();
     expect(outcome.heal.reason).toBe("guidance_delivered");
+    expect(outcome.cockpit).toContain("### Next step");
+    expect(outcome.cockpit).not.toContain("## Vibe Engine OS");
     const scoreboard = fs.readFileSync(
       path.join(root, ".runs", "scoreboard.ndjson"),
       "utf8",
     );
     expect(scoreboard).toContain("healLevel");
     expect(scoreboard).toContain("feedback-cache");
+
+    const interventions = fs.readFileSync(
+      path.join(root, ".runs", "interventions.ndjson"),
+      "utf8",
+    );
+    expect(interventions).toContain("promotion_gate");
+  });
+
+  it("respects maxLevel 0 by skipping L1 cache hits", async () => {
+    seedGateFeedbackCache(".");
+    const result = await diagnoseAndHeal(
+      {
+        symptom: "Vibe Promotion Gate failing",
+        title: "Vibe Promotion Gate failing",
+        trustTier: "experiment",
+        rootDir: ".",
+      },
+      { maxLevel: 0, skipDiagnostics: true },
+    );
+    expect(result.reason).not.toBe("guidance_delivered");
+    expect(result.healLevel === 0 || result.healLevel === 3).toBe(true);
+  });
+
+  it("resolveHealMaxLevel maps skipLlm to 1 and defaults to 3", () => {
+    expect(resolveHealMaxLevel({})).toBe(3);
+    expect(resolveHealMaxLevel({ skipLlm: true })).toBe(1);
+    expect(resolveHealMaxLevel({ maxLevel: 2, skipLlm: true })).toBe(2);
   });
 });

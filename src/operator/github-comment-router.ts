@@ -104,6 +104,7 @@ export async function routeGitHubComment(
       actor: input.actor,
       // Zero-token first on GitHub/CI; L2 requires explicit CLI + trust check
       skipLlm: true,
+      maxLevel: 1,
       issueNumber: input.context.issueNumber,
     });
 
