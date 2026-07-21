@@ -98,7 +98,7 @@ After readiness is green locally:
 
 ```bash
 npm run launch:ship -- --dry-run   # readiness + push check only
-VIBE_LAUNCH_TROUBLESHOOT=1 npm run launch:ship  # optional orchestrator preflight (fail-open)
+VIBE_LAUNCH_TROUBLESHOOT=0 npm run launch:ship  # skip fail-open troubleshoot after readiness fail
 npm run launch:ship                # readiness → launch-proof workflow → branch protection
 ```
 

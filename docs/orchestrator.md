@@ -107,6 +107,18 @@ Troubleshoot spans append to `.runs/<runId>/events.ndjson` via `appendOsEvent` �
 
 `runMetricsSchema` extended with `healLevel`, `agentSlot`, `deterministicFix`. `npm run scoreboard` prints %L0–L3. Offline `npm run autoresearch` scores heal routing from real `scoreboard.ndjson` plus gate fixtures. Heal wins append to `.runs/interventions.ndjson`.
 
+## Measure before P3
+
+Do **not** start edge/OmniRoute (P3) until local dogfood clears these bars for **2 weeks**:
+
+| Target | Bar |
+|--------|-----|
+| L0/L1 heals | ≥70% of scoreboard rows with `healLevel` |
+| `firstPassGreen` | ≥60% |
+| Autoresearch | run `npm run autoresearch` weekly; review `.runs/interventions.ndjson` |
+
+Baseline: `npm run scoreboard` + one `npm run orchestrate:smoke` after each Pearl merge. Plateau or miss → stay on P2 flywheel (scar-post, classify table, CI/launch troubleshoot hints).
+
 ## Compliance
 
 Run `scripts/ai-trust-check.sh` before local LLM runs. See [ai-providers.md](./ai-providers.md).

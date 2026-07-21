@@ -384,6 +384,14 @@ export async function diagnoseAndHeal(
       }
 
       if (failureClass !== "unknown" && maxLevel < 2) {
+        const cachedRemediation = symptomClass.gateId
+          ? readGateFeedbackEntry(rootDir, symptomClass.gateId)
+              ?.remediation_instruction
+          : undefined;
+        const remediation =
+          [failedDiag.remediation, cachedRemediation]
+            .filter(Boolean)
+            .join("\n") || undefined;
         return parseHealResult({
           healed: false,
           level: 0,
@@ -391,10 +399,7 @@ export async function diagnoseAndHeal(
           deterministicFix: true,
           agentSlot: failedDiag.script,
           reason: failedDiag.classification.summary,
-          remediation: symptomClass.gateId
-            ? readGateFeedbackEntry(rootDir, symptomClass.gateId)
-                ?.remediation_instruction
-            : undefined,
+          remediation,
         });
       }
     }

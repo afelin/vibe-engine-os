@@ -3,6 +3,7 @@ import {
   classifyPreflightOutput,
   classifyReadinessOutput,
   classifyReplayOutput,
+  extractGauntletCaseId,
   type DiagnosticClassification,
 } from "./diagnose.js";
 
@@ -12,6 +13,8 @@ export type NpmDiagnosticResult = {
   stdout: string;
   stderr: string;
   classification?: DiagnosticClassification;
+  /** Operator-facing remediation when a gauntlet case is cited. */
+  remediation?: string;
 };
 
 function runNpmScript(
@@ -42,6 +45,27 @@ function runNpmScript(
   }
 }
 
+function withGauntletCite(
+  classification: DiagnosticClassification,
+  output: string,
+): { classification: DiagnosticClassification; remediation?: string } {
+  const caseId =
+    classification.gauntletCaseId ?? extractGauntletCaseId(output);
+  if (!caseId) return { classification };
+
+  const cited: DiagnosticClassification = {
+    ...classification,
+    gauntletCaseId: caseId,
+    summary: classification.gauntletCaseId
+      ? classification.summary
+      : `${classification.summary} (gauntlet case: ${caseId})`,
+  };
+  return {
+    classification: cited,
+    remediation: `Gauntlet case \`${caseId}\` matched preflight output — fix that case in evals/taskbond-gauntlet.jsonl or the bond under test, then re-run \`npm run eval:bond\`.`,
+  };
+}
+
 export function runBondPreflight(
   rootDir: string,
   issueNumber = "",
@@ -51,10 +75,14 @@ export function runBondPreflight(
   if (issueNumber) args.push(issueNumber);
   if (runId) args.push(runId);
   const result = runNpmScript(rootDir, "bond:preflight", args);
+  const output = `${result.stdout}\n${result.stderr}`;
+  const base = classifyPreflightOutput(output);
+  const { classification, remediation } = withGauntletCite(base, output);
   return {
     script: "bond:preflight",
     ...result,
-    classification: classifyPreflightOutput(`${result.stdout}\n${result.stderr}`),
+    classification,
+    remediation,
   };
 }
 
@@ -70,10 +98,14 @@ export function runReplayCheck(rootDir: string, runId: string): NpmDiagnosticRes
 
 export function runLaunchReadiness(rootDir: string): NpmDiagnosticResult {
   const result = runNpmScript(rootDir, "launch:readiness", [rootDir]);
+  const output = `${result.stdout}\n${result.stderr}`;
+  const base = classifyReadinessOutput(output);
+  const { classification, remediation } = withGauntletCite(base, output);
   return {
     script: "launch:readiness",
     ...result,
-    classification: classifyReadinessOutput(`${result.stdout}\n${result.stderr}`),
+    classification,
+    remediation,
   };
 }
 
