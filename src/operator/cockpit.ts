@@ -260,6 +260,12 @@ export function renderScoreboardSummary(
       `- **Last healLevel:** L${healMix.lastHealLevel}`,
       `- **Avg tokensEstimate (heal rows):** ${healMix.avgTokensEstimate.toFixed(0)}`,
     );
+    if (healMix.lastHealRunId) {
+      const slot = healMix.lastAgentSlot ?? "none";
+      lines.push(
+        `- **Last troubleshoot:** \`${healMix.lastHealRunId}\` · L${healMix.lastHealLevel} · ${slot}`,
+      );
+    }
   }
 
   if (manifest?.metrics?.firstPassGreen !== undefined) {

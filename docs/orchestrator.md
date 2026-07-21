@@ -10,6 +10,7 @@ npm run orchestrate -- troubleshoot "Vibe Promotion Gate failing" --skip-llm
 npm run orchestrate -- troubleshoot "…" --max-level 1
 ORCHESTRATOR_SKIP_LLM=1 npm run orchestrate -- troubleshoot "<symptom>"
 VIBE_HEAL_MAX_LEVEL=2 npm run orchestrate -- troubleshoot "<symptom>"
+VIBE_DEPTH=1 npm run orchestrate -- troubleshoot "<symptom>"   # caps heal at L1
 npm run orchestrate:smoke
 npm run orchestrate -- route --intent "debug M365 Teams webhook"
 npm run orchestrate -- agents
@@ -21,7 +22,8 @@ GitHub: comment `/troubleshoot <symptom>` on an issue (routes via `github-commen
 
 ```text
 Intent → resolve_gate (MCP) → feedback-cache → npm diagnostics
-      → build_scoped_context → external agent slot → heal result
+      → validate_bond (bond-class) → recallLessons
+      → build_scoped_context → external agent slot → critic → heal result
       → events.ndjson + cockpit + HPURL receipt
 ```
 
@@ -29,13 +31,17 @@ Intent → resolve_gate (MCP) → feedback-cache → npm diagnostics
 
 | Level | Mechanism | Tokens |
 |-------|-----------|--------|
-| L0 | `resolve_gate`, `readGateFeedbackEntry`, `recallLessons`, `bond:preflight` / `replay` / `launch:readiness` | 0 |
+| L0 | `resolve_gate`, `readGateFeedbackEntry`, `validate_bond` (bond-class), `recallLessons`, `bond:preflight` / `replay` / `launch:readiness` | 0 |
 | L1 | Feedback-cache hit → known remediation | 0 |
-| L2 | One bounded LLM pass (`corp-claude` or `groq-experiment`) | 1 |
+| L2 | One bounded LLM pass (`corp-claude` or `groq-experiment`) + one `resolveCriticEndpoint` pass | 1–2 |
 | L3 | `m365-guide`, human `/approve`, cockpit escalate | varies |
 | L4 | Offline `autoresearch` + interventions — never hot path | 0 in prod |
 
-**Dial:** `VIBE_HEAL_MAX_LEVEL=0|1|2|3` (or `--max-level`) caps the ladder. Default **3** preserves the full ladder. `--skip-llm` / `ORCHESTRATOR_SKIP_LLM=1` / GitHub `/troubleshoot` cap at **1**. OS gate failures also call `writeGateFeedbackEntry` so L1 grows from production (not only static seeds).
+**Heal dial:** `VIBE_HEAL_MAX_LEVEL=0|1|2|3` (or `--max-level`) caps the ladder. Default **3** preserves the full ladder. `--skip-llm` / `ORCHESTRATOR_SKIP_LLM=1` / GitHub `/troubleshoot` cap at **1**. OS gate failures also call `writeGateFeedbackEntry` so L1 grows from production (not only static seeds).
+
+**Depth dial:** `VIBE_DEPTH` (or labels `vibe:plan-only` / `vibe:safe` / `vibe:ship`) also caps heal — take the **more restrictive** of depth vs `VIBE_HEAL_MAX_LEVEL`. Depth **0–1** → max heal **L1** (zero-token / plan-only). **L2** requires depth **≥ 2**. Local/CI can raise depth deliberately; GitHub `/troubleshoot` stays at maxLevel 1 regardless.
+
+**L2 critic:** After the agent recommendation, heal runs **one** critic pass via `resolveCriticEndpoint`. Fail → escalate **L3** immediately (no retry spiral). Critic provider `off` skips the call and accepts the recommendation.
 
 **Constitutional cage:** orchestrator never auto-modifies `mandates.json`, `gates.json`, `VOWS.md`, credentials, or workflow permissions.
 
@@ -81,9 +87,13 @@ Uses existing [`src/llm/router.ts`](../src/llm/router.ts) (`resolveCodegenEndpoi
 
 ## MCP tools on the heal hot path (via `callReleaseGateTool`)
 
-`resolve_gate`, `build_scoped_context`, `validate_capsule`
+`resolve_gate`, `build_scoped_context`, `validate_capsule`, `validate_bond` (once, when diagnose classifies bond-class)
 
-Other MCP tools (`list_gates`, `preview_gate`, `evaluate_mandate`, `seal_bond`, `validate_bond`, `constitution_schemas`, `recall_lessons`) remain available for operators/agents; heal uses direct library calls for mandates/recall where noted.
+Other MCP tools (`list_gates`, `preview_gate`, `evaluate_mandate`, `seal_bond`, `constitution_schemas`, `recall_lessons`) remain available for operators/agents; heal uses direct library calls for mandates/recall where noted.
+
+## Failed CI check → packet
+
+`packetFromFailedCheck` / `packetFieldsFromFailedCheck` in `diagnose.ts` map check names (**Vibe Promotion Gate**, Assisted-by attribution, `npm check`) into `TroubleshootPacket` fields for `npm run orchestrate -- troubleshoot`.
 
 ## npm diagnostics (verify step)
 
@@ -106,7 +116,8 @@ Run `scripts/ai-trust-check.sh` before local LLM runs. See [ai-providers.md](./a
 | File | Role |
 |------|------|
 | `src/orchestrator/troubleshoot.ts` | DAG wiring |
-| `src/orchestrator/heal.ts` | L0–L3 dispatcher + `VIBE_HEAL_MAX_LEVEL` |
-| `src/orchestrator/diagnose.ts` | Failure classification |
+| `src/orchestrator/heal.ts` | L0–L3 dispatcher + depth/`VIBE_HEAL_MAX_LEVEL` + L2 critic |
+| `src/orchestrator/diagnose.ts` | Failure classification + CI check → packet helper |
+| `src/os/depth.ts` | `VIBE_DEPTH` + `healMaxLevelForDepth` |
 | `src/orchestrator/registry.ts` | Agent slots |
 | `src/orchestrator/primitives/*` | corp-claude, m365, hermes only |

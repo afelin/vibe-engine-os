@@ -65,3 +65,12 @@ export function renderDepthStatus(depth: VibeDepth = getVibeDepth()): string {
   const caps = depthCapabilities(depth);
   return `**Vibe Depth:** ${depth} (${caps.label})`;
 }
+
+/**
+ * Heal ladder cap implied by OS depth.
+ * Depth 0–1 → L0–L1 only; L2+ requires depth ≥ 2.
+ */
+export function healMaxLevelForDepth(depth: VibeDepth): 0 | 1 | 2 | 3 {
+  if (depth <= 1) return 1;
+  return 3;
+}

@@ -7,6 +7,8 @@ import {
   seedGateFeedbackCache,
 } from "../memory/feedback-cache.js";
 import { recallLessons } from "../memory/recall.js";
+import { resolveCriticEndpoint, type CriticEndpoint } from "../llm/router.js";
+import { getVibeDepth, healMaxLevelForDepth } from "../os/depth.js";
 import { evaluateMandates, loadMandates } from "../policy/evaluate.js";
 import { callReleaseGateTool } from "../release-gate/mcp-handlers.js";
 import { classifyProblem, domainToAgentSlot } from "./classify.js";
@@ -25,6 +27,8 @@ export type HealOptions = {
   maxLevel?: HealMaxLevel;
   skipDiagnostics?: boolean;
   trustCheck?: () => void;
+  /** Test seam: override critic pass. Return true = PASS. */
+  criticPass?: (recommendation: string) => Promise<boolean>;
 };
 
 export function parseHealMaxLevel(raw: string | undefined): HealMaxLevel | undefined {
@@ -35,15 +39,27 @@ export function parseHealMaxLevel(raw: string | undefined): HealMaxLevel | undef
 }
 
 /**
- * Resolve heal dial: explicit option > VIBE_HEAL_MAX_LEVEL > skipLlm→1 > 3.
- * Default 3 preserves current full-ladder CLI behavior.
+ * Requested heal dial before depth composition:
+ * explicit option > VIBE_HEAL_MAX_LEVEL > skipLlm→1 > 3.
  */
-export function resolveHealMaxLevel(options: HealOptions = {}): HealMaxLevel {
+export function resolveRequestedHealMaxLevel(
+  options: HealOptions = {},
+): HealMaxLevel {
   if (options.maxLevel !== undefined) return options.maxLevel;
   const fromEnv = parseHealMaxLevel(process.env.VIBE_HEAL_MAX_LEVEL);
   if (fromEnv !== undefined) return fromEnv;
   if (options.skipLlm) return 1;
   return 3;
+}
+
+/**
+ * Resolve heal dial: requested cap composed with VIBE_DEPTH
+ * (take the more restrictive). Depth 0–1 → max L1; L2 needs depth ≥ 2.
+ */
+export function resolveHealMaxLevel(options: HealOptions = {}): HealMaxLevel {
+  const requested = resolveRequestedHealMaxLevel(options);
+  const depthCap = healMaxLevelForDepth(getVibeDepth());
+  return Math.min(requested, depthCap) as HealMaxLevel;
 }
 
 function resolveRootDir(packet: TroubleshootPacket): string {
@@ -137,6 +153,131 @@ export function applyGatePatchUnderBond(
   return { applied: true, reason: "patched" };
 }
 
+/** One MCP validate_bond call → remediation text when invalid. */
+export function remediationFromValidateBond(
+  rootDir: string,
+  packet: TroubleshootPacket,
+): string | undefined {
+  const issueBody = packet.body?.trim() || packet.symptom;
+  if (!issueBody) return undefined;
+
+  try {
+    const text = callReleaseGateTool("validate_bond", {
+      root_dir: rootDir,
+      issue_body: issueBody,
+    });
+    const parsed = JSON.parse(text) as {
+      valid?: boolean;
+      errors?: string[];
+      next_action?: string;
+      message?: string;
+    };
+    if (parsed.valid) return undefined;
+
+    const parts: string[] = [];
+    if (Array.isArray(parsed.errors) && parsed.errors.length > 0) {
+      parts.push(parsed.errors.join("; "));
+    }
+    if (parsed.next_action) parts.push(parsed.next_action);
+    if (parsed.message) parts.push(parsed.message);
+    const joined = parts.filter(Boolean).join(" — ").trim();
+    return joined || text.slice(0, 500);
+  } catch (error: unknown) {
+    return error instanceof Error
+      ? `validate_bond error: ${error.message}`
+      : "validate_bond error";
+  }
+}
+
+async function callCriticVerdict(
+  critic: CriticEndpoint,
+  recommendation: string,
+): Promise<string> {
+  const system =
+    "You are a Judea Pearl Causal Critic for vibe-engine-os heal recommendations. " +
+    "If the recommendation is safe and actionable, reply EXACTLY 'PASS'. " +
+    "If it fails, explain why in one short paragraph.";
+  const user = `Review this heal recommendation:\n\n${recommendation}`;
+
+  if (critic.kind === "off") return "PASS";
+
+  if (critic.kind === "openai") {
+    const res = await fetch(`${critic.endpoint.baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${critic.endpoint.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: critic.endpoint.model,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+        max_tokens: 256,
+      }),
+    });
+    if (!res.ok) throw new Error(`critic_http_${res.status}`);
+    const data = (await res.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+    return data.choices?.[0]?.message?.content?.trim() ?? "";
+  }
+
+  const url =
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": critic.apiKey,
+    },
+    body: JSON.stringify({
+      system_instruction: { parts: { text: system } },
+      contents: [{ parts: [{ text: user }] }],
+    }),
+  });
+  if (!res.ok) throw new Error(`critic_http_${res.status}`);
+  const data = (await res.json()) as {
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+  };
+  return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? "";
+}
+
+/** One critic pass; true = PASS. Critic off counts as pass. Fail → escalate (no retry). */
+export async function runHealCriticPass(
+  recommendation: string,
+  options: HealOptions = {},
+): Promise<{ pass: boolean; detail?: string }> {
+  if (options.criticPass) {
+    const pass = await options.criticPass(recommendation);
+    return { pass, detail: pass ? undefined : "critic_rejected" };
+  }
+
+  let critic: CriticEndpoint;
+  try {
+    critic = resolveCriticEndpoint();
+  } catch (error: unknown) {
+    return {
+      pass: false,
+      detail: error instanceof Error ? error.message : "critic_resolve_failed",
+    };
+  }
+
+  if (critic.kind === "off") return { pass: true };
+
+  try {
+    const verdict = await callCriticVerdict(critic, recommendation);
+    if (verdict.toUpperCase().includes("PASS")) return { pass: true };
+    return { pass: false, detail: verdict.slice(0, 500) || "critic_rejected" };
+  } catch (error: unknown) {
+    return {
+      pass: false,
+      detail: error instanceof Error ? error.message : "critic_call_failed",
+    };
+  }
+}
+
 export async function diagnoseAndHeal(
   packetInput: TroubleshootPacket,
   options: HealOptions = {},
@@ -150,6 +291,7 @@ export async function diagnoseAndHeal(
   };
 
   seedGateFeedbackCache(rootDir);
+  const symptomClass = classifyFromSymptom(packet.symptom);
 
   // L0: deterministic gate match — apply under bond or propose only
   const gate = parseGateResolve(packet.title, packet.body ?? packet.symptom);
@@ -181,10 +323,25 @@ export async function diagnoseAndHeal(
     });
   }
 
+  // L0: bond-class → one validate_bond MCP pass (before L1 cache)
+  if (symptomClass.failureClass === "bond") {
+    const bondRemediation = remediationFromValidateBond(rootDir, packet);
+    if (bondRemediation) {
+      return parseHealResult({
+        healed: false,
+        level: 0,
+        healLevel: 0,
+        deterministicFix: true,
+        agentSlot: "validate_bond",
+        remediation: bondRemediation,
+        reason: "bond_validate_failed",
+      });
+    }
+  }
+
   // L1: cached remediation (guidance delivered — not a hard failure)
   if (maxLevel >= 1) {
-    const symptomGateId = classifyFromSymptom(packet.symptom).gateId;
-    const gateId = packet.gateId ?? gate.gateId ?? symptomGateId;
+    const gateId = packet.gateId ?? gate.gateId ?? symptomClass.gateId;
     if (gateId) {
       const cached = readGateFeedbackEntry(rootDir, gateId);
       if (cached) {
@@ -209,8 +366,23 @@ export async function diagnoseAndHeal(
     });
     const failedDiag = diagnostics.find((d) => !d.ok);
     if (failedDiag?.classification) {
-      const symptomClass = classifyFromSymptom(packet.symptom);
       const failureClass = failedDiag.classification.failureClass;
+
+      if (failureClass === "bond") {
+        const bondRemediation = remediationFromValidateBond(rootDir, packet);
+        if (bondRemediation) {
+          return parseHealResult({
+            healed: false,
+            level: 0,
+            healLevel: 0,
+            deterministicFix: true,
+            agentSlot: "validate_bond",
+            reason: failedDiag.classification.summary,
+            remediation: bondRemediation,
+          });
+        }
+      }
+
       if (failureClass !== "unknown" && maxLevel < 2) {
         return parseHealResult({
           healed: false,
@@ -228,7 +400,8 @@ export async function diagnoseAndHeal(
     }
   }
 
-  // L0: lesson recall
+
+  // L0: lesson recall (direct library — not MCP)
   const prefixes = packet.pathPrefixes ?? ["src/"];
   const lessons = recallLessons(rootDir, prefixes, 3);
   if (lessons.lessons.length > 0) {
@@ -299,6 +472,20 @@ export async function diagnoseAndHeal(
   const agent = agentResult as import("./types.js").AgentResult;
 
   if (agent.ok && agent.recommendation && maxLevel >= 2) {
+    const critic = await runHealCriticPass(agent.recommendation, options);
+    if (!critic.pass) {
+      // Fail → escalate L3 once (no retry spiral)
+      return parseHealResult({
+        healed: false,
+        level: 3,
+        healLevel: 3,
+        agentSlot: "human",
+        remediation: agent.recommendation,
+        reason: critic.detail ?? "critic_rejected",
+        tokensSpent: 1,
+      });
+    }
+
     return parseHealResult({
       healed: false,
       level: 2,

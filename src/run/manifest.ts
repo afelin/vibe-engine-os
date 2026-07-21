@@ -126,6 +126,8 @@ export type HealMixSummary = {
   counts: { l0: number; l1: number; l2: number; l3: number };
   pct: { l0: number; l1: number; l2: number; l3: number };
   lastHealLevel?: number;
+  lastHealRunId?: string;
+  lastAgentSlot?: string;
   avgTokensEstimate: number;
 };
 
@@ -137,11 +139,17 @@ export function summarizeHealMix(
   let tokenSum = 0;
   let tokenN = 0;
   let lastHealLevel: number | undefined;
+  let lastHealRunId: string | undefined;
+  let lastAgentSlot: string | undefined;
 
   for (const entry of entries) {
     const level = entry.metrics.healLevel;
     if (level === undefined || level === null) continue;
-    if (lastHealLevel === undefined) lastHealLevel = level;
+    if (lastHealLevel === undefined) {
+      lastHealLevel = level;
+      lastHealRunId = entry.runId;
+      lastAgentSlot = entry.metrics.agentSlot;
+    }
     if (level === 0) counts.l0++;
     else if (level === 1) counts.l1++;
     else if (level === 2) counts.l2++;
@@ -167,6 +175,8 @@ export function summarizeHealMix(
       l3: pctOf(counts.l3),
     },
     lastHealLevel,
+    lastHealRunId,
+    lastAgentSlot,
     avgTokensEstimate: tokenN === 0 ? 0 : tokenSum / tokenN,
   };
 }

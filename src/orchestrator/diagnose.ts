@@ -1,3 +1,5 @@
+import type { TroubleshootPacket } from "../constitution/catalog.js";
+
 export type DiagnosticCheck = {
   name: string;
   ok: boolean;
@@ -17,6 +19,11 @@ export type DiagnosticClassification = {
   summary: string;
   checks: DiagnosticCheck[];
 };
+
+const ATTRIBUTION_CHECK_PATTERNS =
+  /assisted-?by|attribution\s*audit|audit\s*assisted/i;
+const NPM_CHECK_PATTERNS =
+  /^npm\s*check\b|npm\s*check\s*\+|ci\s*\/\s*npm\s*check/i;
 
 const REPLAY_PATTERNS = /replay|deterministic|snapshot mismatch|events\.ndjson/i;
 const CAPSULE_PATTERNS = /capsule|vows|manifest/i;
@@ -129,6 +136,74 @@ export function classifyFromSymptom(symptom: string): DiagnosticClassification {
     };
   }
   return { failureClass: "unknown", summary: symptom, checks: [] };
+}
+
+/**
+ * Map CI / GitHub check names into TroubleshootPacket fields for CLI use.
+ * Covers Vibe Promotion Gate, Assisted-by attribution, and npm check strings.
+ */
+export function packetFieldsFromFailedCheck(checkName: string): {
+  symptom: string;
+  title: string;
+  gateId?: string;
+  failureClass: DiagnosticClassification["failureClass"];
+} {
+  const name = checkName.trim() || "unknown check";
+
+  if (PROMOTION_PATTERNS.test(name)) {
+    return {
+      symptom: `${name} failing`,
+      title: name,
+      gateId: "promotion_gate",
+      failureClass: "preflight",
+    };
+  }
+  if (ATTRIBUTION_CHECK_PATTERNS.test(name)) {
+    return {
+      symptom: `${name} failing`,
+      title: name,
+      gateId: "attribution",
+      failureClass: "preflight",
+    };
+  }
+  if (NPM_CHECK_PATTERNS.test(name)) {
+    return {
+      symptom: `npm check failing (${name})`,
+      title: name,
+      gateId: "npm_check",
+      failureClass: "preflight",
+    };
+  }
+
+  const classified = classifyFromSymptom(name);
+  return {
+    symptom: name,
+    title: name,
+    gateId: classified.gateId,
+    failureClass: classified.failureClass,
+  };
+}
+
+/** Build a TroubleshootPacket from a failed CI/check name for `orchestrate troubleshoot`. */
+export function packetFromFailedCheck(
+  checkName: string,
+  options: {
+    trustTier?: TroubleshootPacket["trustTier"];
+    rootDir?: string;
+    body?: string;
+    runId?: string;
+  } = {},
+): TroubleshootPacket {
+  const fields = packetFieldsFromFailedCheck(checkName);
+  return {
+    symptom: fields.symptom,
+    title: fields.title,
+    gateId: fields.gateId,
+    body: options.body,
+    runId: options.runId,
+    rootDir: options.rootDir,
+    trustTier: options.trustTier ?? "experiment",
+  };
 }
 
 function parsePreflightChecks(stdout: string): DiagnosticCheck[] {

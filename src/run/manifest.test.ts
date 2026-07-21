@@ -119,6 +119,7 @@ describe("run manifest", () => {
           durationMs: 1,
           tokensEstimate: healLevel,
           healLevel,
+          agentSlot: healLevel === 3 ? "human" : "feedback-cache",
           deterministicFix: healLevel <= 1,
         },
       });
@@ -130,6 +131,8 @@ describe("run manifest", () => {
     expect(mix.pct.l1).toBe(50);
     expect(mix.pct.l3).toBe(25);
     expect(mix.lastHealLevel).toBe(3);
+    expect(mix.lastHealRunId).toBe("r3");
+    expect(mix.lastAgentSlot).toBe("human");
   });
 
   it("renders rollback instructions with the base sha and branch", () => {
