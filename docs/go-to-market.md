@@ -30,6 +30,8 @@
 
 **Never paywall:** activate, MCP, gauntlet, replay, zero-token gates, install script.
 
+**Prelaunch battery gate:** `npm run battery:prelaunch` hard-fails if the free Aha path is broken (issue→PR+receipt, gauntlet, MCP, `/go`, zero-token). Hosted HPURL and live CyberReady claims stay `unclaimed` in `.vibe/battery-prelaunch.json` until those products exist — scar posts and GTM copy may only quote ledger rows with `status: pass`. Details: [Prelaunch battery](./prelaunch-battery.md).
+
 ---
 
 ## Outreach (CAC ~$0)

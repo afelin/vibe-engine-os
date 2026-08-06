@@ -31,5 +31,10 @@ jobs:
       - name: Launch readiness gate
         run: npm run launch:readiness
 
+      - name: Prelaunch battery (fast)
+        run: npm run battery:prelaunch -- --fast
+        env:
+          VIBE_BATTERY_MODE: fast
+
       - name: Metrics guardrails
         run: npm run metrics:check

@@ -119,34 +119,13 @@ else
   set_assert eval_bond false
 fi
 
+# Moments include stackables MCP round-trip (vitest). Avoid npx tsx -e here —
+# importing mcp-handlers under tsx -e hits @xmachines/play-catalog exports on CI.
 if run_step "battery-moments" npx vitest run src/launch/battery-moments.test.ts; then
   set_assert battery_moments true
-else
-  set_assert battery_moments false
-fi
-
-# Cheap MCP / stackables smoke (temp root, no network)
-if run_step "mcp/stackables smoke" npx tsx -e '
-import * as fs from "node:fs";
-import * as os from "node:os";
-import * as path from "node:path";
-import { callReleaseGateTool } from "./src/release-gate/mcp-handlers.ts";
-
-const root = fs.mkdtempSync(path.join(os.tmpdir(), "vibe-battery-mcp-"));
-try {
-  const listed = JSON.parse(callReleaseGateTool("list_stackables", { root_dir: "." }));
-  if (!listed.legal_spaces?.includes("none")) throw new Error("list_stackables missing none");
-  const set = JSON.parse(callReleaseGateTool("set_legal_space", { root_dir: root, legal_space: "none" }));
-  if (!set.ok) throw new Error("set_legal_space failed");
-  const get = JSON.parse(callReleaseGateTool("get_active_stack", { root_dir: root }));
-  if (get.stack?.legalSpace !== "none") throw new Error("get_active_stack mismatch");
-  process.stdout.write("mcp/stackables smoke ok\n");
-} finally {
-  fs.rmSync(root, { recursive: true, force: true });
-}
-'; then
   set_assert mcp_stackables_smoke true
 else
+  set_assert battery_moments false
   set_assert mcp_stackables_smoke false
 fi
 
