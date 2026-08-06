@@ -223,7 +223,7 @@ function formatScarPost({ l0Win, proof, gauntletOutput }) {
 
   lines.push(
     "---",
-    "Templates: internal/go-to-market.md (engineering-only) · Runbook: docs/launch-proof.md",
+    "Runbook: docs/launch-proof.md · Scar templates: private / RISE-internal (not in this public repo)",
   );
 
   return lines.filter(Boolean).join("\n");
