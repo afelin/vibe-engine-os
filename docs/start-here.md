@@ -10,8 +10,8 @@ This is the canonical entry for vibe-engine-os. Everything else (solo guide, noc
 
 No terminal. No Cursor. Issue → PR → receipt.
 
-1. Open a [Vibe Request](../.github/ISSUE_TEMPLATE/vibe-request.yml) (labels `vibe/run` + `vibe:safe`).
-2. Fill **Intent**, **Outcome**, and **Files to touch** (2–4 paths).
+1. **First green PR** → use the [Starter template](../.github/ISSUE_TEMPLATE/vibe-starter.yml) (prefilled cloud-loop smoke; labels `vibe/run` + `vibe:safe`).
+2. Or open a blank [Vibe Request](../.github/ISSUE_TEMPLATE/vibe-request.yml) and fill **Intent**, **Outcome**, and **Files to touch** (2–4 paths).
 3. Wait for the forever loop; merge when checks are green (optional `vibe/auto-merge`).
 
 Full walkthrough: [Nocode Quickstart](./nocode-quickstart.md).

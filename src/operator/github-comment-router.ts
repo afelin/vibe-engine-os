@@ -4,7 +4,7 @@ import { readTaskBond } from "../bond/store.js";
 import { isApproverAllowed } from "../policy/approvers.js";
 import { parseOperatorCommand } from "./commands.js";
 import { mapCommandToEvent } from "./events.js";
-import { renderCockpitComment } from "./cockpit.js";
+import { renderCockpitComment, renderGoGuide } from "./cockpit.js";
 import { detectShipWork } from "./ship-heuristic.js";
 import { intentToPacket, runTroubleshootDag } from "../orchestrator/troubleshoot.js";
 import { hasProcessedComment, markCommentProcessed } from "./comment-dedupe.js";
@@ -95,6 +95,17 @@ export async function routeGitHubComment(
     return { handled: false, event: null, responseBody: null };
   }
 
+  if (command.type === "go") {
+    if (dedupeEnabled) {
+      markCommentProcessed(rootDir, input.commentId, input.actor);
+    }
+    return {
+      handled: true,
+      event,
+      responseBody: renderGoGuide({ state: input.state }),
+    };
+  }
+
   if (command.type === "troubleshoot") {
     const bond = readTaskBond(rootDir, input.context.issueNumber);
     const packet = intentToPacket(
@@ -142,7 +153,7 @@ export async function routeGitHubComment(
 function responseBodyForCommand(
   commandType: Exclude<
     ReturnType<typeof parseOperatorCommand>["type"],
-    "unknown" | "troubleshoot"
+    "unknown" | "troubleshoot" | "go"
   >,
   input: GitHubCommentRouteInput,
 ): string {
