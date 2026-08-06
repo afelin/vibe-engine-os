@@ -1,7 +1,9 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import {
+  applyWeeklyInterventionClosure,
   readInterventions,
+  type InterventionDelta,
   type InterventionStage,
 } from "./interventions.js";
 
@@ -56,7 +58,7 @@ function formatTokenDelta(value: number): string {
 
 /**
  * Compact weekly Pearl story for operators / C-level.
- * Phase 4 will persist stages on interventions; until then, omit counts with a clear label.
+ * Stage counts come from the interventions ledger once weekly closure has written them.
  */
 export function renderWeeklyPearlSummary(
   delta: WeeklyPearlDelta | null,
@@ -74,7 +76,7 @@ export function renderWeeklyPearlSummary(
       "",
       "### Intervention stages",
       "",
-      "- Stages not written yet (Phase 4 will persist candidate/kept/dropped).",
+      "- Stages not written yet (run weekly closure when weeklyDelta exists).",
       "",
     );
     return lines.join("\n");
@@ -96,7 +98,7 @@ export function renderWeeklyPearlSummary(
   const stages = delta.interventionStages;
   if (!stages) {
     lines.push(
-      "- Stages not written yet (Phase 4 will persist candidate/kept/dropped on interventions).",
+      "- Stages not written yet (no staged interventions in the ledger).",
       "- Showing zeros until stages are recorded: candidate: 0 · kept: 0 · dropped: 0",
       "",
     );
@@ -108,12 +110,7 @@ export function renderWeeklyPearlSummary(
       "",
     );
     const total = STAGE_KEYS.reduce((sum, key) => sum + stages[key], 0);
-    if (total === 0 && delta.interventionStagesFromLedger === false) {
-      lines.push(
-        "_Stages not written yet on interventions (counts are zeros)._",
-        "",
-      );
-    } else if (total === 0) {
+    if (total === 0) {
       lines.push(
         "_No staged interventions in the ledger yet (counts are zeros)._",
         "",
@@ -154,13 +151,36 @@ export function buildWeeklyPearlDeltaFromReport(
     source: typeof weekly.source === "string" ? weekly.source : undefined,
   };
 
-  // Phase 4 will persist stages; until then omit counts so the render labels clearly.
   if (anyStaged) {
     delta.interventionStages = stages;
     delta.interventionStagesFromLedger = true;
   }
 
   return delta;
+}
+
+/** Apply weeklyDelta stage backfill + follow-ups, then build Pearl delta. */
+export function applyClosureAndBuildPearlDelta(
+  report: {
+    weeklyDelta?: {
+      firstPassGreenDelta?: number;
+      l0l1HealShareDelta?: number;
+      tokensMedianDelta?: number;
+      source?: string;
+    } | null;
+  } | null,
+  rootDir: string,
+): WeeklyPearlDelta | null {
+  const weekly = report?.weeklyDelta;
+  if (weekly) {
+    const closureDelta: InterventionDelta = {
+      firstPassGreenDelta: Number(weekly.firstPassGreenDelta) || 0,
+      l0l1HealShareDelta: Number(weekly.l0l1HealShareDelta) || 0,
+      tokensMedianDelta: Number(weekly.tokensMedianDelta) || 0,
+    };
+    applyWeeklyInterventionClosure(rootDir, closureDelta);
+  }
+  return buildWeeklyPearlDeltaFromReport(report, rootDir);
 }
 
 export function loadLatestResearchReport(
@@ -181,14 +201,14 @@ export function loadLatestResearchReport(
   return { file, report };
 }
 
-/** CLI: print markdown summary for the latest autoresearch report. */
+/** CLI: apply intervention closure (when weeklyDelta exists), then print Pearl markdown. */
 function main(): void {
   const rootDir = process.argv[2] ?? process.cwd();
   const latest = loadLatestResearchReport(rootDir);
   const report = (latest?.report ?? null) as {
     weeklyDelta?: WeeklyPearlDelta | null;
   } | null;
-  const delta = buildWeeklyPearlDeltaFromReport(report, rootDir);
+  const delta = applyClosureAndBuildPearlDelta(report, rootDir);
   process.stdout.write(renderWeeklyPearlSummary(delta));
 }
 

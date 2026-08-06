@@ -1,5 +1,13 @@
-import { describe, expect, it } from "vitest";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
 import {
+  appendIntervention,
+  applyWeeklyInterventionClosure,
+} from "./interventions.js";
+import {
+  buildWeeklyPearlDeltaFromReport,
   countInterventionStages,
   renderWeeklyPearlSummary,
   type WeeklyPearlDelta,
@@ -76,5 +84,51 @@ describe("countInterventionStages", () => {
       kept: 0,
       dropped: 0,
     });
+  });
+});
+
+describe("buildWeeklyPearlDeltaFromReport with staged interventions", () => {
+  const tmpDirs: string[] = [];
+
+  afterEach(() => {
+    for (const dir of tmpDirs) {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("includes real stage counts once weekly closure writes stages", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "vibe-pearl-stages-"));
+    tmpDirs.push(root);
+    fs.mkdirSync(path.join(root, ".runs"), { recursive: true });
+
+    appendIntervention(root, ["src/policy/mandates.json"]);
+    applyWeeklyInterventionClosure(root, {
+      firstPassGreenDelta: 0.08,
+      l0l1HealShareDelta: 0.12,
+      tokensMedianDelta: -120,
+    });
+
+    const delta = buildWeeklyPearlDeltaFromReport(
+      {
+        weeklyDelta: {
+          firstPassGreenDelta: 0.08,
+          l0l1HealShareDelta: 0.12,
+          tokensMedianDelta: -120,
+          source: "2026-07-30.json",
+        },
+      },
+      root,
+    );
+
+    expect(delta?.interventionStages).toEqual({
+      candidate: 0,
+      kept: 1,
+      dropped: 0,
+    });
+    expect(delta?.interventionStagesFromLedger).toBe(true);
+
+    const body = renderWeeklyPearlSummary(delta);
+    expect(body).toMatch(/\*\*kept:\*\*\s*1/i);
+    expect(body).not.toMatch(/stages not written yet/i);
   });
 });

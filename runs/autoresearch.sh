@@ -19,6 +19,7 @@ mkdir -p "$OUT_DIR"
 
 node --input-type=module -e "
 import fs from 'node:fs';
+import { applyWeeklyInterventionClosure } from '$ROOT/src/research/intervention-closure.mjs';
 
 const root = '$ROOT';
 const gates = JSON.parse(fs.readFileSync('$GATES_FILE', 'utf8')).gates ?? [];
@@ -171,11 +172,19 @@ function computeWeeklyDelta(currentReport) {
 const weeklyDelta = computeWeeklyDelta(report);
 report.weeklyDelta = weeklyDelta;
 
+const closure = applyWeeklyInterventionClosure(root, weeklyDelta);
+report.interventionClosure = {
+  stage: closure.stage,
+  updated: closure.updated,
+  followUps: closure.followUps.length,
+};
+
 fs.writeFileSync('$OUT_FILE', JSON.stringify(report, null, 2) + '\n');
 const summary = {
   mode: report.mode,
   fixtures: report.fixtures,
   weeklyDelta,
+  interventionClosure: report.interventionClosure,
   scoreboardHeal: scoreboardHeal
     ? {
         n: scoreboardHeal.n,
