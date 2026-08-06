@@ -4,6 +4,6 @@ vibe-engine-os is a free, portable open-source promotion gate for AI-assisted so
 
 ## Deep links
 
-1. White paper: `https://EXAMPLE.pages.placeholder/vibe-engine-os/whitepaper/`
+1. White paper: `https://afelin.github.io/vibe-engine-os/whitepaper/`
 2. Source repository: `https://github.com/afelin/vibe-engine-os`
-3. Proof surface: `https://EXAMPLE.pages.placeholder/vibe-engine-os/proof/`
+3. Proof surface: `https://afelin.github.io/vibe-engine-os/proof/`

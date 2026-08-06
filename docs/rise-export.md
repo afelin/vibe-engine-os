@@ -71,7 +71,7 @@ When mirroring to RISE Pages or a `docs/` site repo:
 2. **Deep links for RI.SE.** The blurb’s three URLs (white paper, repo, proof) should point at the **stable public** hosts after rewrite—not at private Actions artifact URLs.
 3. **Cross-repo.** Prefer absolute HTTPS links from RI.SE → RISE Pages and from Pages → `repository-code` on engineering or RISE mirror as published.
 4. **SHA pin.** At publish, fill white paper + `CITATION.cff` version/date/**source SHA** so institute citations resolve to an immutable tree.
-5. **Placeholder hygiene.** Replace `EXAMPLE.pages.placeholder` strings in `papers/rise-project-blurb.md` before RI.SE paste.
+5. **Placeholder hygiene.** Blurb deep links default to `https://afelin.github.io/vibe-engine-os/...` (GitHub Pages). After RISE mirror publish, rewrite those hosts to the stable RISE Pages URLs before RI.SE paste.
 
 ---
 
