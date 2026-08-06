@@ -124,6 +124,7 @@ export type OSEvent =
       agentSlot?: string;
       deterministicFix?: boolean;
       healed?: boolean;
+      outcome?: "healed" | "guidance_delivered" | "approval_required" | "escalated";
     };
 
 export function normalizeOsReceivedEvent(input: {

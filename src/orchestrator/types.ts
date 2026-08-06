@@ -5,6 +5,12 @@ export type AgentSlotId =
   | "groq-experiment"
   | "human";
 
+export type HealOutcome =
+  | "healed"
+  | "guidance_delivered"
+  | "approval_required"
+  | "escalated";
+
 export type AgentResult = {
   ok: boolean;
   agentSlot: AgentSlotId;

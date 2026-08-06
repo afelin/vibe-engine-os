@@ -107,6 +107,12 @@ Troubleshoot spans append to `.runs/<runId>/events.ndjson` via `appendOsEvent` �
 
 `runMetricsSchema` extended with `healLevel`, `agentSlot`, `deterministicFix`. `npm run scoreboard` prints %L0–L3. Offline `npm run autoresearch` scores heal routing from real `scoreboard.ndjson` plus gate fixtures. Heal wins append to `.runs/interventions.ndjson`.
 
+**Outcome taxonomy (typed):**
+- `healed` — deterministic patch applied under bond
+- `guidance_delivered` — cache/lessons/L2 recommendation provided to operator
+- `approval_required` — protected write path requires `/approve`
+- `escalated` — unresolved by current cap/trust; handoff to human/m365
+
 ## Measure before P3
 
 Do **not** start edge/OmniRoute (P3) until local dogfood clears these bars for **2 weeks**:

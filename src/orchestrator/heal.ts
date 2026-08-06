@@ -304,6 +304,7 @@ export async function diagnoseAndHeal(
     if (apply.applied) {
       return parseHealResult({
         healed: true,
+        outcome: "healed",
         level: 0,
         healLevel: 0,
         deterministicFix: true,
@@ -314,6 +315,7 @@ export async function diagnoseAndHeal(
     }
     return parseHealResult({
       healed: false,
+      outcome: apply.reason === "patch_requires_approval" ? "approval_required" : "escalated",
       level: 0,
       healLevel: 0,
       deterministicFix: true,
@@ -329,6 +331,7 @@ export async function diagnoseAndHeal(
     if (bondRemediation) {
       return parseHealResult({
         healed: false,
+        outcome: "escalated",
         level: 0,
         healLevel: 0,
         deterministicFix: true,
@@ -347,6 +350,7 @@ export async function diagnoseAndHeal(
       if (cached) {
         return parseHealResult({
           healed: true,
+          outcome: "guidance_delivered",
           level: 1,
           healLevel: 1,
           deterministicFix: true,
@@ -373,6 +377,7 @@ export async function diagnoseAndHeal(
         if (bondRemediation) {
           return parseHealResult({
             healed: false,
+            outcome: "escalated",
             level: 0,
             healLevel: 0,
             deterministicFix: true,
@@ -394,6 +399,7 @@ export async function diagnoseAndHeal(
             .join("\n") || undefined;
         return parseHealResult({
           healed: false,
+          outcome: "escalated",
           level: 0,
           healLevel: 0,
           deterministicFix: true,
@@ -412,6 +418,7 @@ export async function diagnoseAndHeal(
   if (lessons.lessons.length > 0) {
     return parseHealResult({
       healed: false,
+      outcome: "guidance_delivered",
       level: 0,
       healLevel: 0,
       deterministicFix: true,
@@ -425,6 +432,7 @@ export async function diagnoseAndHeal(
   if (maxLevel < 2) {
     return parseHealResult({
       healed: false,
+      outcome: "escalated",
       level: 3,
       healLevel: 3,
       agentSlot: "human",
@@ -438,6 +446,7 @@ export async function diagnoseAndHeal(
   } catch (error: unknown) {
     return parseHealResult({
       healed: false,
+      outcome: "escalated",
       level: 3,
       healLevel: 3,
       agentSlot: "human",
@@ -466,6 +475,7 @@ export async function diagnoseAndHeal(
   if ("humanStep" in agentResult && agentResult.humanStep) {
     return parseHealResult({
       healed: false,
+      outcome: "escalated",
       level: 3,
       healLevel: 3,
       agentSlot: "m365-guide",
@@ -482,6 +492,7 @@ export async function diagnoseAndHeal(
       // Fail → escalate L3 once (no retry spiral)
       return parseHealResult({
         healed: false,
+        outcome: "escalated",
         level: 3,
         healLevel: 3,
         agentSlot: "human",
@@ -493,6 +504,7 @@ export async function diagnoseAndHeal(
 
     return parseHealResult({
       healed: false,
+      outcome: "guidance_delivered",
       level: 2,
       healLevel: 2,
       agentSlot: slotId,
@@ -504,6 +516,7 @@ export async function diagnoseAndHeal(
   // L3: escalate
   return parseHealResult({
     healed: false,
+    outcome: "escalated",
     level: 3,
     healLevel: 3,
     agentSlot: "human",

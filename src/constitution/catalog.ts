@@ -50,6 +50,9 @@ export const runMetricsSchema = z.object({
   healLevel: z.number().int().min(0).max(4).optional(),
   agentSlot: z.string().optional(),
   deterministicFix: z.boolean().optional(),
+  healOutcome: z
+    .enum(["healed", "guidance_delivered", "approval_required", "escalated"])
+    .optional(),
 });
 
 export const orchestratorDomainSchema = z.enum([
@@ -93,6 +96,12 @@ export const troubleshootPacketSchema = z.object({
 
 export const healResultSchema = z.object({
   healed: z.boolean(),
+  outcome: z.enum([
+    "healed",
+    "guidance_delivered",
+    "approval_required",
+    "escalated",
+  ]),
   level: z.number().int().min(0).max(4),
   deterministicFix: z.boolean().optional(),
   agentSlot: z.string().optional(),
