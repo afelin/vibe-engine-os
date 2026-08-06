@@ -119,6 +119,7 @@ describe("run manifest", () => {
           durationMs: 1,
           tokensEstimate: healLevel,
           healLevel,
+          healOutcome: healLevel <= 1 ? "guidance_delivered" : "escalated",
           agentSlot: healLevel === 3 ? "human" : "feedback-cache",
           deterministicFix: healLevel <= 1,
         },

@@ -59,6 +59,7 @@ describe("orchestrator heal", () => {
     expect(result.level).toBe(1);
     expect(result.healed).toBe(true);
     expect(result.reason).toBe("guidance_delivered");
+    expect(result.outcome).toBe("guidance_delivered");
     expect(result.agentSlot).toBe("feedback-cache");
     expect(result.remediation).toContain("bond:preflight");
   });
@@ -152,6 +153,7 @@ describe("orchestrator troubleshoot routing", () => {
 
     expect(outcome.hpurl).toBeUndefined();
     expect(outcome.heal.reason).toBe("guidance_delivered");
+    expect(outcome.heal.outcome).toBe("guidance_delivered");
     expect(outcome.cockpit).toContain("### Next step");
     expect(outcome.cockpit).not.toContain("## Vibe Engine OS");
     const scoreboard = fs.readFileSync(
@@ -160,6 +162,7 @@ describe("orchestrator troubleshoot routing", () => {
     );
     expect(scoreboard).toContain("healLevel");
     expect(scoreboard).toContain("feedback-cache");
+    expect(scoreboard).toContain("\"healOutcome\":\"guidance_delivered\"");
 
     const interventions = fs.readFileSync(
       path.join(root, ".runs", "interventions.ndjson"),
@@ -180,6 +183,7 @@ describe("orchestrator troubleshoot routing", () => {
       { maxLevel: 0, skipDiagnostics: true },
     );
     expect(result.reason).not.toBe("guidance_delivered");
+    expect(result.outcome).not.toBe("guidance_delivered");
     expect(result.healLevel === 0 || result.healLevel === 3).toBe(true);
   });
 

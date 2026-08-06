@@ -19,6 +19,7 @@ export type RunMetrics = {
   healLevel?: number;
   agentSlot?: string;
   deterministicFix?: boolean;
+  healOutcome?: "healed" | "guidance_delivered" | "approval_required" | "escalated";
 };
 
 export type RunManifest = {

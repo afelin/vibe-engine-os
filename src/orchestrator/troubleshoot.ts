@@ -226,6 +226,7 @@ export async function runTroubleshootDag(
     trustCheck: options.trustCheck,
   };
   const heal = await diagnoseAndHeal(packet, healOpts);
+  const healOutcome = heal.outcome;
 
   const capsuleRunId = packet.runId ?? options.runId;
   const hpurl = hpurlFromValidatedCapsule(rootDir, capsuleRunId);
@@ -240,14 +241,22 @@ export async function runTroubleshootDag(
     agentSlot: heal.agentSlot,
     deterministicFix: heal.deterministicFix ?? false,
     healed: heal.healed,
+    outcome: healOutcome,
   });
+
+  const stateByOutcome: Record<HealResult["outcome"], string> = {
+    healed: "troubleshoot.healed",
+    guidance_delivered: "troubleshoot.guidance",
+    approval_required: "troubleshoot.approval_required",
+    escalated: "troubleshoot.open",
+  };
 
   appendScoreboardEntry(rootDir, {
     runId: ledgerRunId,
     issueNumber: options.issueNumber ?? "0",
     issueTitle: packet.title,
     success: heal.healed,
-    state: heal.healed ? "troubleshoot.healed" : "troubleshoot.open",
+    state: stateByOutcome[healOutcome],
     createdAt: new Date().toISOString(),
     metrics: {
       attempts: 1,
@@ -258,6 +267,7 @@ export async function runTroubleshootDag(
       healLevel,
       agentSlot: heal.agentSlot,
       deterministicFix: heal.deterministicFix ?? false,
+      healOutcome,
     },
   });
 
