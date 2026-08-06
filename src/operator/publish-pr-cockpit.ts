@@ -1,13 +1,80 @@
+import { readPersistedApproval } from "../os/approval-store.js";
 import { readRunManifest } from "../run/manifest.js";
 import { sanitizeRunId } from "../run/paths.js";
+import { loadActiveStack } from "../policy/stackables.js";
 import {
   publishCockpitComment,
   resolveGitHubCommentTarget,
 } from "../publishing/github-comments.js";
+import {
+  renderTrustSummary,
+  trustSummaryCommentMarker,
+} from "../publishing/trust-summary.js";
 import { renderCockpitComment, resolvePrUrl } from "./cockpit.js";
+import {
+  fetchCheckRunsForRef,
+  fetchPullRequest,
+  pickAttributionCheck,
+  pickPromotionCheck,
+  type CheckRunSnapshot,
+  type PullRequestSnapshot,
+} from "../promote/auto-merge.js";
+import { parseRepository } from "../publishing/github-checks.js";
 
 const rootDir = process.argv[2] ?? ".";
 const runIdArg = process.argv[3] ?? process.env.RUN_ID ?? "";
+
+function parsePrNumber(prUrl: string | undefined): number | undefined {
+  if (!prUrl) return undefined;
+  const match = prUrl.match(/\/pull\/(\d+)/);
+  if (!match?.[1]) return undefined;
+  const n = Number(match[1]);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+async function loadPrTrustContext(args: {
+  token: string;
+  repository: string;
+  prUrl?: string;
+}): Promise<{
+  pr: PullRequestSnapshot | null;
+  promotionCheck: CheckRunSnapshot | null;
+  attributionCheck: CheckRunSnapshot | null;
+}> {
+  const pullNumber =
+    parsePrNumber(args.prUrl) ??
+    (process.env.VIBE_PR_NUMBER
+      ? Number(process.env.VIBE_PR_NUMBER)
+      : undefined);
+  const parsed = parseRepository(args.repository);
+  if (!parsed || !pullNumber || !Number.isFinite(pullNumber)) {
+    return { pr: null, promotionCheck: null, attributionCheck: null };
+  }
+
+  try {
+    const pr = await fetchPullRequest(
+      fetch,
+      args.token,
+      parsed.owner,
+      parsed.repo,
+      pullNumber,
+    );
+    const checks = await fetchCheckRunsForRef(
+      fetch,
+      args.token,
+      parsed.owner,
+      parsed.repo,
+      pr.head.sha,
+    );
+    return {
+      pr,
+      promotionCheck: pickPromotionCheck(checks),
+      attributionCheck: pickAttributionCheck(checks),
+    };
+  } catch {
+    return { pr: null, promotionCheck: null, attributionCheck: null };
+  }
+}
 
 async function main() {
   if (!runIdArg) {
@@ -34,7 +101,37 @@ async function main() {
     return;
   }
 
-  const body = renderCockpitComment(
+  const approvalRecord = readPersistedApproval(rootDir, manifest.issueNumber);
+  const approvalState = approvalRecord
+    ? ("approved" as const)
+    : manifest.approvalRequired
+      ? ("pending" as const)
+      : ("not_required" as const);
+
+  const legalSpace = loadActiveStack(rootDir)?.legalSpace;
+  const prTrust = await loadPrTrustContext({
+    token: target.token,
+    repository: target.repository,
+    prUrl,
+  });
+
+  const trustSummary = renderTrustSummary({
+    state: "completed",
+    approvalState,
+    approvalRequired: manifest.approvalRequired,
+    approved: Boolean(approvalRecord),
+    runId: manifest.runId,
+    vowsHash: manifest.vowsHash,
+    capsuleHash: manifest.capsuleHash,
+    repository: target.repository,
+    rootDir,
+    legalSpace,
+    pr: prTrust.pr,
+    promotionCheck: prTrust.promotionCheck,
+    attributionCheck: prTrust.attributionCheck,
+  });
+
+  const cockpitBody = renderCockpitComment(
     "completed",
     {
       issueNumber: manifest.issueNumber,
@@ -56,6 +153,14 @@ async function main() {
       prUrl,
     },
   );
+
+  // Marked upsert block: trust summary marker + body ahead of cockpit.
+  const body = [
+    trustSummaryCommentMarker,
+    trustSummary,
+    "",
+    cockpitBody,
+  ].join("\n");
 
   const result = await publishCockpitComment({
     token: target.token,
