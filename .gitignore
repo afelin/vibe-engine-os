@@ -3,6 +3,9 @@ dist/
 coverage/
 .runs/
 .env
+.env.*
+!.env.example
+!.env.*.example
 CRITIC_FAILED.md
 repomix-output.txt
 .vibe/*
@@ -10,5 +13,6 @@ repomix-output.txt
 !.vibe/orchestrator/
 !.vibe/orchestrator/agents.json.example
 !.vibe/launch-proof.json.example
+!.vibe/corp-boundary.example
 # Generated into unified Pages root by scripts/build-whitepaper.mjs
 site/proof/

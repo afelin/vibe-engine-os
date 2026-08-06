@@ -223,7 +223,7 @@ function formatScarPost({ l0Win, proof, gauntletOutput }) {
 
   lines.push(
     "---",
-    "Templates: docs/go-to-market.md · Runbook: docs/launch-proof.md",
+    "Templates: internal/go-to-market.md (engineering-only) · Runbook: docs/launch-proof.md",
   );
 
   return lines.filter(Boolean).join("\n");

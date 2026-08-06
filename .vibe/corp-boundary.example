@@ -1,0 +1,4 @@
+# Marker file: this repo is corporate / work-bound.
+# scripts/ai-trust-check.sh refuses experiment LLM env when this file exists.
+# Copy to .vibe/corp-boundary in work repos:
+#   cp .vibe/corp-boundary.example .vibe/corp-boundary

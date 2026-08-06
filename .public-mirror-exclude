@@ -1,0 +1,22 @@
+# Paths and globs excluded from RISE / public mirror trees.
+# Consumed by scripts/prepare-public-tree.sh (rsync --exclude-from).
+# Keep in sync with docs/rise-export.md denylist.
+
+internal/
+docs/go-to-market.md
+.env
+.env.*
+.vibe/
+.runs/
+.worktrees/
+node_modules/
+dist/
+coverage/
+.git/
+.github/workflows/launch-ship.yml
+CRITIC_FAILED.md
+repomix-output.txt
+*.pem
+*.key
+credentials.json
+**/secrets/
