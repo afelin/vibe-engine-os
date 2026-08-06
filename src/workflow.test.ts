@@ -412,4 +412,35 @@ describe("GitHub Actions workflow", () => {
     expect(pkg.scripts["launch:readiness"]).toContain("readiness-cli");
     expect(pkg.scripts["launch:scar"]).toContain("scar-post.mjs");
   });
+
+  it("start-here hub exists with four entry paths and Vibe Request link", () => {
+    const startHerePath = path.join(process.cwd(), "docs/start-here.md");
+    expect(fs.existsSync(startHerePath)).toBe(true);
+
+    const startHere = fs.readFileSync(startHerePath, "utf8");
+    expect(startHere).toMatch(/5 minutes/i);
+
+    // Path 1 — GitHub-only nocode
+    expect(startHere).toContain("nocode-quickstart.md");
+    expect(startHere).toContain("vibe-request.yml");
+
+    // Path 2 — Cursor + MCP + skill
+    expect(startHere).toContain("mcp.json");
+    expect(startHere).toContain(".cursor/skills/vibe-engine");
+
+    // Path 3 — External agent/IDE via adapter
+    expect(startHere).toContain("agent-adapter.md");
+    expect(startHere).toContain("agent-protocol.md");
+
+    // Path 4 — Pick legal space (placeholder until stackables land)
+    expect(startHere).toMatch(/legal.?space/i);
+    expect(startHere).toContain("set_legal_space");
+    expect(startHere).toContain(".vibe/active-stack.json");
+  });
+
+  it("README points to docs/start-here.md as canonical entry", () => {
+    const readme = fs.readFileSync(path.join(process.cwd(), "README.md"), "utf8");
+    const firstParagraph = readme.split("\n\n").slice(0, 3).join("\n\n");
+    expect(firstParagraph).toContain("docs/start-here.md");
+  });
 });

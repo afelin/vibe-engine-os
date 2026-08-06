@@ -1,5 +1,7 @@
 # Solo Vibe Coder Guide
 
+See also: [docs/start-here.md](./start-here.md)
+
 *You write intent. AI builds. vibe-engine-os guards, records, and ships — with receipts.*
 
 This guide is for a **solo founder or operator** using vibe-engine-os with Cursor (or similar) to build products like a CyberReady MVP. No deep engineering background required.
