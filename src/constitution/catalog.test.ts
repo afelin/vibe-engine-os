@@ -120,6 +120,7 @@ describe("constitution catalog", () => {
     const schemas = exportCatalogJsonSchema();
     expect(Object.keys(schemas).sort()).toEqual(
       [
+        "ActiveStack",
         "AwaitingApprovalPhase",
         "BondPolicy",
         "CompletedPhase",
@@ -131,6 +132,8 @@ describe("constitution catalog", () => {
         "GeneratingPatchPhase",
         "HealResult",
         "LearningPhase",
+        "LegalSpacePack",
+        "MandateDeltas",
         "MandateEval",
         "Mandates",
         "OrchestratorIntent",
@@ -151,5 +154,8 @@ describe("constitution catalog", () => {
       ].sort(),
     );
     expect(schemas.ExecutionDag).toMatchObject({ type: "object" });
+    expect(schemas.LegalSpacePack).toMatchObject({ type: "object" });
+    expect(schemas.ActiveStack).toMatchObject({ type: "object" });
+    expect(schemas.MandateDeltas).toMatchObject({ type: "object" });
   });
 });

@@ -1,0 +1,16 @@
+{
+  "id": "eu-nis2-cra",
+  "title": "EU NIS2 / CRA posture",
+  "description": "EU SME supplier posture — stricter forbidden prefixes and approval gates for NIS2/CRA-aligned path control.",
+  "mandate_deltas": {
+    "forbidden_prefixes_extra": ["src/crypto/", "src/secrets/"],
+    "require_approval_prefixes_extra": ["src/policy/", "wrangler.toml"],
+    "max_attempts": 2
+  },
+  "gate_hints": ["vitest"],
+  "narrative_tags": ["nis2", "cra", "eu-supplier"],
+  "cyberready_align": {
+    "regimes": ["NIS2", "CRA"],
+    "note": "OPA/SBOM/VEX live in CyberReady; vibe enforces path/bond/approval posture"
+  }
+}

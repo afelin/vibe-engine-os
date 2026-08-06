@@ -8,6 +8,7 @@ import {
 import { exportAgentAdapter } from "../launch/agent-adapter.js";
 import { runLaunchReadiness } from "../launch/readiness.js";
 import { createVowAttestation } from "../constitution/vows.js";
+import { loadActiveStack } from "../policy/stackables.js";
 
 const rootDir = process.argv[2] ?? ".";
 
@@ -40,6 +41,8 @@ const activatedPath = writeActivatedJson(rootDir, {
   launchReadiness: launchReadiness.ok ? "pass" : "fail",
 });
 
+const activeSpace = loadActiveStack(rootDir)?.legalSpace ?? "none";
+
 console.log(`✓ Schemas exported: ${schemasPath}`);
 console.log(`✓ Agent adapter: ${adapterPath}`);
 console.log(`✓ MCP smoke: ${mcpSmoke.gateCount} gates`);
@@ -49,6 +52,7 @@ console.log(
     : "⚠ Launch readiness: fail (run npm run launch:readiness)",
 );
 console.log(`✓ Activated: ${activatedPath}`);
+console.log(`✓ Active legal space: ${activeSpace}`);
 printPersonaQuickstart();
 console.log("");
 console.log("Next: npm run bootstrap — MCP/skill install snippets → .vibe/bootstrap-snippets.json");

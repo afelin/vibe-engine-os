@@ -1,0 +1,13 @@
+{
+  "id": "us-baseline",
+  "title": "US baseline posture",
+  "description": "Lighter US baseline — modest extra approval on infrastructure and deploy surfaces.",
+  "mandate_deltas": {
+    "require_approval_prefixes_extra": ["infra/", "deploy/"]
+  },
+  "narrative_tags": ["us-baseline"],
+  "cyberready_align": {
+    "regimes": ["US-baseline"],
+    "note": "OPA/SBOM/VEX live in CyberReady; vibe enforces path/bond/approval posture"
+  }
+}

@@ -213,6 +213,33 @@ export const mandatesSchema = z.object({
   bond: bondPolicySchema.optional(),
 });
 
+export const mandateDeltasSchema = z.object({
+  forbidden_prefixes_extra: z.array(z.string()).optional(),
+  require_approval_prefixes_extra: z.array(z.string()).optional(),
+  max_attempts: z.number().int().positive().optional(),
+});
+
+export const legalSpacePackSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string(),
+  mandate_deltas: mandateDeltasSchema,
+  gate_hints: z.array(z.string()).optional(),
+  narrative_tags: z.array(z.string()).optional(),
+  cyberready_align: z
+    .object({
+      regimes: z.array(z.string()).min(1),
+      note: z.string(),
+    })
+    .optional(),
+});
+
+export const activeStackSchema = z.object({
+  legalSpace: z.string().min(1),
+  projectProfile: z.string().min(1).optional(),
+  activatedAt: z.string().min(1),
+});
+
 export const receivedPhaseSchema = z.object({
   issueNumber: z.string(),
   issueTitle: z.string().optional(),
@@ -316,6 +343,9 @@ export const constitutionCatalog = defineCatalog({
   ScoreboardEntry: scoreboardEntrySchema,
   MandateEval: mandateEvalSchema,
   Mandates: mandatesSchema,
+  MandateDeltas: mandateDeltasSchema,
+  LegalSpacePack: legalSpacePackSchema,
+  ActiveStack: activeStackSchema,
   BondPolicy: bondPolicySchema,
   ScopedContextBundle: scopedContextBundleSchema,
   EvoLesson: evoLessonSchema,

@@ -42,14 +42,16 @@ Bring Claude, Codex, or another IDE via the adapter contract.
 
 ## 4. Pick legal space
 
-Designate which legal/compliance posture governs this repo (NIS2/CRA, US baseline, or none).
+Designate which legal/compliance posture governs this repo — a dial, not a rewrite of policy files.
 
-**Coming soon** (Phase 0.5f stackables): selectable packs merged onto mandates/gates at eval time.
+1. Call MCP `list_stackables` — packs on disk: `none`, `eu-nis2-cra`, `us-baseline` (plus project profiles like `tabdab`).
+2. Call MCP `set_legal_space` with your choice (default `none`). Writes only `.vibe/active-stack.json`.
+3. Subsequent `evaluate_mandate` / bond eval merge pack deltas onto base mandates at eval time — agents never edit `mandates.json` / `gates.json`.
 
-Until then, know the dial conceptually:
+| Space | Posture |
+| --- | --- |
+| `none` | Vibe mandates only |
+| `eu-nis2-cra` | Stricter EU NIS2/CRA path forbids + approvals |
+| `us-baseline` | Lighter US baseline extra approvals |
 
-- MCP `set_legal_space` will write `.vibe/active-stack.json` (`legalSpace`, optional `projectProfile`).
-- Agents and gates will read the active stack; they never rewrite `mandates.json` / `gates.json`.
-- Default remains `none` — vibe mandates only.
-
-When packs land, this section will link the pack list and the dial UI/docs.
+Contract: [agent-contract.md](./agent-contract.md). Packs: `src/policy/stackables/legal-spaces/`.

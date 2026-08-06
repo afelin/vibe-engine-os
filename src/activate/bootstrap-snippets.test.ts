@@ -34,14 +34,15 @@ describe("renderBootstrapSnippets", () => {
     expect(snippets.github).toContain("Vibe Request");
   });
 
-  it("includes preflight order and forthcoming set_legal_space", () => {
+  it("includes preflight order and set_legal_space dial", () => {
     const snippets = renderBootstrapSnippets(".");
     const joined = Object.values(snippets).join("\n");
     expect(joined).toMatch(
       /evaluate_mandate\s*→\s*validate_bond\s*→\s*resolve_gate\s*→\s*constitution_schemas/,
     );
     expect(joined).toContain("set_legal_space");
-    expect(joined).toMatch(/forthcoming|coming soon|once available/i);
+    expect(joined).toContain("list_stackables");
+    expect(joined).toMatch(/eu-nis2-cra|us-baseline/);
   });
 
   it("validates written JSON against schema", () => {
@@ -67,7 +68,9 @@ describe("renderBootstrapSnippets", () => {
 });
 
 describe("npm run bootstrap", () => {
-  it("exits 0 and writes bootstrap-snippets.json", () => {
+  it(
+    "exits 0 and writes bootstrap-snippets.json",
+    () => {
     const nvmNode22 = path.join(
       process.env.HOME ?? "",
       ".nvm/versions/node/v22.23.1/bin",
@@ -85,6 +88,7 @@ describe("npm run bootstrap", () => {
     });
     expect(result.status, result.stderr || result.stdout).toBe(0);
     expect(result.stdout).toContain("bootstrap");
+    expect(result.stdout).toMatch(/Active legal space:/);
     const outPath = path.join(process.cwd(), ".vibe/bootstrap-snippets.json");
     expect(fs.existsSync(outPath)).toBe(true);
     const parsed = JSON.parse(fs.readFileSync(outPath, "utf8"));
@@ -99,5 +103,7 @@ describe("npm run bootstrap", () => {
         })
         .safeParse(parsed).success,
     ).toBe(true);
-  });
+  },
+    30_000,
+  );
 });

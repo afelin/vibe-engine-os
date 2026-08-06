@@ -2,6 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { z } from "zod";
+import { loadActiveStack } from "../policy/stackables.js";
 import { runActivateChecks } from "./check.js";
 
 export const bootstrapSnippetsSchema = z.object({
@@ -55,7 +56,7 @@ function preflightBlock(): string {
   return [
     `Preflight order: ${PREFLIGHT_ORDER}`,
     "Postrun: validate_capsule → build_scoped_context → recall_lessons",
-    "set_legal_space — forthcoming (Phase 0.5e); OK to ignore until available.",
+    "Legal space: list_stackables → set_legal_space (none | eu-nis2-cra | us-baseline).",
   ].join("\n");
 }
 
@@ -192,6 +193,9 @@ export function runBootstrap(rootDir = "."): {
   const snippets = renderBootstrapSnippets(rootDir);
   const snippetsPath = writeBootstrapSnippets(rootDir, snippets);
   printBootstrapSnippets(snippets);
+  console.log(
+    `✓ Active legal space: ${loadActiveStack(rootDir)?.legalSpace ?? "none"}`,
+  );
   console.log(`✓ Wrote ${snippetsPath}`);
   return { snippetsPath, snippets };
 }

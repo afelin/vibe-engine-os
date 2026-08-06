@@ -34,10 +34,21 @@ describe("hpurl proof links", () => {
       vowsHash: PARAMS.vowsHash,
       repo: PARAMS.repo,
       api: undefined,
+      space: undefined,
       signature: undefined,
       publicKey: undefined,
       scope: undefined,
     });
+  });
+
+  it("round-trips space= legal-space param", () => {
+    const url = buildProofHpurl(BASE, {
+      ...PARAMS,
+      space: "eu-nis2-cra",
+    });
+    expect(url).toContain("space=eu-nis2-cra");
+    const parsed = parseProofHpurl(url);
+    expect(parsed?.space).toBe("eu-nis2-cra");
   });
 
   it("omits optional repo when not provided", () => {
