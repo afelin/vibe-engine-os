@@ -24,6 +24,12 @@ const FONT_LINKS = `  <link rel="preconnect" href="https://fonts.googleapis.com"
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../css/site.css" />`;
 
+/** GitHub blob base for repo files linked from the paper (Pages has no docs/). */
+const REPO_BLOB = "https://github.com/afelin/vibe-engine-os/blob/main";
+
+/** Site-local path segments under site/ — keep relative for project Pages. */
+const SITE_LOCAL = /^(?:\.\.\/)?(?:css|adopt|status|legal|proof|whitepaper)(?:\/|$)/;
+
 function escapeHtml(s) {
   return s
     .replaceAll("&", "&amp;")
@@ -32,12 +38,30 @@ function escapeHtml(s) {
     .replaceAll('"', "&quot;");
 }
 
+/**
+ * Rewrite manuscript hrefs so project Pages does not 404 on ../docs etc.
+ * Absolute / anchors / mailto / site-local paths are left alone.
+ */
+function rewriteHref(href) {
+  if (/^(https?:|mailto:|#)/i.test(href)) return href;
+  if (SITE_LOCAL.test(href)) return href;
+  if (href.startsWith("../")) {
+    return `${REPO_BLOB}/${href.slice(3)}`;
+  }
+  if (/^(docs\/|papers\/|CITATION\.cff|VOWS\.md|README\.md)/.test(href)) {
+    return `${REPO_BLOB}/${href}`;
+  }
+  return href;
+}
+
 function inlineFormat(text) {
   let s = escapeHtml(text);
   s = s.replace(/`([^`]+)`/g, "<code>$1</code>");
   s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
   s = s.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, "<em>$1</em>");
-  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, href) => {
+    return `<a href="${rewriteHref(href)}">${label}</a>`;
+  });
   return s;
 }
 
@@ -249,9 +273,11 @@ function buildWhitepaper() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
   if (!fs.existsSync(MD_PATH)) {
+    // Content may land via a separate PR (papers/). Keep committed HTML so
+    // Pages stays green; after that merge, this script regenerates from MD.
     if (fs.existsSync(OUT_HTML)) {
       console.log(
-        `papers/vibe-engine-whitepaper.md missing — keeping existing ${path.relative(ROOT, OUT_HTML)}`,
+        `papers/vibe-engine-whitepaper.md missing — keeping existing ${path.relative(ROOT, OUT_HTML)} (build after content merges to refresh)`,
       );
       return;
     }
