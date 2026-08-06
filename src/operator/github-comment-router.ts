@@ -7,6 +7,7 @@ import { mapCommandToEvent } from "./events.js";
 import { renderCockpitComment } from "./cockpit.js";
 import { detectShipWork } from "./ship-heuristic.js";
 import { intentToPacket, runTroubleshootDag } from "../orchestrator/troubleshoot.js";
+import { hasProcessedComment, markCommentProcessed } from "./comment-dedupe.js";
 
 export type GitHubCommentRouteInput = {
   body: string;
@@ -59,8 +60,18 @@ export async function routeGitHubComment(
     return { handled: false, event: null, responseBody: null };
   }
 
+  const rootDir = input.rootDir ?? ".";
+  const dedupeEnabled =
+    Boolean(input.rootDir) && command.type !== "approve" && command.type !== "continue";
+  if (dedupeEnabled && hasProcessedComment(rootDir, input.commentId)) {
+    return {
+      handled: true,
+      event: null,
+      responseBody: "## Duplicate command ignored\n\nThis comment was already processed.",
+    };
+  }
+
   if (command.type === "approve") {
-    const rootDir = input.rootDir ?? ".";
     if (!isApproverAllowed(input.actor, rootDir)) {
       return {
         handled: true,
@@ -85,7 +96,6 @@ export async function routeGitHubComment(
   }
 
   if (command.type === "troubleshoot") {
-    const rootDir = input.rootDir ?? ".";
     const bond = readTaskBond(rootDir, input.context.issueNumber);
     const packet = intentToPacket(
       {
@@ -107,12 +117,19 @@ export async function routeGitHubComment(
       maxLevel: 1,
       issueNumber: input.context.issueNumber,
     });
+    if (dedupeEnabled) {
+      markCommentProcessed(rootDir, input.commentId, input.actor);
+    }
 
     return {
       handled: true,
       event,
       responseBody: outcome.cockpit,
     };
+  }
+
+  if (dedupeEnabled) {
+    markCommentProcessed(rootDir, input.commentId, input.actor);
   }
 
   return {
