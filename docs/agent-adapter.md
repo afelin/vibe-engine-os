@@ -1,5 +1,7 @@
 # Agent Adapter Manifest
 
+See also: [docs/start-here.md](./start-here.md)
+
 Machine-readable integration surface exported to `.vibe/agent-adapter.json` on `npm run activate`.
 
 ## Three integration paths

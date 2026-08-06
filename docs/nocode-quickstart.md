@@ -1,5 +1,7 @@
 # Nocode Quickstart
 
+See also: [docs/start-here.md](./start-here.md)
+
 *Fill a GitHub issue. Get a PR and receipt. No terminal required.*
 
 This path is for solo founders and operators who want vibe-engine-os to run entirely from GitHub—no Cursor, no CLI, no local setup beyond what the repo already has in Actions.
