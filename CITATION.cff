@@ -1,0 +1,43 @@
+cff-version: 1.2.0
+title: "vibe-engine-os: Portable Promotion Primitives for Agent-Written Code"
+message: >-
+  If you use vibe-engine-os in research or engineering work, please cite
+  this software using the metadata in this file (and the white paper when
+  discussing mechanisms).
+type: software
+authors:
+  - name: "vibe-engine-os contributors"
+    website: "https://github.com/afelin/vibe-engine-os"
+repository-code: "https://github.com/afelin/vibe-engine-os"
+url: "https://github.com/afelin/vibe-engine-os"
+abstract: >-
+  Free open-source promotion-gate primitives for AI-assisted software change:
+  TaskBond, mandates, zero-token gates, depth dial, forever loop, tamper-evident
+  capsules and HPURL proof links, deterministic replay, adversarial gauntlet,
+  MCP rulebook tools, light heal/Pearl operators, and Assisted-by attribution.
+  Regulation-agnostic; posture packs are house-rule overlays, not law.
+  CyberReady remains Planned when not installed (fail-open).
+keywords:
+  - software engineering
+  - AI agents
+  - promotion gates
+  - reproducible evidence
+  - open source
+license: "SEE LICENSE IN REPOSITORY"
+version: "UNPUBLISHED"
+date-released: "YYYY-MM-DD"
+identifiers:
+  - type: other
+    value: "TO_BE_FILLED_AT_PUBLISH"
+    description: "Git commit SHA of the cited published tree; fill at publish"
+preferred-citation:
+  type: article
+  title: "vibe-engine-os: Portable Promotion Primitives for Agent-Written Code"
+  authors:
+    - name: "vibe-engine-os contributors"
+  year: 2026
+  journal: "Technical white paper"
+  url: "https://github.com/afelin/vibe-engine-os/blob/main/papers/vibe-engine-whitepaper.md"
+  notes: >-
+    Version, date, and source SHA are placeholders until publish.
+    Capsules are tamper-evident, not tamper-proof; no certification claims.
