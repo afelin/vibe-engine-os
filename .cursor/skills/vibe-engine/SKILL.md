@@ -27,6 +27,10 @@ Before proposing any file edits in a vibe-engine-os repository:
 
 Operator commands (`/go`, `/approve`, `/retry`, `/rollback`, `/troubleshoot`) override agent proposals.
 
+### CyberReady (optional)
+
+When CyberReady present, call `cyberready_validate_delta` after `evaluate_mandate`. If `CYBERREADY_SOCK` is missing, the tool returns `{ ok: false, reason: "not_installed" }` — fail-open; do not block promote or the vibe path. Still no OPA embed inside vibe-engine-os.
+
 ## Examples
 
 - Fresh clone → `get_active_stack` returns unset → `list_stackables` → `set_legal_space` with `none` (or operator-chosen space).

@@ -37,6 +37,7 @@ import {
   readActiveStack,
   setLegalSpace,
 } from "../policy/stackables.js";
+import { cyberreadyValidateDelta } from "./cyberready-bridge.js";
 
 export const RELEASE_GATE_MCP = {
   name: "vibe-release-gates",
@@ -217,6 +218,24 @@ export const RELEASE_GATE_TOOLS = [
       type: "object",
       properties: {
         root_dir: { type: "string" },
+      },
+    },
+  },
+  {
+    name: "cyberready_validate_delta",
+    description:
+      "Optional CyberReady bridge: validate compliance delta via CYBERREADY_SOCK. Fail-open when not installed — does not block evaluate_mandate or promote.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        sock_path: {
+          type: "string",
+          description: "Override CYBERREADY_SOCK Unix socket path",
+        },
+        payload: {
+          type: "object",
+          description: "Optional opaque validate_delta payload for IPC",
+        },
       },
     },
   },
@@ -518,6 +537,20 @@ export function callReleaseGateTool(
       stack
         ? { ok: true, stack }
         : { ok: true, stack: null, hint: "unset — call list_stackables / set_legal_space (default none)" },
+      null,
+      2,
+    );
+  }
+
+  if (name === "cyberready_validate_delta") {
+    const sockPath =
+      typeof args.sock_path === "string" ? args.sock_path : undefined;
+    const payload =
+      args.payload && typeof args.payload === "object"
+        ? (args.payload as Record<string, unknown>)
+        : undefined;
+    return JSON.stringify(
+      cyberreadyValidateDelta({ sockPath, payload }),
       null,
       2,
     );

@@ -10,7 +10,7 @@ import {
 import { computeVowsHash } from "../constitution/vows.js";
 
 describe("release gate MCP handlers", () => {
-  it("advertises thirteen deterministic tools", () => {
+  it("advertises fourteen deterministic tools", () => {
     expect(RELEASE_GATE_TOOLS.map((tool) => tool.name)).toEqual([
       "list_gates",
       "resolve_gate",
@@ -25,6 +25,7 @@ describe("release gate MCP handlers", () => {
       "list_stackables",
       "set_legal_space",
       "get_active_stack",
+      "cyberready_validate_delta",
     ]);
   });
 
@@ -52,8 +53,40 @@ describe("release gate MCP handlers", () => {
         expect.objectContaining({ name: "list_stackables" }),
         expect.objectContaining({ name: "set_legal_space" }),
         expect.objectContaining({ name: "get_active_stack" }),
+        expect.objectContaining({ name: "cyberready_validate_delta" }),
       ]),
     });
+  });
+
+  it("cyberready_validate_delta returns not_installed without CYBERREADY_SOCK and does not throw", () => {
+    const prev = process.env.CYBERREADY_SOCK;
+    delete process.env.CYBERREADY_SOCK;
+    try {
+      expect(() =>
+        callReleaseGateTool("cyberready_validate_delta", {}),
+      ).not.toThrow();
+      const text = callReleaseGateTool("cyberready_validate_delta", {});
+      const parsed = JSON.parse(text) as { ok: boolean; reason?: string };
+      expect(parsed.ok).toBe(false);
+      expect(parsed.reason).toBe("not_installed");
+
+      const response = handleMcpRequest({
+        jsonrpc: "2.0",
+        id: 40,
+        method: "tools/call",
+        params: { name: "cyberready_validate_delta", arguments: {} },
+      });
+      expect(response?.result).toMatchObject({ isError: false });
+      const body = (response?.result as { content: { text: string }[] }).content[0]
+        .text;
+      expect(JSON.parse(body).reason).toBe("not_installed");
+    } finally {
+      if (prev === undefined) {
+        delete process.env.CYBERREADY_SOCK;
+      } else {
+        process.env.CYBERREADY_SOCK = prev;
+      }
+    }
   });
 
   it("resolves gates through tools/call", () => {
