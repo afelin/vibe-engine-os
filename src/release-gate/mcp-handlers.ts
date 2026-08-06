@@ -3,7 +3,7 @@ import {
   loadReleaseGates,
   resolveGateFromRegistry,
 } from "./registry.js";
-import { evaluateMandates, loadMandates } from "../policy/evaluate.js";
+import { evaluateMandates } from "../policy/evaluate.js";
 import {
   exportCatalogJsonSchema,
   parseRunManifest,
@@ -33,6 +33,7 @@ import type { ExecutionDag } from "../os/events.js";
 import { parseExecutionDag } from "../constitution/parse.js";
 import {
   listStackables,
+  loadEffectiveMandates,
   readActiveStack,
   setLegalSpace,
 } from "../policy/stackables.js";
@@ -90,7 +91,7 @@ export const RELEASE_GATE_TOOLS = [
   {
     name: "evaluate_mandate",
     description:
-      "Evaluate proposed file paths against agent mandates (forbidden and approval prefixes).",
+      "Evaluate proposed file paths against agent mandates merged with the active legal-space stackable (forbidden and approval prefixes).",
     inputSchema: {
       type: "object",
       properties: {
@@ -98,6 +99,7 @@ export const RELEASE_GATE_TOOLS = [
           type: "array",
           items: { type: "string" },
         },
+        root_dir: { type: "string" },
       },
       required: ["proposed_files"],
     },
@@ -241,15 +243,18 @@ export function callReleaseGateTool(
   }
 
   if (name === "evaluate_mandate") {
+    const rootDir = typeof args.root_dir === "string" ? args.root_dir : ".";
     const proposedFiles = Array.isArray(args.proposed_files)
       ? args.proposed_files.filter((item): item is string => typeof item === "string")
       : [];
-    const evaluation = evaluateMandates(proposedFiles);
+    const mandates = loadEffectiveMandates(rootDir);
+    const evaluation = evaluateMandates(proposedFiles, mandates);
     return JSON.stringify(
       {
         ...envelopeFromVerdict(formatMandateVerdict(evaluation)),
-        mandates: loadMandates(),
+        mandates,
         evaluation,
+        legalSpace: readActiveStack(rootDir)?.legalSpace ?? "none",
       },
       null,
       2,

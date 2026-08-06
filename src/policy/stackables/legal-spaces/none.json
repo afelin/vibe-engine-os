@@ -1,0 +1,6 @@
+{
+  "id": "none",
+  "title": "No legal-space overlay",
+  "description": "Default — vibe mandates only; no additional legal-space deltas.",
+  "mandate_deltas": {}
+}

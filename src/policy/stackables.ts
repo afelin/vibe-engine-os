@@ -1,11 +1,34 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  loadMandates,
+  type Mandates,
+} from "./evaluate.js";
 
 export type ActiveStack = {
   legalSpace: string;
   projectProfile?: string;
   activatedAt: string;
+};
+
+export type MandateDeltas = {
+  forbidden_prefixes_extra?: string[];
+  require_approval_prefixes_extra?: string[];
+  max_attempts?: number;
+};
+
+export type LegalSpacePack = {
+  id: string;
+  title: string;
+  description: string;
+  mandate_deltas: MandateDeltas;
+  gate_hints?: string[];
+  narrative_tags?: string[];
+  cyberready_align?: {
+    regimes: string[];
+    note: string;
+  };
 };
 
 const LEGAL_SPACES_REL = "src/policy/stackables/legal-spaces";
@@ -31,7 +54,7 @@ function listJsonIds(dir: string): string[] {
     .filter((id) => id.length > 0);
 }
 
-/** Legal space ids. Always includes `none`. Scans packs when present; otherwise `none` only. */
+/** Legal space ids. Always includes `none`. Scans packs when present. */
 export function listLegalSpaces(rootDir = "."): string[] {
   const ids = new Set<string>(["none"]);
   for (const dir of [
@@ -41,6 +64,11 @@ export function listLegalSpaces(rootDir = "."): string[] {
     for (const id of listJsonIds(dir)) ids.add(id);
   }
   return [...ids].sort();
+}
+
+/** Alias — pack discovery surface for agents/MCP. */
+export function listLegalSpaceIds(rootDir = "."): string[] {
+  return listLegalSpaces(rootDir);
 }
 
 /** Project profile ids from `src/policy/profiles` (e.g. tabdab when present). */
@@ -89,6 +117,130 @@ export function readActiveStack(rootDir = "."): ActiveStack | null {
   }
 }
 
+/** Alias — reads `.vibe/active-stack.json`. */
+export function loadActiveStack(rootDir = "."): ActiveStack | null {
+  return readActiveStack(rootDir);
+}
+
+function resolvePackPath(id: string, rootDir: string): string | null {
+  const candidates = [
+    path.join(rootDir, LEGAL_SPACES_REL, `${id}.json`),
+    path.join(bundledLegalSpacesDir, `${id}.json`),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return null;
+}
+
+/**
+ * Load a legal-space pack by id. Unknown ids fail closed.
+ */
+export function loadLegalSpacePack(
+  id: string,
+  rootDir = ".",
+): LegalSpacePack {
+  const space = id.trim();
+  if (!space) {
+    throw new Error("Unknown legal space: (empty). Allowed: " + listLegalSpaceIds(rootDir).join(", "));
+  }
+
+  const allowed = listLegalSpaceIds(rootDir);
+  if (!allowed.includes(space)) {
+    throw new Error(
+      `Unknown legal space: ${space}. Allowed: ${allowed.join(", ")}`,
+    );
+  }
+
+  const packPath = resolvePackPath(space, rootDir);
+  if (!packPath) {
+    // `none` is always allowed even if pack file is missing (identity overlay).
+    if (space === "none") {
+      return {
+        id: "none",
+        title: "No legal-space overlay",
+        description: "Default — vibe mandates only.",
+        mandate_deltas: {},
+      };
+    }
+    throw new Error(
+      `Unknown legal space: ${space}. Pack file missing. Allowed: ${allowed.join(", ")}`,
+    );
+  }
+
+  try {
+    const raw = JSON.parse(fs.readFileSync(packPath, "utf8")) as LegalSpacePack;
+    if (!raw || typeof raw.id !== "string" || raw.id !== space) {
+      throw new Error(`Pack id mismatch for ${space}`);
+    }
+    return {
+      id: raw.id,
+      title: typeof raw.title === "string" ? raw.title : space,
+      description:
+        typeof raw.description === "string" ? raw.description : "",
+      mandate_deltas:
+        raw.mandate_deltas && typeof raw.mandate_deltas === "object"
+          ? raw.mandate_deltas
+          : {},
+      ...(Array.isArray(raw.gate_hints) ? { gate_hints: raw.gate_hints } : {}),
+      ...(Array.isArray(raw.narrative_tags)
+        ? { narrative_tags: raw.narrative_tags }
+        : {}),
+      ...(raw.cyberready_align && typeof raw.cyberready_align === "object"
+        ? { cyberready_align: raw.cyberready_align }
+        : {}),
+    };
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message.startsWith("Unknown legal space")) {
+      throw error;
+    }
+    if (error instanceof Error && error.message.startsWith("Pack id mismatch")) {
+      throw error;
+    }
+    throw new Error(
+      `Unknown legal space: ${space}. Failed to parse pack. Allowed: ${allowed.join(", ")}`,
+    );
+  }
+}
+
+/** Pure merge — deltas onto base mandates; never writes policy files. */
+export function applyStackableDeltas(
+  baseMandates: Mandates,
+  pack: LegalSpacePack,
+): Mandates {
+  const deltas = pack.mandate_deltas ?? {};
+  const forbidden = [
+    ...baseMandates.forbidden_prefixes,
+    ...(deltas.forbidden_prefixes_extra ?? []),
+  ];
+  const requireApproval = [
+    ...baseMandates.require_approval_prefixes,
+    ...(deltas.require_approval_prefixes_extra ?? []),
+  ];
+
+  return {
+    ...baseMandates,
+    forbidden_prefixes: [...new Set(forbidden)],
+    require_approval_prefixes: [...new Set(requireApproval)],
+    max_attempts:
+      typeof deltas.max_attempts === "number" && deltas.max_attempts > 0
+        ? deltas.max_attempts
+        : baseMandates.max_attempts,
+  };
+}
+
+/**
+ * Base mandates + active legal-space pack. Unset stack → `none`.
+ * Unknown active space fails closed (throws).
+ */
+export function loadEffectiveMandates(rootDir = "."): Mandates {
+  const base = loadMandates(rootDir);
+  const stack = loadActiveStack(rootDir);
+  const spaceId = stack?.legalSpace?.trim() || "none";
+  const pack = loadLegalSpacePack(spaceId, rootDir);
+  return applyStackableDeltas(base, pack);
+}
+
 export function setLegalSpace(
   rootDir: string,
   legalSpace: string,
@@ -101,6 +253,9 @@ export function setLegalSpace(
       `Unknown legal space: ${space}. Allowed: ${allowedSpaces.join(", ")}`,
     );
   }
+
+  // Fail closed: pack must load (except synthetic none without file — still ok via loadLegalSpacePack).
+  loadLegalSpacePack(space, rootDir);
 
   let profile: string | undefined;
   if (projectProfile !== undefined && projectProfile.trim()) {

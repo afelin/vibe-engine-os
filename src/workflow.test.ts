@@ -432,10 +432,13 @@ describe("GitHub Actions workflow", () => {
     expect(startHere).toContain("agent-adapter.md");
     expect(startHere).toContain("agent-protocol.md");
 
-    // Path 4 — Pick legal space (placeholder until stackables land)
+    // Path 4 — Pick legal space dial
     expect(startHere).toMatch(/legal.?space/i);
     expect(startHere).toContain("set_legal_space");
+    expect(startHere).toContain("list_stackables");
     expect(startHere).toContain(".vibe/active-stack.json");
+    expect(startHere).toContain("eu-nis2-cra");
+    expect(startHere).toContain("us-baseline");
   });
 
   it("README points to docs/start-here.md as canonical entry", () => {

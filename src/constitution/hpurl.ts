@@ -9,6 +9,8 @@ export type ProofHpurlParams = {
   vowsHash: string;
   repo?: string;
   api?: string;
+  /** Active legal-space id (e.g. eu-nis2-cra). */
+  space?: string;
 };
 
 export type ParsedProofHpurl = ProofHpurlParams & {
@@ -41,6 +43,7 @@ function buildCanonicalSearchParams(
   search.set("vows", params.vowsHash);
   if (params.repo) search.set("repo", params.repo);
   if (params.api) search.set("api", params.api);
+  if (params.space) search.set("space", params.space);
   if (extra) {
     for (const [key, value] of Object.entries(extra)) {
       search.set(key, value);
@@ -76,6 +79,7 @@ export function parseProofHpurl(url: string): ParsedProofHpurl | null {
 
   const repo = search.get("repo") ?? undefined;
   const api = search.get("api") ?? undefined;
+  const space = search.get("space") ?? undefined;
   const signature = search.get(RESERVED_SIG) ?? undefined;
   const publicKey = search.get(RESERVED_PUBKEY) ?? undefined;
   const scope = search.get(RESERVED_SCOPE) ?? undefined;
@@ -86,6 +90,7 @@ export function parseProofHpurl(url: string): ParsedProofHpurl | null {
     vowsHash,
     repo,
     api,
+    space,
     signature,
     publicKey,
     scope,
@@ -138,6 +143,7 @@ export async function verifyProofHpurl(url: string): Promise<boolean> {
     vowsHash: parsed.vowsHash,
     repo: parsed.repo,
     api: parsed.api,
+    space: parsed.space,
   }).toString();
 
   const publicKey = await crypto.subtle.importKey(

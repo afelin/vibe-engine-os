@@ -173,14 +173,41 @@ src/x.ts
     expect(parsed.bond.boundFiles).toContain("src/x.ts");
   });
 
-  it("lists stackables including none and tabdab", () => {
+  it("lists stackables including none, eu-nis2-cra, us-baseline, and tabdab", () => {
     const text = callReleaseGateTool("list_stackables", { root_dir: "." });
     const parsed = JSON.parse(text) as {
       legal_spaces: string[];
       project_profiles: string[];
     };
-    expect(parsed.legal_spaces).toContain("none");
+    expect(parsed.legal_spaces).toEqual(["eu-nis2-cra", "none", "us-baseline"]);
     expect(parsed.project_profiles).toContain("tabdab");
+  });
+
+  it("evaluate_mandate reflects eu-nis2-cra pack deltas", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "vibe-mcp-eval-"));
+    try {
+      fs.mkdirSync(path.join(root, "src/policy"), { recursive: true });
+      fs.copyFileSync(
+        path.join(process.cwd(), "src/policy/mandates.json"),
+        path.join(root, "src/policy/mandates.json"),
+      );
+      callReleaseGateTool("set_legal_space", {
+        root_dir: root,
+        legal_space: "eu-nis2-cra",
+      });
+      const text = callReleaseGateTool("evaluate_mandate", {
+        root_dir: root,
+        proposed_files: ["src/crypto/keys.ts"],
+      });
+      const parsed = JSON.parse(text) as {
+        evaluation: { passed: boolean };
+        legalSpace: string;
+      };
+      expect(parsed.legalSpace).toBe("eu-nis2-cra");
+      expect(parsed.evaluation.passed).toBe(false);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("set_legal_space rejects unknown ids", () => {

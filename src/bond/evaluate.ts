@@ -1,10 +1,10 @@
 import type { VibeDepth } from "../os/depth.js";
 import {
   evaluateMandates,
-  loadMandates,
   type MandateEvaluation,
   type Mandates,
 } from "../policy/evaluate.js";
+import { loadEffectiveMandates } from "../policy/stackables.js";
 import { loadProjectProfile, mergeAllowedPrefixes } from "./profile.js";
 
 export type TaskBondViolation = {
@@ -49,7 +49,7 @@ export function evaluateTaskBond(
   draft: TaskBondDraft,
   depth: VibeDepth,
   rootDir = ".",
-  mandates: Mandates = loadMandates(rootDir),
+  mandates: Mandates = loadEffectiveMandates(rootDir),
 ): TaskBondEval {
   const policy = bondPolicy(mandates);
   const profile = loadProjectProfile(undefined, rootDir);
