@@ -1,12 +1,17 @@
 #!/usr/bin/env node
 /**
  * Export L0 heal win (preferred) or last gauntlet/launch-proof as a GTM scar-post snippet.
+ * Stakeholder narratives delegate to src/publishing/stakeholder-narratives.ts (zero-LLM).
  */
-import { execSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
 const root = process.cwd();
+const narrativesModule = path.join(
+  root,
+  "src/publishing/stakeholder-narratives.ts",
+);
 
 function readLaunchProof() {
   const proofPath = path.join(root, ".vibe/launch-proof.json");
@@ -59,6 +64,98 @@ function runGauntletCapture() {
         : "");
     return output.trim() || "Gauntlet failed — run npm run eval:bond for details";
   }
+}
+
+function readActiveLegalSpace() {
+  const stackPath = path.join(root, ".vibe/active-stack.json");
+  if (!fs.existsSync(stackPath)) return undefined;
+  try {
+    const stack = JSON.parse(fs.readFileSync(stackPath, "utf8"));
+    return typeof stack.legalSpace === "string" ? stack.legalSpace : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Delegate to shared TypeScript renderer via tsx (ESM + zero-LLM templates).
+ */
+function renderSharedNarrativesSection(manifest) {
+  if (!fs.existsSync(narrativesModule)) return "";
+
+  const vibeDir = path.join(root, ".vibe");
+  fs.mkdirSync(vibeDir, { recursive: true });
+  const payloadPath = path.join(vibeDir, "_stakeholder-narratives-input.json");
+  const runnerPath = path.join(vibeDir, "_stakeholder-narratives-runner.mts");
+  fs.writeFileSync(payloadPath, `${JSON.stringify(manifest)}\n`, "utf8");
+  fs.writeFileSync(
+    runnerPath,
+    `import * as fs from "node:fs";
+import {
+  formatStakeholderNarrativesSection,
+  renderStakeholderNarratives,
+} from "../src/publishing/stakeholder-narratives.ts";
+
+const manifest = JSON.parse(fs.readFileSync(${JSON.stringify(payloadPath)}, "utf8"));
+process.stdout.write(
+  formatStakeholderNarrativesSection(renderStakeholderNarratives(manifest)),
+);
+`,
+    "utf8",
+  );
+
+  try {
+    const tsxCli = path.join(root, "node_modules/tsx/dist/cli.mjs");
+    if (!fs.existsSync(tsxCli)) return "";
+    return execFileSync(process.execPath, [tsxCli, runnerPath], {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    }).trim();
+  } catch {
+    return "";
+  } finally {
+    try {
+      fs.unlinkSync(runnerPath);
+    } catch {
+      // ignore
+    }
+    try {
+      fs.unlinkSync(payloadPath);
+    } catch {
+      // ignore
+    }
+  }
+}
+
+function narrativesManifestFromArtifacts({ l0Win, proof }) {
+  const legalSpace = readActiveLegalSpace();
+  if (l0Win) {
+    return {
+      runId: l0Win.runId,
+      issueNumber: l0Win.issueNumber,
+      issueTitle: l0Win.issueTitle,
+      success: l0Win.success === true,
+      state: l0Win.state,
+      metrics: l0Win.metrics,
+      legalSpace,
+      rootDir: root,
+    };
+  }
+  if (proof) {
+    return {
+      runId: proof.runId || `launch-proof-${proof.issueNumber ?? "unknown"}`,
+      issueNumber:
+        proof.issueNumber !== undefined ? String(proof.issueNumber) : undefined,
+      capsuleHash: proof.capsuleHash,
+      vowsHash: proof.vowsHash,
+      success: proof.checksGreen === true,
+      state: "completed",
+      legalSpace,
+      rootDir: root,
+    };
+  }
+  return null;
 }
 
 function formatScarPost({ l0Win, proof, gauntletOutput }) {
@@ -114,6 +211,14 @@ function formatScarPost({ l0Win, proof, gauntletOutput }) {
       "Then re-run `npm run launch:scar` for artifact-backed copy.",
       "",
     );
+  }
+
+  const narrManifest = narrativesManifestFromArtifacts({ l0Win, proof });
+  if (narrManifest) {
+    const section = renderSharedNarrativesSection(narrManifest);
+    if (section) {
+      lines.push("", section, "");
+    }
   }
 
   lines.push(
