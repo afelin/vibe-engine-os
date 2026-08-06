@@ -10,6 +10,11 @@ import {
   renderTrustSummary,
   trustSummaryCommentMarker,
 } from "../publishing/trust-summary.js";
+import {
+  formatStakeholderNarrativesSection,
+  renderStakeholderNarratives,
+  stakeholderNarrativesCommentMarker,
+} from "../publishing/stakeholder-narratives.js";
 import { renderCockpitComment, resolvePrUrl } from "./cockpit.js";
 import {
   fetchCheckRunsForRef,
@@ -131,6 +136,22 @@ async function main() {
     attributionCheck: prTrust.attributionCheck,
   });
 
+  const stakeholderNarratives = formatStakeholderNarrativesSection(
+    renderStakeholderNarratives({
+      runId: manifest.runId,
+      issueNumber: manifest.issueNumber,
+      issueTitle: manifest.issueTitle,
+      capsuleHash: manifest.capsuleHash,
+      vowsHash: manifest.vowsHash,
+      approvalRequired: manifest.approvalRequired,
+      metrics: manifest.metrics,
+      success: true,
+      state: "completed",
+      legalSpace,
+      rootDir,
+    }),
+  );
+
   const cockpitBody = renderCockpitComment(
     "completed",
     {
@@ -154,10 +175,14 @@ async function main() {
     },
   );
 
-  // Marked upsert block: trust summary marker + body ahead of cockpit.
+  // Marked upsert block: trust summary + stakeholder narratives ahead of cockpit.
+  // Keep existing trust/cockpit markers intact for upsert matching.
   const body = [
     trustSummaryCommentMarker,
     trustSummary,
+    "",
+    stakeholderNarrativesCommentMarker,
+    stakeholderNarratives,
     "",
     cockpitBody,
   ].join("\n");
