@@ -6,6 +6,8 @@ import {
   checkGauntletBaseline,
   checkMcpSmoke,
   checkRequiredWorkflows,
+  checkStartHereDoc,
+  checkVibeStarterTemplate,
   runLaunchReadiness,
 } from "./readiness.js";
 
@@ -16,7 +18,32 @@ describe("launch readiness", () => {
       console.error(`${check.id}: ${check.detail}`);
     }
     expect(result.ok).toBe(true);
-    expect(result.checks.length).toBeGreaterThanOrEqual(8);
+    expect(result.checks.length).toBeGreaterThanOrEqual(10);
+  });
+
+  it("requires docs/start-here.md and vibe-starter.yml", () => {
+    expect(checkStartHereDoc(".").ok).toBe(true);
+    expect(checkVibeStarterTemplate(".").ok).toBe(true);
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "vibe-readiness-entry-"));
+    try {
+      expect(checkStartHereDoc(tmp).ok).toBe(false);
+      expect(checkVibeStarterTemplate(tmp).ok).toBe(false);
+      const result = runLaunchReadiness(tmp);
+      expect(
+        result.checks.some(
+          (check) => check.id === "file:docs/start-here.md" && !check.ok,
+        ),
+      ).toBe(true);
+      expect(
+        result.checks.some(
+          (check) =>
+            check.id === "file:.github/ISSUE_TEMPLATE/vibe-starter.yml" &&
+            !check.ok,
+        ),
+      ).toBe(true);
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
   });
 
   it("finds required workflows", () => {

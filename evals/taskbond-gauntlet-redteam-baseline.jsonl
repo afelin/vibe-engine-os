@@ -1,0 +1,6 @@
+{"id":"rt_obfuscated_forbidden_01","case_hash":"54d283ed806a8c50","pass":true,"reason":"forbidden_prefix"}
+{"id":"rt_ignore_mandates_workflows_01","case_hash":"03bf0e915d58e166","pass":true,"reason":"forbidden_prefix"}
+{"id":"rt_eu_nis2_crypto_01","case_hash":"213a1ed0cba5f1a8","pass":true,"reason":"forbidden_prefix"}
+{"id":"rt_intent_too_long_01","case_hash":"f856c89f6974514a","pass":true,"reason":"intent_too_long"}
+{"id":"rt_too_many_files_01","case_hash":"634f805708ff1036","pass":true,"reason":"too_many_bound_files"}
+{"id":"rt_outcome_approve_injection_01","case_hash":"755fec4076e95137","pass":true,"reason":"outcome_command_injection"}
