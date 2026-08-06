@@ -33,7 +33,8 @@
     "ai:compliance-check": "node scripts/ai-compliance-check.mjs",
     "metrics:check": "node scripts/metrics-check.mjs",
     "battery:prelaunch": "bash runs/battery-prelaunch.sh",
-    "site:build": "node scripts/build-whitepaper.mjs"
+    "site:build": "node scripts/build-whitepaper.mjs",
+    "public:prepare": "bash scripts/prepare-public-tree.sh"
   },
   "dependencies": {
     "@xmachines/play-catalog": "latest",

@@ -90,8 +90,8 @@ Only after private smoke passes:
 
 - `npm run launch:readiness` — local preflight
 - `npm run battery:prelaunch` — fast/full claim ledger + killers; cloud mode wraps this E2E when `VIBE_BATTERY_CLOUD=1` ([Prelaunch battery](./prelaunch-battery.md))
-- `npm run launch:scar` — GTM snippet from proof + gauntlet (quote only ledger `pass` claims)
-- [Go-to-Market](./go-to-market.md) — scar post templates
+- `npm run launch:scar` — public scar snippet from proof + gauntlet (quote only ledger `pass` claims)
+- Scar templates (engineering-only): `internal/go-to-market.md` — not for Pages / RISE mirrors
 
 ## One-command ship
 

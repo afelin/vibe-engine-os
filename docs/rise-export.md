@@ -2,16 +2,18 @@
 
 This note defines what may leave the engineering monorepo onto a **public** RISE-facing GitHub / Pages surface. It is an OSS hygiene document, not a go-to-market plan.
 
+See also: [`docs/PUBLIC.md`](./PUBLIC.md) (short public vs internal contract).
+
 ## Default dual-repo strategy (A)
 
 | Repo | Role |
 |------|------|
-| **Engineering** (`afelin/vibe-engine-os` or successor) | Full source, CI, internal docs, experiments |
-| **RISE public** (RISE GitHub org mirror or docs repo) | **Docs + site only** by default: white paper HTML/MD, adopt/status/legal pages, `proof/` static receipts, citation metadata |
+| **Engineering** (`afelin/vibe-engine-os` or successor) | Full source, CI, **`internal/`**, experiments |
+| **RISE public** (RISE GitHub org mirror or docs repo) | Allowlisted export only — white paper, site, proof, operator how-tos, optional engine source |
 
-Strategy **A (default):** keep application/runtime source of truth in the engineering repo; export **documentation and static public site** to RISE GitHub for institutional face and stable Pages URLs. Sync is one-way (engineering → RISE public) on tagged or approved publish SHAs.
+Strategy **A (default):** keep application/runtime source of truth in the engineering repo; export **documentation and static public site** to RISE GitHub for institutional face and stable Pages URLs. Sync is one-way (engineering → RISE public) on tagged or approved publish SHAs via `npm run public:prepare` → `dist/public/`.
 
-Strategy B (optional later): full OSS mirror of the engine under RISE GitHub. Not required for Phase A.
+Strategy B (optional later): full OSS mirror of the engine under RISE GitHub (still **without** `internal/`). Not required for Phase A.
 
 ---
 
@@ -24,27 +26,33 @@ Strategy B (optional later): full OSS mirror of the engine under RISE GitHub. No
 | `CITATION.cff` | Institute citation hygiene |
 | `site/` public pages (home, whitepaper, adopt, status, legal) | Built by site agent; calm research/engineering tone |
 | `proof/` static proof UI / sample receipts | Evidence surface; no hosted-verify product claims |
-| `VOWS.md`, `docs/start-here.md`, `docs/solo-vibe-coder-guide.md`, `docs/nocode-quickstart.md`, `docs/agent-protocol.md`, `docs/agent-adapter.md`, `docs/agent-contract.md`, `docs/launch-proof.md`, `docs/prelaunch-battery.md` | Operator/run books (strip or rewrite any absolute-% / certification phrasing before export if present) |
+| `VOWS.md`, `docs/start-here.md`, `docs/solo-vibe-coder-guide.md`, `docs/nocode-quickstart.md`, `docs/agent-protocol.md`, `docs/agent-adapter.md`, `docs/agent-contract.md`, `docs/launch-proof.md`, `docs/prelaunch-battery.md`, `docs/PUBLIC.md` | Operator/run books (strip or rewrite any absolute-% / certification phrasing before export if present) |
 | `README.md` capability tables | Prefer claim-ledger–safe language; fix “tamper-proof” → “tamper-evident” on export if still present |
+| Engine / evals (strategy B) | `src/`, `runs/`, `scripts/`, `evals/` — still exclude secrets |
 | License / NOTICE / this file (`docs/rise-export.md`) | Export policy itself |
 
 Public tone: **portable free OSS primitives**, research/engineering. CyberReady = **one Planned** status cell only.
 
 ---
 
-## Denylist (must NOT ship on public Pages / RI.SE)
+## Denylist (must NOT ship on public Pages / RI.SE / RISE mirror)
 
 | Path / topic | Why |
 |--------------|-----|
-| `docs/go-to-market.md` | Monetization tiers, pricing, CAC/outreach playbooks |
+| **`internal/` (entire tree)** | Founder/operator notes; never Pages, never RISE public |
+| `internal/go-to-market.md` | Monetization tiers, pricing, CAC/outreach playbooks |
+| `docs/go-to-market.md` | Stub only in engineering repo; excluded from mirror |
 | Spin-off / equity / Swedish cybersecurity governance handoff narrative | Speculative politics; undermines research-project framing |
 | Payment tiers as product promise | Contradicts free-primitive public wave |
 | “Platform play” / Cloudflare commercial brand push | Wrong phase; parked |
 | Certification / “NIS2 compliant” / CRA-as-law claims | Liability + rot; posture packs ≠ law |
 | Absolute efficacy percentages as marketing | Not claim-safe |
 | Hosted HPURL verify / live CyberReady buyer proof as shipped | Remain **unclaimed** until products exist |
-| Secrets, `.env`, private tokens, customer data | Never |
-| Internal growth-arc memos that mix commercialization with the paper | Keep offline |
+| Secrets, `.env`, `.env.*` (non-example), private tokens, customer data | Never |
+| `.vibe/launch-proof.json` (real run data), private `.runs/` artifacts | Example files may stay |
+| Internal growth-arc memos that mix commercialization with the paper | Keep offline / under `internal/` only |
+
+Machine-readable deny list: [`.public-mirror-exclude`](../.public-mirror-exclude). Enforced by [`scripts/prepare-public-tree.sh`](../scripts/prepare-public-tree.sh).
 
 If a sentence helps a future deal but does not help an SME **run or verify** the primitive today, **cut it** from the export.
 
@@ -52,14 +60,26 @@ If a sentence helps a future deal but does not help an SME **run or verify** the
 
 ## Public vs internal docs (split)
 
-| Public | Internal (engineering repo or private) |
-|--------|----------------------------------------|
+| Public | Internal (`internal/` — engineering only) |
+|--------|-------------------------------------------|
 | What the software **is**, how to run it free, limits, evidence | Credibility → SME traction → optional later service wrapping |
 | White paper, adopt path, proof, citation | GTM tiers, pricing triggers, scar-post outreach calendars |
 | Posture packs as house rules | Legal strategy, governance uptake speculation |
 | CyberReady Planned | CyberReady commercial packaging |
 
-`docs/go-to-market.md` stays in the engineering tree for operators who need it; **exclude from Pages sync**.
+GTM lives at [`internal/go-to-market.md`](../internal/go-to-market.md). **Never** sync `internal/` to Pages or RISE public.
+
+---
+
+## Prepare public tree (operator)
+
+```bash
+npm run public:prepare
+# → dist/public/  (gitignored)
+# Inspect, then rsync/push that tree to the RISE public remote.
+```
+
+Or use git sparse-checkout (see footer written into `dist/public/.public-tree-README`) and still drop `internal/` + `docs/go-to-market.md`.
 
 ---
 
@@ -79,15 +99,17 @@ When mirroring to RISE Pages or a `docs/` site repo:
 
 1. Confirm head SHA is intended publish SHA; fill placeholders.  
 2. Run claim-safe skim: no spin-off, equity, payment tiers, certification, absolute %, posture-pack-as-law.  
-3. Sync **allowlist only** to RISE public repo / Pages branch.  
+3. Run `npm run public:prepare`; sync **`dist/public/` only** to RISE public repo / Pages branch.  
 4. Verify three RI.SE deep links resolve.  
-5. Leave denylist paths untracked on the public remote.
+5. Confirm `internal/` and `*go-to-market*` are absent on the public remote.
 
 ---
 
 ## Related
 
+- Public contract: [`docs/PUBLIC.md`](./PUBLIC.md)  
 - White paper: [`papers/vibe-engine-whitepaper.md`](../papers/vibe-engine-whitepaper.md)  
 - Blurb: [`papers/rise-project-blurb.md`](../papers/rise-project-blurb.md)  
 - Citation: [`CITATION.cff`](../CITATION.cff)  
-- Claim ledger (engineering): `src/launch/claim-ledger.ts`
+- Claim ledger (engineering): `src/launch/claim-ledger.ts`  
+- Exclude file: [`.public-mirror-exclude`](../.public-mirror-exclude)

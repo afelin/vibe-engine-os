@@ -36,6 +36,15 @@ jobs:
       - name: Build white paper + unify proof into site/
         run: node scripts/build-whitepaper.mjs
 
+      # Pages root is site/ only (from site/ + papers/ + proof/). Never deploy internal/ or GTM.
+      - name: Guard — Pages artifact has no internal/GTM paths
+        run: |
+          set -euo pipefail
+          if [[ -e site/internal ]] || find site -iname '*go-to-market*' | grep -q .; then
+            echo "Refuse to deploy: internal or go-to-market path under site/" >&2
+            exit 1
+          fi
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3

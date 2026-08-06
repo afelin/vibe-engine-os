@@ -129,4 +129,4 @@ CI runs **fast only**. Do not enable cloud on every PR.
 
 - [Start here](./start-here.md) — pick a path
 - [Launch proof](./launch-proof.md) — cloud hero E2E
-- [Go-to-market](./go-to-market.md) — tiers; quote only `pass` claims
+- Quote only ledger `pass` claims in any public copy; monetization notes stay under `internal/` (not published)

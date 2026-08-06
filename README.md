@@ -86,7 +86,7 @@ npm run activate
 | [Nocode Quickstart](docs/nocode-quickstart.md) | Nocode users — issue → PR → receipt, no terminal |
 | [Launch Proof](docs/launch-proof.md) | Operators — zero-token E2E runbook + artifact slots |
 | [Platform Enforcement](docs/platform-enforcement.md) | Operators — deploy-from-capsule, GitHub Pro-free enforcement |
-| [Go-to-Market](docs/go-to-market.md) | Founders — tiers, outreach, competitor gap |
+| [Public surface](docs/PUBLIC.md) | What is public vs `internal/` (RISE export) |
 | [OS Phases](docs/os-phases.md) | Promotion phase diagram (auto-derived from machine) |
 | [GitHub App](docs/github-app.md) | Enterprise — required checks, branch protection |
 
