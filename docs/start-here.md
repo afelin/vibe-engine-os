@@ -55,3 +55,15 @@ Designate which legal/compliance posture governs this repo — a dial, not a rew
 | `us-baseline` | Lighter US baseline extra approvals |
 
 Contract: [agent-contract.md](./agent-contract.md). Packs: `src/policy/stackables/legal-spaces/`.
+
+---
+
+## 5. Prelaunch battery (evidence before you ship the story)
+
+Before public “try vibe-engine” copy, run the honesty compiler:
+
+```bash
+npm run battery:prelaunch
+```
+
+Plain-speak killers, claim ledger rules, journeys J1–J5, and free vs paid gates: [Prelaunch battery](./prelaunch-battery.md).
