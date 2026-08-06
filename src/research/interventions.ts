@@ -8,6 +8,16 @@ export type InterventionRecord = {
   changedFiles: string[];
   diffHash: string;
   recordedAt: string;
+  stage?: InterventionStage;
+  stageReason?: string;
+};
+
+export type InterventionStage = "candidate" | "kept" | "dropped";
+
+export type InterventionDelta = {
+  firstPassGreenDelta: number;
+  l0l1HealShareDelta: number;
+  tokensMedianDelta: number;
 };
 
 const INTERVENTIONS_FILE = "interventions.ndjson";
@@ -93,6 +103,23 @@ export function readInterventions(rootDir: string, limit = 20): InterventionReco
     .filter(Boolean)
     .slice(-limit)
     .map((line) => JSON.parse(line) as InterventionRecord);
+}
+
+/**
+ * Weekly Pearl decision:
+ * - kept: quality up (firstPass + L0/L1 share) and cost down (tokens median)
+ * - dropped: quality down and cost up
+ * - candidate: inconclusive / mixed signal
+ */
+export function evaluateInterventionStage(delta: InterventionDelta): InterventionStage {
+  const qualityUp = delta.firstPassGreenDelta > 0 && delta.l0l1HealShareDelta > 0;
+  const qualityDown = delta.firstPassGreenDelta < 0 && delta.l0l1HealShareDelta < 0;
+  const costDown = delta.tokensMedianDelta < 0;
+  const costUp = delta.tokensMedianDelta > 0;
+
+  if (qualityUp && costDown) return "kept";
+  if (qualityDown && costUp) return "dropped";
+  return "candidate";
 }
 
 export function recordPolicyInterventions(rootDir: string): InterventionRecord | null {

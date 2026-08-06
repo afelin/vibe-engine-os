@@ -125,6 +125,22 @@ Do **not** start edge/OmniRoute (P3) until local dogfood clears these bars for *
 
 Baseline: `npm run scoreboard` + one `npm run orchestrate:smoke` after each Pearl merge. Plateau or miss → stay on P2 flywheel (scar-post, classify table, CI/launch troubleshoot hints).
 
+### Weekly Pearl runbook
+
+Run once per week (local or CI artifact collection):
+
+```bash
+npm run scoreboard
+npm run autoresearch
+```
+
+`runs/autoresearch.sh` now emits `weeklyDelta` when a prior report exists and classifies intervention quality through:
+- `firstPassGreenDelta`
+- `l0l1HealShareDelta`
+- `tokensMedianDelta`
+
+Interventions stay `candidate` until quality improves and token median drops (`kept`), or quality regresses with cost increase (`dropped`).
+
 ## Compliance
 
 Run `scripts/ai-trust-check.sh` before local LLM runs. See [ai-providers.md](./ai-providers.md).

@@ -138,10 +138,44 @@ const report = {
   scoreboardHeal,
 };
 
+function computeWeeklyDelta(currentReport) {
+  const researchDir = '$OUT_DIR';
+  const currentFile = '$OUT_FILE';
+  const candidates = fs
+    .readdirSync(researchDir)
+    .filter((name) => name.endsWith('.json'))
+    .map((name) => ({ name, full: researchDir + '/' + name }))
+    .filter((entry) => entry.full !== currentFile)
+    .sort((a, b) => a.name.localeCompare(b.name));
+  if (candidates.length === 0) return null;
+
+  const prevRaw = fs.readFileSync(candidates[candidates.length - 1].full, 'utf8');
+  const prev = JSON.parse(prevRaw);
+  const current = currentReport.scoreboardHeal;
+  const previous = prev?.scoreboardHeal;
+  if (!current || !previous) return null;
+
+  const toRate = (n) => (typeof n === 'number' ? n : 0);
+  return {
+    source: candidates[candidates.length - 1].name,
+    firstPassGreenDelta:
+      toRate(current.deterministicFixRate) - toRate(previous.deterministicFixRate),
+    l0l1HealShareDelta:
+      (toRate(current.pctL0) + toRate(current.pctL1)) -
+      (toRate(previous.pctL0) + toRate(previous.pctL1)),
+    tokensMedianDelta:
+      toRate(current.avgTokensEstimate) - toRate(previous.avgTokensEstimate),
+  };
+}
+
+const weeklyDelta = computeWeeklyDelta(report);
+report.weeklyDelta = weeklyDelta;
+
 fs.writeFileSync('$OUT_FILE', JSON.stringify(report, null, 2) + '\n');
 const summary = {
   mode: report.mode,
   fixtures: report.fixtures,
+  weeklyDelta,
   scoreboardHeal: scoreboardHeal
     ? {
         n: scoreboardHeal.n,
