@@ -31,6 +31,11 @@ import {
 import { recallLessons } from "../memory/recall.js";
 import type { ExecutionDag } from "../os/events.js";
 import { parseExecutionDag } from "../constitution/parse.js";
+import {
+  listStackables,
+  readActiveStack,
+  setLegalSpace,
+} from "../policy/stackables.js";
 
 export const RELEASE_GATE_MCP = {
   name: "vibe-release-gates",
@@ -175,6 +180,42 @@ export const RELEASE_GATE_TOOLS = [
         limit: { type: "number" },
       },
       required: ["path_prefixes"],
+    },
+  },
+  {
+    name: "list_stackables",
+    description:
+      "List available legal-space stackables and project profiles (fail-closed catalog).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        root_dir: { type: "string" },
+      },
+    },
+  },
+  {
+    name: "set_legal_space",
+    description:
+      "Write .vibe/active-stack.json with legalSpace (+ optional projectProfile). Rejects unknown ids. Does not edit policy packs.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        root_dir: { type: "string" },
+        legal_space: { type: "string" },
+        project_profile: { type: "string" },
+      },
+      required: ["legal_space"],
+    },
+  },
+  {
+    name: "get_active_stack",
+    description:
+      "Read current .vibe/active-stack.json selection (legalSpace, projectProfile, activatedAt).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        root_dir: { type: "string" },
+      },
     },
   },
 ] as const;
@@ -445,6 +486,36 @@ export function callReleaseGateTool(
     const limit = typeof args.limit === "number" ? args.limit : 5;
     const result = recallLessons(rootDir, prefixes, limit);
     return JSON.stringify(result, null, 2);
+  }
+
+  if (name === "list_stackables") {
+    const rootDir = typeof args.root_dir === "string" ? args.root_dir : ".";
+    return JSON.stringify(listStackables(rootDir), null, 2);
+  }
+
+  if (name === "set_legal_space") {
+    const rootDir = typeof args.root_dir === "string" ? args.root_dir : ".";
+    const legalSpace =
+      typeof args.legal_space === "string" ? args.legal_space : "";
+    const projectProfile =
+      typeof args.project_profile === "string" ? args.project_profile : undefined;
+    if (!legalSpace.trim()) {
+      throw new Error("legal_space required");
+    }
+    const stack = setLegalSpace(rootDir, legalSpace, projectProfile);
+    return JSON.stringify({ ok: true, stack }, null, 2);
+  }
+
+  if (name === "get_active_stack") {
+    const rootDir = typeof args.root_dir === "string" ? args.root_dir : ".";
+    const stack = readActiveStack(rootDir);
+    return JSON.stringify(
+      stack
+        ? { ok: true, stack }
+        : { ok: true, stack: null, hint: "unset — call list_stackables / set_legal_space (default none)" },
+      null,
+      2,
+    );
   }
 
   throw new Error(`Unknown tool: ${name}`);

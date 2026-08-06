@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 import {
   callReleaseGateTool,
   handleMcpRequest,
@@ -7,7 +10,7 @@ import {
 import { computeVowsHash } from "../constitution/vows.js";
 
 describe("release gate MCP handlers", () => {
-  it("advertises ten deterministic tools", () => {
+  it("advertises thirteen deterministic tools", () => {
     expect(RELEASE_GATE_TOOLS.map((tool) => tool.name)).toEqual([
       "list_gates",
       "resolve_gate",
@@ -19,6 +22,9 @@ describe("release gate MCP handlers", () => {
       "validate_bond",
       "build_scoped_context",
       "recall_lessons",
+      "list_stackables",
+      "set_legal_space",
+      "get_active_stack",
     ]);
   });
 
@@ -43,6 +49,9 @@ describe("release gate MCP handlers", () => {
     expect(tools?.result).toMatchObject({
       tools: expect.arrayContaining([
         expect.objectContaining({ name: "resolve_gate" }),
+        expect.objectContaining({ name: "list_stackables" }),
+        expect.objectContaining({ name: "set_legal_space" }),
+        expect.objectContaining({ name: "get_active_stack" }),
       ]),
     });
   });
@@ -162,5 +171,57 @@ src/x.ts
     expect(parsed.valid).toBe(true);
     expect(parsed.ok).toBe(true);
     expect(parsed.bond.boundFiles).toContain("src/x.ts");
+  });
+
+  it("lists stackables including none and tabdab", () => {
+    const text = callReleaseGateTool("list_stackables", { root_dir: "." });
+    const parsed = JSON.parse(text) as {
+      legal_spaces: string[];
+      project_profiles: string[];
+    };
+    expect(parsed.legal_spaces).toContain("none");
+    expect(parsed.project_profiles).toContain("tabdab");
+  });
+
+  it("set_legal_space rejects unknown ids", () => {
+    const response = handleMcpRequest({
+      jsonrpc: "2.0",
+      id: 99,
+      method: "tools/call",
+      params: {
+        name: "set_legal_space",
+        arguments: { legal_space: "not-a-real-space", root_dir: "." },
+      },
+    });
+    expect(response?.result).toMatchObject({ isError: true });
+    const text = (response?.result as { content: { text: string }[] }).content[0]
+      .text;
+    expect(text).toMatch(/Unknown legal space/);
+  });
+
+  it("set_legal_space and get_active_stack round-trip none", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "vibe-mcp-stack-"));
+    try {
+      const setText = callReleaseGateTool("set_legal_space", {
+        root_dir: root,
+        legal_space: "none",
+      });
+      const setParsed = JSON.parse(setText) as {
+        ok: boolean;
+        stack: { legalSpace: string };
+      };
+      expect(setParsed.ok).toBe(true);
+      expect(setParsed.stack.legalSpace).toBe("none");
+
+      const getText = callReleaseGateTool("get_active_stack", { root_dir: root });
+      const getParsed = JSON.parse(getText) as {
+        ok: boolean;
+        stack: { legalSpace: string } | null;
+      };
+      expect(getParsed.ok).toBe(true);
+      expect(getParsed.stack?.legalSpace).toBe("none");
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 });
