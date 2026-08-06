@@ -1,0 +1,57 @@
+name: Vibe Starter
+description: Prefilled safe starter — cloud-loop smoke for a first green PR
+title: "[vibe] cloud-loop smoke — verify forever loop is alive"
+labels:
+  - vibe/run
+  - vibe:safe
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **First green PR.** Submit as-is (or tweak lightly). Labels `vibe/run` + `vibe:safe` are already set.
+
+        This starter recreates the deterministic cloud-loop smoke from `.planning/milestones/ISSUE_901_PLAN.md` so CI can verify the forever loop is alive.
+
+        Operator commands: `/status` · `/approve` · `/retry` · `/rollback`
+
+  - type: textarea
+    id: intent
+    attributes:
+      label: Intent (one sentence)
+      description: What should change, in plain language?
+      value: Export cloud-loop smoke status so CI can verify the forever loop is alive.
+    validations:
+      required: true
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome (how we know it's done)
+      description: Checklist or acceptance criteria. Keep it testable.
+      value: |
+        - Unit test passes
+        - cloudLoopSmokeStatus === "v1-cloud-loop-ok"
+    validations:
+      required: true
+
+  - type: textarea
+    id: files
+    attributes:
+      label: Files to touch (exact paths)
+      description: Bound paths for TaskBond / codegen scope.
+      value: |
+        src/cloud-loop-smoke.ts
+        src/cloud-loop-smoke.test.ts
+    validations:
+      required: true
+
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints (optional)
+      description: Protected paths, things to avoid, or scope limits.
+      value: |
+        Do not change package.json
+        Stay on the two smoke files above
+    validations:
+      required: false
