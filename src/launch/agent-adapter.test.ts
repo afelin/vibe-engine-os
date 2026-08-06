@@ -28,4 +28,14 @@ describe("vibe-engine skill", () => {
     expect(skill).toContain("/go");
     expect(skill).toContain("get_active_stack");
   });
+
+  it("mentions cyberready_validate_delta after evaluate_mandate when CyberReady present", () => {
+    const skill = fs.readFileSync(
+      path.join(".cursor/skills/vibe-engine/SKILL.md"),
+      "utf8",
+    );
+    expect(skill).toMatch(/When CyberReady present/i);
+    expect(skill).toContain("cyberready_validate_delta");
+    expect(skill).toContain("evaluate_mandate");
+  });
 });
