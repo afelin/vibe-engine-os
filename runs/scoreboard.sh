@@ -2,10 +2,21 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SCOREBOARD="$ROOT/.runs/scoreboard.ndjson"
+SCOREBOARD="${VIBE_SCOREBOARD_PATH:-$ROOT/.runs/scoreboard.ndjson}"
+JSON_ONLY=0
+
+for arg in "$@"; do
+  case "$arg" in
+    --json) JSON_ONLY=1 ;;
+  esac
+done
 
 if [[ ! -f "$SCOREBOARD" ]]; then
-  echo "No scoreboard entries yet."
+  if [[ "$JSON_ONLY" -eq 1 ]]; then
+    echo '{"runs":0,"successRate":0,"firstPassRate":0,"averageDurationMs":0,"averageContextChars":0,"truncationRate":0,"hallucinationBlockRate":0,"healMix":{"n":0,"pctL0":0,"pctL1":0,"pctL2":0,"pctL3":0,"counts":{"l0":0,"l1":0,"l2":0,"l3":0},"avgTokensEstimate":0}}'
+  else
+    echo "No scoreboard entries yet."
+  fi
   exit 0
 fi
 
@@ -63,6 +74,12 @@ const summary = {
     lastHealLevel: healRows[healRows.length - 1]?.metrics?.healLevel,
   },
 };
+
+const jsonOnly = ${JSON_ONLY} === 1;
+if (jsonOnly) {
+  console.log(JSON.stringify(summary));
+  process.exit(0);
+}
 
 console.log('## Scoreboard (last 20 runs)');
 const firstPassPct = (summary.firstPassRate * 100).toFixed(0);

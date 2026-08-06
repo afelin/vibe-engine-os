@@ -6,7 +6,14 @@ DATE="$(date -u +%Y-%m-%d)"
 OUT_DIR="$ROOT/.runs/research"
 OUT_FILE="$OUT_DIR/$DATE.json"
 GATES_FILE="$ROOT/src/release-gate/gates.json"
-SCOREBOARD="$ROOT/.runs/scoreboard.ndjson"
+SCOREBOARD="${VIBE_SCOREBOARD_PATH:-$ROOT/.runs/scoreboard.ndjson}"
+SUMMARY_JSON_ONLY=0
+
+for arg in "$@"; do
+  case "$arg" in
+    --summary-json) SUMMARY_JSON_ONLY=1 ;;
+  esac
+done
 
 mkdir -p "$OUT_DIR"
 
@@ -132,25 +139,25 @@ const report = {
 };
 
 fs.writeFileSync('$OUT_FILE', JSON.stringify(report, null, 2) + '\n');
-console.log('Wrote autoresearch report to $OUT_FILE');
-console.log(
-  JSON.stringify(
-    {
-      mode: report.mode,
-      fixtures: report.fixtures,
-      scoreboardHeal: scoreboardHeal
-        ? {
-            n: scoreboardHeal.n,
-            pctL0: scoreboardHeal.pctL0,
-            pctL1: scoreboardHeal.pctL1,
-            pctL2: scoreboardHeal.pctL2,
-            pctL3: scoreboardHeal.pctL3,
-            deterministicFixRate: scoreboardHeal.deterministicFixRate,
-          }
-        : null,
-    },
-    null,
-    2,
-  ),
-);
+const summary = {
+  mode: report.mode,
+  fixtures: report.fixtures,
+  scoreboardHeal: scoreboardHeal
+    ? {
+        n: scoreboardHeal.n,
+        pctL0: scoreboardHeal.pctL0,
+        pctL1: scoreboardHeal.pctL1,
+        pctL2: scoreboardHeal.pctL2,
+        pctL3: scoreboardHeal.pctL3,
+        deterministicFixRate: scoreboardHeal.deterministicFixRate,
+      }
+    : null,
+};
+const summaryOnly = ${SUMMARY_JSON_ONLY} === 1;
+if (summaryOnly) {
+  console.log(JSON.stringify(summary));
+} else {
+  console.log('Wrote autoresearch report to $OUT_FILE');
+  console.log(JSON.stringify(summary, null, 2));
+}
 "
