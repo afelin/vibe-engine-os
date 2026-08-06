@@ -45,7 +45,11 @@ jobs:
             exit 1
           fi
 
+      # First deploy: repo may have no Pages site yet (has_pages=false → 404 from API).
+      # enablement: true lets GITHUB_TOKEN create/configure Pages for Actions builds.
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
