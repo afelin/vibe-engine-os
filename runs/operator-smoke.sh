@@ -45,3 +45,26 @@ grep -q "operator.rollback_requested" "$TMP_DIR/rollback.log"
 grep -q "Operator comment skipped" "$TMP_DIR/rollback.log"
 grep -q "operator.status_requested" "$LEDGER"
 grep -q "operator.rollback_requested" "$LEDGER"
+
+# Fast /go three-action guide (direct render — no full agent path)
+npx tsx <<'TS' >"$TMP_DIR/go.log"
+import { renderGoGuide } from "./src/operator/cockpit.js";
+
+const body = renderGoGuide({ preRun: true });
+const numbered = [...body.matchAll(/^\d+\.\s/gm)];
+if (!body.startsWith("## Go")) {
+  console.error("go guide missing ## Go heading");
+  process.exit(1);
+}
+if (numbered.length !== 3) {
+  console.error(`go guide expected 3 actions, got ${numbered.length}`);
+  process.exit(1);
+}
+if (!/\*\*Blocking:\*\*/.test(body) || !/\*\*Fastest unblock:\*\*/.test(body) || !/\*\*Merge or deploy next:\*\*/.test(body)) {
+  console.error("go guide missing required action labels");
+  process.exit(1);
+}
+console.log("operator.go_guide_ok");
+TS
+
+grep -q "operator.go_guide_ok" "$TMP_DIR/go.log"

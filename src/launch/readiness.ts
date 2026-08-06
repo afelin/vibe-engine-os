@@ -47,6 +47,14 @@ export function checkIssueTemplate(rootDir = "."): LaunchReadinessCheck {
   return checkFileExists(rootDir, ".github/ISSUE_TEMPLATE/vibe-request.yml");
 }
 
+export function checkVibeStarterTemplate(rootDir = "."): LaunchReadinessCheck {
+  return checkFileExists(rootDir, ".github/ISSUE_TEMPLATE/vibe-starter.yml");
+}
+
+export function checkStartHereDoc(rootDir = "."): LaunchReadinessCheck {
+  return checkFileExists(rootDir, "docs/start-here.md");
+}
+
 export function checkProofPage(rootDir = "."): LaunchReadinessCheck {
   return checkFileExists(rootDir, "proof/index.html");
 }
@@ -160,6 +168,8 @@ export function runLaunchReadiness(rootDir = "."): LaunchReadinessResult {
   const checks: LaunchReadinessCheck[] = [
     ...checkRequiredWorkflows(rootDir),
     checkIssueTemplate(rootDir),
+    checkVibeStarterTemplate(rootDir),
+    checkStartHereDoc(rootDir),
     checkProofPage(rootDir),
     checkGauntletBaseline(rootDir),
     checkMcpSmoke(),

@@ -15,10 +15,15 @@ export type TaskBondViolation = {
     | "forbidden_prefix"
     | "require_approval"
     | "disallowed_prefix"
-    | "missing_intent";
+    | "missing_intent"
+    | "outcome_command_injection";
   path?: string;
   detail: string;
 };
+
+/** Operator slash-commands must not be smuggled via outcome text. */
+const OUTCOME_COMMAND_RE =
+  /(?:^|\s)\/(approve|retry|rollback|continue|go|status|deploy|details|troubleshoot)\b/i;
 
 export type TaskBondEval = {
   passed: boolean;
@@ -72,6 +77,17 @@ export function evaluateTaskBond(
       rule: "intent_too_long",
       detail: `Intent exceeds ${policy.max_intent_chars} characters.`,
     });
+  }
+
+  for (const outcome of draft.outcomes) {
+    if (OUTCOME_COMMAND_RE.test(outcome)) {
+      violations.push({
+        rule: "outcome_command_injection",
+        detail:
+          "Outcomes must not contain operator slash-commands (e.g. /approve). Approval requires a real operator comment.",
+      });
+      break;
+    }
   }
 
   if (

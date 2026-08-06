@@ -15,6 +15,62 @@ describe("taskbond gauntlet", () => {
     expect(scorecard.pass).toBe(cases.length);
   });
 
+  it("runs redteam pack green (obfuscation, injection, eu-nis2-cra, size, /approve)", () => {
+    const casesPath = path.join(
+      process.cwd(),
+      "evals/taskbond-gauntlet-redteam.jsonl",
+    );
+    const cases = parseGauntletJsonl(fs.readFileSync(casesPath, "utf8"));
+    const scorecard = runTaskBondGauntlet(cases, ".", {
+      casesRef: "evals/taskbond-gauntlet-redteam.jsonl",
+    });
+    expect(scorecard.fail).toBe(0);
+    expect(scorecard.pass).toBe(cases.length);
+    expect(cases.map((c) => c.id)).toEqual(
+      expect.arrayContaining([
+        "rt_obfuscated_forbidden_01",
+        "rt_ignore_mandates_workflows_01",
+        "rt_eu_nis2_crypto_01",
+        "rt_intent_too_long_01",
+        "rt_too_many_files_01",
+        "rt_outcome_approve_injection_01",
+      ]),
+    );
+  });
+
+  it("eu-nis2-cra legal_space forbids crypto that none allows", () => {
+    const none = runTaskBondGauntlet(
+      [
+        {
+          id: "none-crypto",
+          category: "redteam",
+          depth: 3,
+          legal_space: "none",
+          intent: "Touch crypto",
+          boundFiles: ["src/crypto/keys.ts"],
+          expect: { ok: true },
+        },
+      ],
+      ".",
+    );
+    const eu = runTaskBondGauntlet(
+      [
+        {
+          id: "eu-crypto",
+          category: "redteam",
+          depth: 3,
+          legal_space: "eu-nis2-cra",
+          intent: "Touch crypto",
+          boundFiles: ["src/crypto/keys.ts"],
+          expect: { ok: false, reason: "forbidden_prefix" },
+        },
+      ],
+      ".",
+    );
+    expect(none.fail).toBe(0);
+    expect(eu.fail).toBe(0);
+  });
+
   it("tabdab profile allows Lovable paths", () => {
     const previous = process.env.VIBE_PROJECT_PROFILE;
     process.env.VIBE_PROJECT_PROFILE = "tabdab";
