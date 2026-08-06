@@ -2,7 +2,11 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { appendIntervention, readInterventions } from "./interventions.js";
+import {
+  appendIntervention,
+  evaluateInterventionStage,
+  readInterventions,
+} from "./interventions.js";
 
 describe("InterventionLedger", () => {
   const tmpDirs: string[] = [];
@@ -32,5 +36,31 @@ describe("InterventionLedger", () => {
     fs.mkdirSync(path.join(root, ".runs"), { recursive: true });
 
     expect(appendIntervention(root, [])).toBeNull();
+  });
+
+  it("classifies intervention lifecycle stage from weekly deltas", () => {
+    expect(
+      evaluateInterventionStage({
+        firstPassGreenDelta: 0.08,
+        l0l1HealShareDelta: 0.12,
+        tokensMedianDelta: -120,
+      }),
+    ).toBe("kept");
+
+    expect(
+      evaluateInterventionStage({
+        firstPassGreenDelta: -0.05,
+        l0l1HealShareDelta: -0.1,
+        tokensMedianDelta: 80,
+      }),
+    ).toBe("dropped");
+
+    expect(
+      evaluateInterventionStage({
+        firstPassGreenDelta: 0,
+        l0l1HealShareDelta: 0,
+        tokensMedianDelta: 0,
+      }),
+    ).toBe("candidate");
   });
 });
