@@ -2,15 +2,20 @@
 set -euo pipefail
 
 LEDGER=".runs/operator-events.ndjson"
+DEDUPE=".runs/operator-processed-comments.ndjson"
 TMP_DIR="$(mktemp -d)"
 
 cleanup() {
+  mkdir -p .runs
   if [ -f "$TMP_DIR/operator-events.ndjson" ]; then
-    mkdir -p .runs
     cp "$TMP_DIR/operator-events.ndjson" "$LEDGER"
   else
     rm -f "$LEDGER"
-    rmdir .runs 2>/dev/null || true
+  fi
+  if [ -f "$TMP_DIR/operator-processed-comments.ndjson" ]; then
+    cp "$TMP_DIR/operator-processed-comments.ndjson" "$DEDUPE"
+  else
+    rm -f "$DEDUPE"
   fi
   rm -rf "$TMP_DIR"
 }
@@ -19,6 +24,11 @@ trap cleanup EXIT
 if [ -f "$LEDGER" ]; then
   cp "$LEDGER" "$TMP_DIR/operator-events.ndjson"
 fi
+if [ -f "$DEDUPE" ]; then
+  cp "$DEDUPE" "$TMP_DIR/operator-processed-comments.ndjson"
+fi
+# Isolate smoke from prior local runs of the same fixed comment IDs
+rm -f "$DEDUPE"
 
 env \
   GITHUB_EVENT_NAME=issue_comment \
