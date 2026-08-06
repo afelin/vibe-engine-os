@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: read
+  issues: write
+  actions: read
 
 jobs:
   autoresearch:
@@ -22,8 +24,72 @@ jobs:
 
       - run: npm ci
 
+      - name: Restore prior research (best-effort)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p .runs/research
+          PRIOR_RUN=$(gh run list --workflow autoresearch-weekly.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty' || true)
+          if [ -z "${PRIOR_RUN}" ]; then
+            echo "No prior successful weekly run"
+            exit 0
+          fi
+          echo "Restoring research from run ${PRIOR_RUN}"
+          mkdir -p .runs/research-restore
+          gh run download "${PRIOR_RUN}" --name "autoresearch-${PRIOR_RUN}" --dir .runs/research-restore || true
+          find .runs/research-restore -type f -name '*.json' -print0 2>/dev/null | while IFS= read -r -d '' f; do
+            cp -n "$f" .runs/research/ || true
+          done
+
       - name: Run autoresearch
         run: npm run autoresearch
+
+      - name: Render weekly Pearl summary
+        id: pearl
+        run: |
+          SUMMARY_FILE="$RUNNER_TEMP/weekly-pearl.md"
+          npx tsx src/research/pearl-summary.ts . > "$SUMMARY_FILE"
+          {
+            echo "body<<PEARL_EOF"
+            cat "$SUMMARY_FILE"
+            echo "PEARL_EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "Wrote Pearl summary ($(wc -c < "$SUMMARY_FILE") bytes)"
+
+      - name: Publish weekly Pearl issue comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PEARL_BODY: ${{ steps.pearl.outputs.body }}
+        run: |
+          set -euo pipefail
+          MARKER='<!-- vibe-engine-os-weekly-pearl -->'
+          TITLE='Weekly Pearl tracking'
+          LABEL='vibe/pearl-weekly'
+
+          gh label create "$LABEL" --description "Weekly Pearl autoresearch tracking" --color "0E8A16" 2>/dev/null || true
+
+          ISSUE_NUMBER=$(gh issue list --label "$LABEL" --state open --limit 1 --json number --jq '.[0].number // empty')
+          if [ -z "$ISSUE_NUMBER" ]; then
+            ISSUE_URL=$(gh issue create --title "$TITLE" --label "$LABEL" --body "Tracking issue for weekly Pearl autoresearch deltas. Updated automatically by the Autoresearch Weekly workflow.")
+            ISSUE_NUMBER="${ISSUE_URL##*/}"
+          fi
+
+          BODY="${MARKER}
+          ${PEARL_BODY}
+
+          _Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}_
+          "
+
+          EXISTING=$(gh api "repos/${{ github.repository }}/issues/${ISSUE_NUMBER}/comments" --paginate --jq ".[] | select(.body | contains(\"${MARKER}\")) | .id" | head -n1 || true)
+          if [ -n "$EXISTING" ]; then
+            gh api -X PATCH "repos/${{ github.repository }}/issues/comments/${EXISTING}" -f body="$BODY" >/dev/null
+            echo "Updated Pearl comment on issue #${ISSUE_NUMBER} (comment ${EXISTING})"
+          else
+            gh issue comment "$ISSUE_NUMBER" --body "$BODY"
+            echo "Created Pearl comment on issue #${ISSUE_NUMBER}"
+          fi
 
       - name: Upload research artifact
         uses: actions/upload-artifact@v4
@@ -31,3 +97,4 @@ jobs:
           name: autoresearch-${{ github.run_id }}
           path: .runs/research/
           if-no-files-found: warn
+          retention-days: 90
