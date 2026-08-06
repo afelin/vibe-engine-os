@@ -84,4 +84,15 @@ describe("orchestrator diagnose", () => {
     expect(classified.gauntletCaseId).toBe("forbidden_01");
     expect(classified.summary).toContain("gauntlet case: forbidden_01");
   });
+
+  it("extracts gauntlet case ids from regression lines", () => {
+    expect(
+      extractGauntletCaseId("path_escape_03: was pass, now fail"),
+    ).toBe("path_escape_03");
+    const classified = classifyFromSymptom(
+      "taskbond gauntlet regression path_escape_03: was pass, now fail",
+    );
+    expect(classified.failureClass).toBe("gauntlet");
+    expect(classified.gauntletCaseId).toBe("path_escape_03");
+  });
 });

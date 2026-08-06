@@ -178,4 +178,35 @@ describe("GitHub comment router", () => {
     );
     expect(result.responseBody).toMatch(/guidance_delivered|Healed:\s*yes/i);
   });
+
+  it("ignores duplicate command comment ids (idempotent webhook replay)", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "vibe-gh-dup-"));
+    tempDirs.push(root);
+    fs.mkdirSync(path.join(root, ".runs"), { recursive: true });
+
+    const first = await routeGitHubComment({
+      body: "/status",
+      actor: "alice",
+      commentId: "comment-dup-1",
+      state: "learning",
+      rootDir: root,
+      context,
+      readRollback: () => ({ found: false, body: "missing" }),
+    });
+    expect(first.handled).toBe(true);
+    expect(first.event?.type).toBe("operator.status_requested");
+
+    const second = await routeGitHubComment({
+      body: "/status",
+      actor: "alice",
+      commentId: "comment-dup-1",
+      state: "learning",
+      rootDir: root,
+      context,
+      readRollback: () => ({ found: false, body: "missing" }),
+    });
+    expect(second.handled).toBe(true);
+    expect(second.event).toBeNull();
+    expect(second.responseBody).toContain("Duplicate command ignored");
+  });
 });
