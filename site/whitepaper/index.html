@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>vibe-engine-os: Portable Promotion Primitives for Agent-Written Code — vibe-engine</title>
+  <meta name="description" content="vibe-engine white paper: portable open-source promotion primitives." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/site.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a class="brand" href="../">vibe-engine</a>
+      <nav aria-label="Primary">
+        <ul class="nav">
+          <li><a href="./" aria-current="page">White paper</a></li>
+          <li><a href="../adopt/">Adopt</a></li>
+          <li><a href="../status/">Status</a></li>
+          <li><a href="../proof/">Proof</a></li>
+          <li><a href="../legal/">Legal</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="site-main">
+    <article class="prose">
+<h1>vibe-engine-os: Portable Promotion Primitives for Agent-Written Code</h1>
+<p><strong>Technical white paper (claim-safe)</strong><br />
+<strong>Version:</strong> <code>UNPUBLISHED</code> — replace with release tag at publish<br />
+<strong>Date:</strong> <code>YYYY-MM-DD</code> — fill at publish<br />
+<strong>Source SHA:</strong> <code>TO_BE_FILLED_AT_PUBLISH</code> — set to the git commit SHA of the published tree<br />
+<strong>How to cite:</strong> see <a href="#how-to-cite">How to cite</a> and repository root <a href="https://github.com/afelin/vibe-engine-os/blob/main/CITATION.cff"><code>CITATION.cff</code></a></p>
+<blockquote><p><strong>Honesty note.</strong> This document describes free open-source software mechanisms that run on the operator’s own GitHub repository and CI. It does not claim certification, legal compliance, absolute percentages, or commercial product tiers. Capsules are <strong>tamper-evident</strong>, not tamper-proof. Hosted receipt verify and live CyberReady signed buyer proof remain <strong>unclaimed</strong> until those products exist.</p></blockquote>
+<hr />
+<h2>Abstract</h2>
+<p>vibe-engine-os is a <strong>promotion gate</strong> for AI-assisted software change: generative models may propose artifacts; house rules (vows, mandates, bonds, gates) and automated checks decide what may land in Git. The portable core is a set of OSS primitives—TaskBond, mandate evaluation, zero-token release gates, a depth dial, forever-loop automation, capsules with HPURL proof links, deterministic replay, an adversarial gauntlet, MCP tool surfaces, light heal/Pearl operators, and Assisted-by attribution—that make agent work <strong>bounded, replayable, and evidence-bearing</strong>.</p>
+<p>The engine is <strong>regulation-agnostic</strong>. Optional posture packs are <strong>house-rule overlays</strong> (path forbids and approval prefixes). They are not NIS2, CRA, or any statute. An optional CyberReady bridge is documented as <strong>Planned</strong> only: when absent it fail-opens and does not block promotion.</p>
+<hr />
+<h2>1. Problem statement</h2>
+<p>Coding agents expand the volume of proposed diffs faster than review and policy can keep up. Common failure modes:</p>
+<ol>
+<li><strong>Scope creep</strong> — a request for one file becomes a multi-directory rewrite.</li>
+<li><strong>Policy bypass</strong> — rules that live in one IDE are ignored by the next agent or by CI-only workflows.</li>
+<li><strong>Unverifiable history</strong> — “the model did it” without a replayable record or fingerprint.</li>
+<li><strong>Silent guardrail rot</strong> — promotion checks pass while refusal behavior quietly weakens.</li>
+<li><strong>Opaque authorship</strong> — AI assistance is unmarked in commit history.</li>
+</ol>
+<p>vibe-engine-os addresses these with <strong>structural</strong> controls (bonds, mandates, gates) and <strong>evidence</strong> (capsule hash, event log replay, gauntlet baseline), not with marketing guarantees.</p>
+<hr />
+<h2>2. Design principles</h2>
+<table>
+<thead>
+<tr><th>Principle</th><th>Meaning in this codebase</th></tr>
+</thead>
+<tbody>
+<tr><td>Generative proposes; vows decide</td><td>Models emit candidate artifacts; <code>VOWS.md</code> / <code>src/constitution/vows.json</code>, mandates, and tests authorize promotion</td></tr>
+<tr><td>Portable OSS</td><td>Run on the operator’s GitHub Actions and local Node ≥ 22; no paywalled Aha path</td></tr>
+<tr><td>Claim-safe language</td><td>Prefer “blocks,” “hashes,” “replays,” “fail-open”; avoid certification and absolute efficacy claims</td></tr>
+<tr><td>Regulation-agnostic core</td><td>Legal statutes are not hard-wired into the OS machine; posture packs overlay house rules</td></tr>
+<tr><td>Evidence over narrative</td><td>Prefer capsules, gauntlet results, and launch-proof artifacts over slogans</td></tr>
+</tbody>
+</table>
+<p>Invariant (from vows): <strong>No promotion without green</strong> typecheck and tests; forbidden prefixes are never written; catalog parse precedes disk write; planner output matches <code>ExecutionDag</code>.</p>
+<hr />
+<h2>3. Architecture overview</h2>
+<pre><code class="language-text">Issue / MCP / agent
+        │
+        ▼
+  TaskBond seal ──► mandate eval (base + optional posture pack)
+        │
+        ▼
+  Zero-token gate match? ──yes──► deterministic patch
+        │ no
+        ▼
+  Depth-capped plan / codegen / verify
+        │
+        ▼
+  Capsule + events.ndjson + HPURL comment
+        │
+        ▼
+  Replay + gauntlet + attribution + Vibe Promotion Gate
+        │
+        ▼
+  Git promotion (optional auto-merge when checks green)</code></pre>
+<p>Constitution artifacts live under a Zod catalog (<code>@xmachines/play-*</code> + local schemas). Structured outputs that fail schema validation do not promote.</p>
+<hr />
+<h2>4. TaskBond</h2>
+<p>A <strong>TaskBond</strong> is a sealed work order: intent (bounded length), expected outcomes, and an explicit list of <strong>bound files</strong> (hard cap, currently 16). Seal and validate flows are available via CLI (<code>npm run bond:seal</code>) and MCP (<code>seal_bond</code>, <code>validate_bond</code>).</p>
+<p>At seal and preflight time, the engine rejects bonds that violate mandates (forbidden prefixes, approval-required paths without operator consent, oversized scope). Scope outside the plan ∪ bound set is blocked by bond-compliance checks during the run.</p>
+<p><strong>What a bond proves:</strong> the run was authorized against a declared file set.<br />
+<strong>What a bond does not prove:</strong> correctness of business logic, security of dependencies, or regulatory compliance.</p>
+<hr />
+<h2>5. Mandates and zero-token gates</h2>
+<p><strong>Mandates</strong> (<code>src/policy/mandates.json</code>, evaluated via MCP <code>evaluate_mandate</code>) encode house rules: forbidden path prefixes, approval prefixes, max attempts, approver allowlist. High-risk paths require operator <code>/approve</code> on the controlling issue.</p>
+<p><strong>Zero-token gates</strong> (<code>src/release-gate/gates.json</code>, MCP <code>resolve_gate</code> / <code>list_gates</code>) match issue title/body to deterministic patch templates. Matched chores need no LLM call—by construction, token cost for those templates is zero. Agents are expected to call <code>resolve_gate</code> before invoking generative codegen.</p>
+<hr />
+<h2>6. Depth dial (<code>VIBE_DEPTH</code>)</h2>
+<p>Autonomy is a <strong>volume knob</strong>, not an all-or-nothing switch:</p>
+<table>
+<thead>
+<tr><th>Depth</th><th>Typical meaning</th></tr>
+</thead>
+<tbody>
+<tr><td>0</td><td>Explain only</td></tr>
+<tr><td>1</td><td>Plan</td></tr>
+<tr><td>2</td><td>Safe file edits</td></tr>
+<tr><td>3</td><td>Tests + code (common default)</td></tr>
+<tr><td>4</td><td>Deploy-oriented work</td></tr>
+<tr><td>5</td><td>Protected paths; requires <code>/approve</code></td></tr>
+</tbody>
+</table>
+<p>Set via environment <code>VIBE_DEPTH</code> or labels such as <code>vibe:plan-only</code>, <code>vibe:safe</code>, <code>vibe:ship</code>. Depth also caps the heal ladder (more restrictive of depth vs <code>VIBE_HEAL_MAX_LEVEL</code> wins). Depth 0–1 keeps heal at zero-token levels.</p>
+<hr />
+<h2>7. Forever loop</h2>
+<p>With label <code>vibe/run</code> on a Vibe Request (or starter) issue, GitHub Actions drive: plan → codegen (when needed) → verify → PR + cockpit comment. Operators steer with issue comments (<code>/status</code>, <code>/approve</code>, <code>/continue</code>, <code>/retry</code>, <code>/rollback</code>, <code>/details</code>, <code>/troubleshoot</code>) without requiring a local terminal for the happy path.</p>
+<p>The loop is <strong>automation on the operator’s GitHub</strong>, not a hosted multi-tenant platform. Availability and retention follow GitHub’s product terms for that repository.</p>
+<hr />
+<h2>8. Capsule, vows hash, and HPURL</h2>
+<p>Each verified run produces a <strong>capsule</strong>: a cryptographic fingerprint (<code>capsuleHash</code>) over run artifacts, plus <code>vowsHash</code> (SHA-256 of canonical vows JSON). Changing recorded material invalidates the fingerprint relative to the published capsule—hence <strong>tamper-evident</strong>.</p>
+<p><strong>Claim boundary:</strong> hashes detect mismatch between claimed and recomputed digests. They do not make storage media physically “tamper-proof,” nor do they prove that upstream GitHub or CI logs were unaltered before encapsulation.</p>
+<p><strong>HPURL</strong> (proof link) encodes run id, capsule hash, vows hash, and optional <code>space=</code> (active legal-space id) in a URL fragment so parameters need not hit a proof server. Local inspection uses <code>proof/index.html</code> and MCP <code>validate_capsule</code>. Public hosted verify URLs may be deferred until Pages is enabled; until a hosted verify product ships, that capability stays <strong>unclaimed</strong> in the project claim ledger.</p>
+<hr />
+<h2>9. Deterministic replay</h2>
+<p>Runs append an event sequence (<code>events.ndjson</code>). Before promotion, <code>npm run replay</code> re-executes the recorded flight and compares ending fingerprints. Mismatch blocks promotion. CI can wire the same check on PRs.</p>
+<p>Replay is a <strong>determinism and integrity check for the recorded machine path</strong>, not a proof that the surrounding CI runner or third-party Actions marketplace steps were free of compromise (see <a href="#14-threat-model">Threat model</a>).</p>
+<hr />
+<h2>10. Gauntlet</h2>
+<p>The TaskBond gauntlet (<code>npm run eval:bond</code>) executes a fixed adversarial suite (bond + mandate scenarios, including legal-space overlays). Results are compared to a locked baseline; drift that weakens refusal behavior fails the suite. The suite is wired into <strong>Vibe Promotion Gate</strong> preflight so weakening guards blocks merge when the check is required on the branch.</p>
+<p>Coverage is <strong>exactly the scenarios in the suite</strong>. Expanding the suite expands covered refusal classes; uncovered attack classes are not implied safe.</p>
+<p>A separate red-team pack exercises additional adversarial cases for launch readiness; treat results as regression evidence for those cases, not as a certification exam.</p>
+<hr />
+<h2>11. MCP surface</h2>
+<p>The <code>vibe-release-gates</code> MCP server exposes live rulebook tools to Cursor and other MCP clients, including (non-exhaustive): <code>evaluate_mandate</code>, <code>resolve_gate</code>, <code>list_gates</code>, <code>seal_bond</code>, <code>validate_bond</code>, <code>constitution_schemas</code>, <code>validate_capsule</code>, <code>build_scoped_context</code>, <code>recall_lessons</code>, <code>list_stackables</code>, <code>set_legal_space</code>, <code>get_active_stack</code>, and optional <code>cyberready_validate_delta</code>.</p>
+<p>Smoke: <code>npm run gate:mcp</code>. The same constitution applies whether the agent is in-IDE or in Actions—reducing “rules only in one tool” bypass, provided operators actually enable the MCP and follow the skill vows.</p>
+<hr />
+<h2>12. Heal ladder and Pearl (light)</h2>
+<p><strong>Heal</strong> (orchestrator troubleshoot path) escalates only as far as dials allow:</p>
+<table>
+<thead>
+<tr><th>Level</th><th>Role</th></tr>
+</thead>
+<tbody>
+<tr><td>L0</td><td>Deterministic: gates, feedback cache read, bond validate, lessons, preflight/replay/readiness</td></tr>
+<tr><td>L1</td><td>Known remediation from feedback cache (still zero-token)</td></tr>
+<tr><td>L2</td><td>One bounded LLM pass + one critic pass (when depth and heal dial allow)</td></tr>
+<tr><td>L3</td><td>Human / guide escalation</td></tr>
+<tr><td>L4</td><td>Offline autoresearch — not hot path</td></tr>
+</tbody>
+</table>
+<p>Default GitHub <code>/troubleshoot</code> caps at L1. Heal outcomes can be recorded in run metrics (<code>healLevel</code>, <code>deterministicFix</code>).</p>
+<p><strong>Pearl</strong> is a compact weekly summary of heal/intervention deltas for operators (first-pass green, L0/L1 heal share, token medians, intervention stages). It is an <strong>ops narrative over measured deltas</strong>, not a performance guarantee.</p>
+<hr />
+<h2>13. Assisted-by attribution</h2>
+<p>On pull requests, an attribution audit blocks merge when commit messages mention AI tooling without an <code>Assisted-by:</code> trailer. The engine tags its own commits <code>Assisted-by: vibe-engine-os</code>.</p>
+<p><strong>Claim boundary:</strong> enforcement is mechanical on <strong>mentioned</strong> AI tools in commit text for PRs that run the check. It does not detect silent omissions where no AI tooling is named.</p>
+<hr />
+<h2>14. Threat model</h2>
+<h3>Assets</h3>
+<ul>
+<li>Integrity of promoted Git history and bound file sets  </li>
+<li>Integrity of run capsules, vows attestation, and replay logs  </li>
+<li>Confidentiality of secrets in the operator’s repo and CI  </li>
+<li>Availability of the forever loop and required checks  </li>
+</ul>
+<h3>Trust boundaries</h3>
+<table>
+<thead>
+<tr><th>Boundary</th><th>Assumption</th><th>Residual risk</th></tr>
+</thead>
+<tbody>
+<tr><td>Operator workstation / agent IDE</td><td>Operator chooses models and MCP enablement</td><td>Malicious or misconfigured agents that skip MCP vows</td></tr>
+<tr><td>vibe-engine-os code + vows</td><td>Reviewed and activated (<code>npm run activate</code>)</td><td>Bugs or incomplete gauntlet coverage</td></tr>
+<tr><td><strong>GitHub</strong> (Issues, Actions, Checks, API)</td><td><strong>Subprocessor for hosting, CI, and collaboration</strong></td><td>GitHub outages; compromised Actions; privileged token misuse; log retention policies outside this project</td></tr>
+<tr><td>Optional external LLM APIs</td><td>Used only when depth/heal dials call them</td><td>Prompt injection, data exfiltration to providers</td></tr>
+<tr><td>Optional CyberReady socket</td><td>Fail-open when not installed</td><td>Not a substitute for compliance tooling</td></tr>
+</tbody>
+</table>
+<h3>Honesty: GitHub as subprocessor</h3>
+<p>vibe-engine-os <strong>does not replace GitHub</strong>. Issue text, Actions logs, PR metadata, and artifacts transit GitHub’s infrastructure under the repository owner’s GitHub agreement. Capsules and HPURLs improve <strong>evidence legibility for governed runs</strong>; they do not magically extend trust into GitHub’s control plane. Operators who need stronger independence must export proofs and retain copies outside GitHub.</p>
+<h3>Out of scope (non-claims)</h3>
+<ul>
+<li>Physical security of developer laptops  </li>
+<li>Supply-chain proof for every npm dependency  </li>
+<li>Formal verification of generated application code  </li>
+<li>Legal determination of NIS2/CRA (or any regime) compliance  </li>
+</ul>
+<hr />
+<h2>15. Posture packs ≠ law</h2>
+<p>Legal-space <strong>stackables</strong> (<code>src/policy/stackables/legal-spaces/</code>, MCP <code>list_stackables</code> / <code>set_legal_space</code>) overlay mandate deltas (extra forbids / approval prefixes) onto the base house rules at evaluation time. Packs such as <code>none</code>, <code>eu-nis2-cra</code>, and <code>us-baseline</code> are <strong>named after postures humans associate with regimes</strong>; they are <strong>not</strong> encodings of those laws, not auditor certifications, and not a substitute for counsel or a compliance program.</p>
+<p>Selecting <code>eu-nis2-cra</code> does <strong>not</strong> mean “NIS2 compliant.” It means “apply this repository’s stricter path/approval overlay labeled for that posture.” Active selection is recorded in <code>.vibe/active-stack.json</code> and may appear on HPURL as <code>space=</code> for audit tagging only.</p>
+<hr />
+<h2>16. CyberReady — Planned only</h2>
+<table>
+<thead>
+<tr><th>Capability</th><th>Public status</th></tr>
+</thead>
+<tbody>
+<tr><td>Soft bridge <code>cyberready_validate_delta</code> via <code>CYBERREADY_SOCK</code></td><td>Optional; <strong>fail-open</strong> with <code>not_installed</code> when absent — does not block mandate eval or promote</td></tr>
+<tr><td>Live CyberReady-ready signed buyer proof / hosted signed audit export</td><td><strong>Planned</strong> — remain <strong>unclaimed</strong> in the claim ledger until product exists</td></tr>
+</tbody>
+</table>
+<p>Public status pages and this paper show <strong>one Planned box</strong> for CyberReady. Do not advertise “CyberReady-ready” proof until the ledger marks the corresponding claim pass.</p>
+<hr />
+<h2>17. Adopt into an existing repository</h2>
+<p>Portable primitive path (no greenfield requirement):</p>
+<pre><code class="language-bash"># From a clone of vibe-engine-os:
+bash runs/adopt.sh /path/to/target-repo
+# or, already installed in-tree:
+bash runs/adopt.sh .</code></pre>
+<p><code>adopt.sh</code> installs the bundle when needed (<code>runs/install-into-repo.sh</code>), runs <code>npm install</code>, then <code>npm run activate</code> (check, zero-token smoke, MCP smoke, schema export, vows attestation → <code>.vibe/activated.json</code>).</p>
+<p>After adopt:</p>
+<ol>
+<li>Enable branch protection / required <strong>Vibe Promotion Gate</strong> as appropriate for the target repo.  </li>
+<li>Enable MCP from <code>mcp.json</code> for Cursor agents.  </li>
+<li>Open a Vibe Request or Starter issue; label <code>vibe/run</code> for the forever loop.  </li>
+<li>Optionally set legal space via MCP (<code>set_legal_space</code>) — house rules only.</li>
+</ol>
+<p>The Aha path (issue → PR + receipt, gauntlet, MCP, zero-token gates) is intended to remain free to run on the operator’s own infrastructure. Internal monetization notes, if any, are <strong>not</strong> part of this paper or the public site allowlist (see <a href="https://github.com/afelin/vibe-engine-os/blob/main/docs/rise-export.md"><code>docs/rise-export.md</code></a>).</p>
+<hr />
+<h2>18. Limits and non-goals</h2>
+<ul>
+<li>Not a codegen product; not a substitute for code review judgment.  </li>
+<li>Not a certification body; no absolute pass-rate marketing.  </li>
+<li>Not a platform-play narrative; this paper describes <strong>software primitives</strong>.  </li>
+<li>Hosted HPURL verify and live CyberReady buyer packaging: <strong>out of claim</strong> until built.  </li>
+<li>Branch protection on private free GitHub repos may require UI/admin steps outside the engine.  </li>
+</ul>
+<hr />
+<h2>19. How to cite</h2>
+<p>Preferred machine-readable citation: repository root <a href="https://github.com/afelin/vibe-engine-os/blob/main/CITATION.cff"><code>CITATION.cff</code></a>.</p>
+<p>Plain-text form (fill version, date, and SHA at publish):</p>
+<blockquote><p>vibe-engine-os contributors. <em>vibe-engine-os: Portable Promotion Primitives for Agent-Written Code</em>. Technical white paper, version VERSION (YYYY-MM-DD). Source SHA: COMMIT_SHA. Available at: https://github.com/afelin/vibe-engine-os</p></blockquote>
+<p>When citing a specific mechanism (bond, capsule, gauntlet), include the commit SHA so readers can resolve exact schemas and baselines.</p>
+<hr />
+<h2>20. Versioning and publish checklist</h2>
+<table>
+<thead>
+<tr><th>Field</th><th>Policy</th></tr>
+</thead>
+<tbody>
+<tr><td>Version</td><td>Release tag or semver chosen at publish</td></tr>
+<tr><td>Date</td><td>Calendar date of the published PDF/HTML</td></tr>
+<tr><td>Source SHA</td><td>Full git commit SHA of the tree that was rendered</td></tr>
+</tbody>
+</table>
+<p>Until publish, leave placeholders (<code>UNPUBLISHED</code>, <code>YYYY-MM-DD</code>, <code>TO_BE_FILLED_AT_PUBLISH</code>) so drafts cannot be mistaken for pinned evidence.</p>
+<hr />
+<h2>Appendix A — Operator entry points</h2>
+<table>
+<thead>
+<tr><th>Path</th><th>Entry</th></tr>
+</thead>
+<tbody>
+<tr><td>Nocode</td><td>GitHub Vibe Request / Starter issue → <code>vibe/run</code></td></tr>
+<tr><td>Cursor</td><td><code>npm run activate</code> + MCP + <code>.cursor/skills/vibe-engine</code></td></tr>
+<tr><td>External agent</td><td>Adapter + Agent Protocol + same MCP tools</td></tr>
+<tr><td>Evidence before storytelling</td><td><code>npm run battery:prelaunch</code> (claim ledger honesty compiler)</td></tr>
+</tbody>
+</table>
+<hr />
+<h2>Appendix B — Related in-repo docs</h2>
+<ul>
+<li><a href="https://github.com/afelin/vibe-engine-os/blob/main/docs/start-here.md"><code>docs/start-here.md</code></a> — five-minute paths  </li>
+<li><a href="https://github.com/afelin/vibe-engine-os/blob/main/docs/solo-vibe-coder-guide.md"><code>docs/solo-vibe-coder-guide.md</code></a> — daily operator loop  </li>
+<li><a href="https://github.com/afelin/vibe-engine-os/blob/main/docs/agent-protocol.md"><code>docs/agent-protocol.md</code></a> — schemas and slash commands  </li>
+<li><a href="https://github.com/afelin/vibe-engine-os/blob/main/docs/launch-proof.md"><code>docs/launch-proof.md</code></a> — zero-token cloud proof runbook  </li>
+<li><a href="https://github.com/afelin/vibe-engine-os/blob/main/docs/rise-export.md"><code>docs/rise-export.md</code></a> — public vs internal export allowlist  </li>
+<li><a href="https://github.com/afelin/vibe-engine-os/blob/main/VOWS.md"><code>VOWS.md</code></a> — normative vows  </li>
+</ul>
+<hr />
+<p><em>End of white paper.</em></p>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <span><a href="../">vibe-engine</a></span>
+      <span><a href="../legal/">Legal notices</a></span>
+    </div>
+  </footer>
+</body>
+</html>

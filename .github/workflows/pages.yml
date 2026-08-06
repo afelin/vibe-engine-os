@@ -1,10 +1,13 @@
-name: Deploy proof to GitHub Pages
+name: Deploy site to GitHub Pages
 
 on:
   push:
     branches: [main]
     paths:
+      - 'site/**'
+      - 'papers/**'
       - 'proof/**'
+      - 'scripts/build-whitepaper.mjs'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -26,11 +29,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Build white paper + unify proof into site/
+        run: node scripts/build-whitepaper.mjs
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: proof
+          path: site
 
       - id: deployment
         uses: actions/deploy-pages@v4
