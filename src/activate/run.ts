@@ -50,3 +50,5 @@ console.log(
 );
 console.log(`✓ Activated: ${activatedPath}`);
 printPersonaQuickstart();
+console.log("");
+console.log("Next: npm run bootstrap — MCP/skill install snippets → .vibe/bootstrap-snippets.json");
