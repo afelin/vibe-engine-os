@@ -10,3 +10,5 @@ repomix-output.txt
 !.vibe/orchestrator/
 !.vibe/orchestrator/agents.json.example
 !.vibe/launch-proof.json.example
+# Generated into unified Pages root by scripts/build-whitepaper.mjs
+site/proof/

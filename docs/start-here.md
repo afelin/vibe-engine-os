@@ -4,6 +4,8 @@
 
 This is the canonical entry for vibe-engine-os. Everything else (solo guide, nocode walkthrough, adapter protocol) deepens a path you choose here.
 
+**Public white paper (GitHub Pages):** [afelin.github.io/vibe-engine-os/whitepaper/](https://afelin.github.io/vibe-engine-os/whitepaper/) — also [adopt](https://afelin.github.io/vibe-engine-os/adopt/), [status](https://afelin.github.io/vibe-engine-os/status/), [legal](https://afelin.github.io/vibe-engine-os/legal/). Source under [`site/`](../site/); build with `npm run site:build` (reads `papers/vibe-engine-whitepaper.md` when that file is present).
+
 ---
 
 ## 1. GitHub-only (nocode)

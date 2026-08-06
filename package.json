@@ -32,7 +32,8 @@
     "orchestrate:smoke": "ORCHESTRATOR_SKIP_LLM=1 tsx src/orchestrator/cli.ts troubleshoot \"Vibe Promotion Gate failing\" --skip-llm",
     "ai:compliance-check": "node scripts/ai-compliance-check.mjs",
     "metrics:check": "node scripts/metrics-check.mjs",
-    "battery:prelaunch": "bash runs/battery-prelaunch.sh"
+    "battery:prelaunch": "bash runs/battery-prelaunch.sh",
+    "site:build": "node scripts/build-whitepaper.mjs"
   },
   "dependencies": {
     "@xmachines/play-catalog": "latest",

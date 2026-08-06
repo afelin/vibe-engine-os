@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Status — vibe-engine</title>
+  <meta name="description" content="Claim-safe status: vibe-engine available; CyberReady Planned only." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/site.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a class="brand" href="../">vibe-engine</a>
+      <nav aria-label="Primary">
+        <ul class="nav">
+          <li><a href="../whitepaper/">White paper</a></li>
+          <li><a href="../adopt/">Adopt</a></li>
+          <li><a href="./" aria-current="page">Status</a></li>
+          <li><a href="../proof/">Proof</a></li>
+          <li><a href="../legal/">Legal</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="site-main">
+    <section class="hero">
+      <p class="hero__eyebrow">Claim-safe</p>
+      <h1>Status</h1>
+      <p class="lede">
+        What you can run today versus what remains Planned. This page avoids
+        certification and product-readiness language.
+      </p>
+    </section>
+
+    <article class="status-box">
+      <span class="status-box__label status-box__label--available">Available</span>
+      <h2>vibe-engine</h2>
+      <p>
+        Open-source promotion primitives in this repository: mandates, TaskBond,
+        zero-token gates, capsule receipts, gauntlet, replay, adopt-into-repo,
+        and GitHub Actions workflows. Free to clone and run under the project license.
+      </p>
+    </article>
+
+    <article class="status-box">
+      <span class="status-box__label status-box__label--planned">Planned</span>
+      <h2>CyberReady</h2>
+      <p>
+        Optional external bridge only. Not shipped as a built-in mode of vibe-engine.
+        If the bridge is absent, validation fails open (<code>not_installed</code>)
+        and does not block promote or the vibe path. No “CyberReady-ready”
+        claim until a live evaluation exists.
+      </p>
+    </article>
+
+    <div class="note">
+      <p>
+        Regulation-agnostic core: posture packs and legal-space dials are
+        configuration aids. They are not law, not certification, and not a
+        substitute for counsel.
+      </p>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <span><a href="../">vibe-engine</a></span>
+      <span><a href="../legal/">Legal notices</a></span>
+    </div>
+  </footer>
+</body>
+</html>

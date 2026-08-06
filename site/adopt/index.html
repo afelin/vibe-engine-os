@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Adopt — vibe-engine</title>
+  <meta name="description" content="Install vibe-engine into an existing repository. Honest limits: package.json.vibe-ref merge and GitHub Actions required." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/site.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a class="brand" href="../">vibe-engine</a>
+      <nav aria-label="Primary">
+        <ul class="nav">
+          <li><a href="../whitepaper/">White paper</a></li>
+          <li><a href="./" aria-current="page">Adopt</a></li>
+          <li><a href="../status/">Status</a></li>
+          <li><a href="../proof/">Proof</a></li>
+          <li><a href="../legal/">Legal</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="site-main">
+    <section class="hero">
+      <p class="hero__eyebrow">Portable primitive</p>
+      <h1>Adopt into an existing repo</h1>
+      <p class="lede">
+        Copy the promotion layer into a target repository, merge scripts and
+        dependencies deliberately, then enable Actions. The engine is free to run;
+        adoption is a merge + wiring job—not a one-click product install.
+      </p>
+    </section>
+
+    <section class="prose">
+      <h2>1. Install into the target repo</h2>
+      <p>From a clone of <code>vibe-engine-os</code>:</p>
+<pre><code>bash runs/install-into-repo.sh /path/to/your-repo</code></pre>
+      <p>
+        This copies source, workflows, issue templates, proof viewer, evals,
+        scripts, and a Cursor skill. It does <strong>not</strong> overwrite an
+        existing <code>package.json</code>. Instead it writes
+        <code>package.json.vibe-ref</code> as a merge reference.
+      </p>
+
+      <h2>2. Merge <code>package.json.vibe-ref</code></h2>
+      <p>
+        Open <code>package.json.vibe-ref</code> and copy the scripts and
+        dependencies you need into your real <code>package.json</code>
+        (Node.js ≥ 22). Until that merge is done, <code>npm run activate</code>
+        and related scripts will not resolve.
+      </p>
+<pre><code># After install, if package.json was not merged:
+# copy scripts/deps from package.json.vibe-ref into package.json
+cd /path/to/your-repo
+npm install
+npm run activate</code></pre>
+
+      <h2>3. Or use the adopt helper</h2>
+      <p>
+        <code>runs/adopt.sh</code> calls install when needed, then
+        <code>npm install</code> and <code>npm run activate</code>:
+      </p>
+<pre><code>bash runs/adopt.sh /path/to/your-repo
+# or, already inside the target after install:
+bash runs/adopt.sh .</code></pre>
+      <p>
+        If only <code>package.json.vibe-ref</code> exists (no merged
+        <code>package.json</code>), adopt prints a warning and will fail at
+        activate until you merge.
+      </p>
+
+      <h2>4. Enable GitHub Actions</h2>
+      <p>
+        Workflows are copied under <code>.github/workflows/</code>
+        (<code>forever.yml</code>, <code>vibe-pr-gate.yml</code>,
+        <code>tdd-attribution.yml</code>, <code>vibe-auto-merge.yml</code>,
+        <code>pages.yml</code>). They do nothing useful until Actions is
+        enabled for the repository and any required secrets/variables your
+        org uses are set. Branch protection and required checks are a separate
+        operator step.
+      </p>
+
+      <h2>Honest limits</h2>
+      <ul>
+        <li><strong>package.json is not auto-merged</strong> — you must integrate <code>package.json.vibe-ref</code> yourself to avoid clobbering an existing app.</li>
+        <li><strong>Actions must be enabled</strong> — cloud loop, promotion gate, and Pages deploy require GitHub Actions (and usually permissions for issues/PRs).</li>
+        <li><strong>Not a hosted SaaS</strong> — proofs and gates run in your repo; this site documents the primitive.</li>
+        <li><strong>Posture packs ≠ law</strong> — legal-space dials are optional configuration, not compliance certification.</li>
+        <li><strong>CyberReady</strong> — Planned only; see <a href="../status/">Status</a>. Missing bridge fails open; it does not block the vibe path.</li>
+      </ul>
+
+      <p>
+        Deeper walks:
+        <a href="https://github.com/afelin/vibe-engine-os/blob/main/docs/start-here.md">start here</a>,
+        <a href="https://github.com/afelin/vibe-engine-os/blob/main/docs/nocode-quickstart.md">nocode quickstart</a>.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <span><a href="../">vibe-engine</a></span>
+      <span><a href="../legal/">Legal notices</a></span>
+    </div>
+  </footer>
+</body>
+</html>

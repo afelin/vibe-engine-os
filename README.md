@@ -4,6 +4,8 @@ Sovereign AI dev cluster with a **headless xmachines Play constitution**: one Zo
 
 **Start here:** [docs/start-here.md](docs/start-here.md) — 5 minutes, any tool (GitHub-only, Cursor + MCP, external agent, or legal-space dial). Deeper walks: [Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md) · [Nocode Quickstart](docs/nocode-quickstart.md) · [Plain-Language Briefing](docs/plain-language-briefing.md).
 
+**Public surface (GitHub Pages):** [white paper](https://afelin.github.io/vibe-engine-os/whitepaper/) · [adopt](https://afelin.github.io/vibe-engine-os/adopt/) · [status](https://afelin.github.io/vibe-engine-os/status/) · [site source](site/). Manuscript: `papers/vibe-engine-whitepaper.md` (when present; `npm run site:build` regenerates HTML).
+
 ## What it is
 
 vibe-engine-os is a **promotion gate**, not a codegen toy. Models propose JSON-shaped artifacts; the constitution catalog and OS machine guards reject bad input before disk write. Only verified snapshots promote to Git.
