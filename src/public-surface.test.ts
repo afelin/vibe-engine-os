@@ -1,5 +1,6 @@
 /**
  * Guards: public Pages / RISE export never ships internal GTM or secrets paths.
+ * Also: GTM body must not live in the public git clone surface.
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
@@ -13,20 +14,36 @@ function read(rel: string): string {
   return readFileSync(join(root, rel), "utf8");
 }
 
+/** Pricing / tier markers that must not appear in committed GTM stubs. */
+const GTM_BODY_MARKERS = [/\|\s*\*\*Vibe\+\*\*/, /~\s*\$12\/mo/, /CAC\s*~\s*\$0/i, /When to pay/i];
+
 describe("public / internal surface split", () => {
-  it("keeps GTM under internal/ with an engineering-only README", () => {
+  it("keeps GTM stub under internal/ with an engineering-only README", () => {
     expect(existsSync(join(root, "internal/go-to-market.md"))).toBe(true);
     expect(existsSync(join(root, "internal/README.md"))).toBe(true);
     const internalReadme = read("internal/README.md");
     expect(internalReadme).toMatch(/not for public mirrors/i);
     expect(internalReadme).toMatch(/not published to Pages/i);
+    expect(internalReadme).toMatch(/Do not commit commercial GTM/i);
   });
 
-  it("docs/go-to-market.md is a stub pointing at internal/ (no tiers table)", () => {
+  it("internal/go-to-market.md is a stub (no commercial GTM body)", () => {
+    const stub = read("internal/go-to-market.md");
+    expect(stub).toMatch(/outside this public repo/i);
+    expect(stub).toMatch(/Do not commit secrets or paid GTM/i);
+    for (const re of GTM_BODY_MARKERS) {
+      expect(stub).not.toMatch(re);
+    }
+  });
+
+  it("docs/go-to-market.md is a stub (no tiers table; no internal body pointer as source of truth)", () => {
     const stub = read("docs/go-to-market.md");
-    expect(stub).toMatch(/internal\/go-to-market\.md/);
+    expect(stub).toMatch(/outside.*public/i);
     expect(stub).not.toMatch(/\|\s*\*\*Vibe\+\*\*/);
     expect(stub).not.toMatch(/~\s*\$12\/mo/);
+    for (const re of GTM_BODY_MARKERS) {
+      expect(stub).not.toMatch(re);
+    }
   });
 
   it("rise-export denylist names internal/ and go-to-market", () => {
@@ -35,13 +52,16 @@ describe("public / internal surface split", () => {
     expect(rise).toMatch(/go-to-market/);
     expect(rise).toMatch(/\.public-mirror-exclude/);
     expect(rise).toMatch(/prepare-public-tree\.sh/);
+    expect(rise).toMatch(/do not commit/i);
   });
 
-  it("PUBLIC.md documents the split and Pages scope", () => {
+  it("PUBLIC.md documents the split, Pages scope, and git clone visibility", () => {
     const pub = read("docs/PUBLIC.md");
     expect(pub).toMatch(/internal\//);
     expect(pub).toMatch(/prepare-public-tree/);
     expect(pub).toMatch(/pages\.yml/i);
+    expect(pub).toMatch(/clones this public repo/i);
+    expect(pub).toMatch(/Do \*\*not\*\* commit commercial GTM/i);
   });
 
   it(".public-mirror-exclude denies internal/ and go-to-market", () => {

@@ -18,10 +18,12 @@ Tone: portable **free** OSS primitives — how to run and verify, not how to mon
 
 | Area | Examples |
 |------|----------|
-| GTM / pricing | `internal/go-to-market.md` (and the stub at `docs/go-to-market.md`) |
-| Entire tree | `internal/**` |
+| GTM stubs only | `internal/go-to-market.md` and `docs/go-to-market.md` — **stubs**, no pricing/tiers body |
+| Entire tree | `internal/**` (still denied from mirrors; keep contents non-sensitive) |
 | Secrets | `.env`, `.env.*` (examples may stay), credentials, private tokens |
 | Private run data | `.vibe/launch-proof.json` (example file OK), `.runs/` artifacts with secrets |
+
+**GitHub visibility ≠ Pages/RISE denylist.** Anyone who clones this public repo sees `internal/`. Soft denylist only helps `public:prepare` / Pages — it does **not** hide files from GitHub. Do **not** commit commercial GTM, secrets, or paid packaging into this tree; keep that in private notes / RISE-internal.
 
 Do **not** put spin-off, equity, or governance-handoff strategy in any public file.
 

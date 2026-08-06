@@ -39,9 +39,9 @@ Public tone: **portable free OSS primitives**, research/engineering. CyberReady 
 
 | Path / topic | Why |
 |--------------|-----|
-| **`internal/` (entire tree)** | Founder/operator notes; never Pages, never RISE public |
-| `internal/go-to-market.md` | Monetization tiers, pricing, CAC/outreach playbooks |
-| `docs/go-to-market.md` | Stub only in engineering repo; excluded from mirror |
+| **`internal/` (entire tree)** | Operator stubs; never Pages, never RISE public |
+| `internal/go-to-market.md` | Stub only — **do not commit** pricing/tiers/outreach body (public clones see git) |
+| `docs/go-to-market.md` | Stub only; excluded from mirror |
 | Spin-off / equity / Swedish cybersecurity governance handoff narrative | Speculative politics; undermines research-project framing |
 | Payment tiers as product promise | Contradicts free-primitive public wave |
 | “Platform play” / Cloudflare commercial brand push | Wrong phase; parked |
@@ -60,14 +60,14 @@ If a sentence helps a future deal but does not help an SME **run or verify** the
 
 ## Public vs internal docs (split)
 
-| Public | Internal (`internal/` — engineering only) |
-|--------|-------------------------------------------|
+| Public | Outside this public repo (private / RISE-internal) |
+|--------|-----------------------------------------------------|
 | What the software **is**, how to run it free, limits, evidence | Credibility → SME traction → optional later service wrapping |
 | White paper, adopt path, proof, citation | GTM tiers, pricing triggers, scar-post outreach calendars |
 | Posture packs as house rules | Legal strategy, governance uptake speculation |
 | CyberReady Planned | CyberReady commercial packaging |
 
-GTM lives at [`internal/go-to-market.md`](../internal/go-to-market.md). **Never** sync `internal/` to Pages or RISE public.
+Commercial GTM must **not** live in this public GitHub tree (stubs only at [`internal/go-to-market.md`](../internal/go-to-market.md) / [`docs/go-to-market.md`](./go-to-market.md)). **Never** sync `internal/` or GTM paths to Pages or RISE public.
 
 ---
 
