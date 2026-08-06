@@ -443,4 +443,29 @@ describe("GitHub Actions workflow", () => {
     const firstParagraph = readme.split("\n\n").slice(0, 3).join("\n\n");
     expect(firstParagraph).toContain("docs/start-here.md");
   });
+
+  it("vibe-starter template exists with vibe/run label and cloud-loop smoke prefills", () => {
+    const starterPath = path.join(
+      process.cwd(),
+      ".github/ISSUE_TEMPLATE/vibe-starter.yml",
+    );
+    expect(fs.existsSync(starterPath)).toBe(true);
+
+    const starter = fs.readFileSync(starterPath, "utf8");
+    expect(starter).toContain("vibe/run");
+    expect(starter).toContain("vibe:safe");
+    expect(starter).toContain("cloud-loop smoke");
+    expect(starter).toContain('cloudLoopSmokeStatus === "v1-cloud-loop-ok"');
+    expect(starter).toContain("src/cloud-loop-smoke.ts");
+    expect(starter).toContain("src/cloud-loop-smoke.test.ts");
+  });
+
+  it("start-here links First green PR to Starter template", () => {
+    const startHere = fs.readFileSync(
+      path.join(process.cwd(), "docs/start-here.md"),
+      "utf8",
+    );
+    expect(startHere).toMatch(/First green PR/i);
+    expect(startHere).toContain("vibe-starter.yml");
+  });
 });
