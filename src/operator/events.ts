@@ -33,6 +33,9 @@ export function mapCommandToEvent(
   };
 
   switch (command.type) {
+    case "go":
+      // Read-only guide — reuse status event so the machine stays idle.
+      return { type: "operator.status_requested", ...base };
     case "plan":
       return { type: "operator.plan_requested", ...base };
     case "approve":

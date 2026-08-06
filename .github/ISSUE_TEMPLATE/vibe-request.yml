@@ -19,7 +19,7 @@ body:
 
         **Explain dial** (optional): labels `vibe:explain-short`, `vibe:explain-long`, `vibe:explain-expand`, or `vibe:explain-off` — extra plain-language “why” in cockpit comments.
 
-        **Operator commands** (issue comments): `/status` · `/approve` · `/retry` · `/rollback`
+        **Operator commands** (issue comments): `/go` (what next?) · Advanced: `/status` · `/approve` · `/retry` · `/rollback`
 
         You'll get a PR link and receipt in comments—no terminal required.
 

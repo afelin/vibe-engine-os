@@ -26,6 +26,7 @@ export function buildAgentAdapterManifest(_rootDir = "."): AgentAdapterManifest 
     ingress: {
       github_issue_labels: ["vibe/run", "vibe:safe", "vibe:ship", "vibe:plan-only"],
       slash_commands: [
+        "/go",
         "/vibe",
         "/status",
         "/approve",

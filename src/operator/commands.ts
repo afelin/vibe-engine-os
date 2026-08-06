@@ -1,4 +1,5 @@
 export type OperatorCommand =
+  | { type: "go" }
   | { type: "plan" }
   | { type: "approve" }
   | { type: "continue" }
@@ -15,6 +16,8 @@ export function parseOperatorCommand(input: string): OperatorCommand {
   const command = trimmed.split(/\s+/)[0]?.toLowerCase();
 
   switch (command) {
+    case "/go":
+      return { type: "go" };
     case "/plan":
       return { type: "plan" };
     case "/approve":

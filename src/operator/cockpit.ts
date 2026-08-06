@@ -81,6 +81,91 @@ export function resolveNextAction(state: string): string {
   return NEXT_ACTION_BY_STATE[state] ?? "Wait for the engine to post the next update.";
 }
 
+export type GoGuideInput = {
+  state?: string;
+  /** When true, emit first-run onboarding (no active machine state). */
+  preRun?: boolean;
+};
+
+/**
+ * Exactly three next actions: blocking / fastest unblock / merge-or-deploy.
+ * Reuses `resolveNextAction`; does not read or write any state store.
+ */
+export function renderGoGuide(input: GoGuideInput): string {
+  const actions =
+    input.preRun === true || !input.state
+      ? resolvePreRunGoActions()
+      : resolveGoActions(input.state);
+
+  return [
+    "## Go",
+    "",
+    `1. **Blocking:** ${actions.blocking}`,
+    `2. **Fastest unblock:** ${actions.unblock}`,
+    `3. **Merge or deploy next:** ${actions.mergeOrDeploy}`,
+  ].join("\n");
+}
+
+function resolvePreRunGoActions(): {
+  blocking: string;
+  unblock: string;
+  mergeOrDeploy: string;
+} {
+  return {
+    blocking: "No active run yet — the engine has nothing to steer.",
+    unblock:
+      "Open a Vibe Request (`.github/ISSUE_TEMPLATE/vibe-request.yml`) with labels `vibe/run` + `vibe:safe`.",
+    mergeOrDeploy:
+      "After the first PR is green, merge (optional `vibe/auto-merge`) to land the change.",
+  };
+}
+
+function resolveGoActions(state: string): {
+  blocking: string;
+  unblock: string;
+  mergeOrDeploy: string;
+} {
+  const next = resolveNextAction(state);
+
+  switch (state) {
+    case "planning":
+      return {
+        blocking: "The planner is still building an execution plan — no operator action yet.",
+        unblock: next,
+        mergeOrDeploy:
+          "When the run publishes a PR, merge when CI is green (or `/deploy` if depth allows).",
+      };
+    case "awaiting_approval":
+      return {
+        blocking: "A protected change is paused pending your approval.",
+        unblock: next,
+        mergeOrDeploy:
+          "After approval finishes codegen and opens a PR, merge when CI is green.",
+      };
+    case "completed":
+      return {
+        blocking: "Nothing is blocking the engine — review the PR and receipt.",
+        unblock: next,
+        mergeOrDeploy:
+          "Merge the PR when CI is green (optional `vibe/auto-merge`), then deploy if your depth allows.",
+      };
+    case "failed":
+      return {
+        blocking: "The run stopped before promotion.",
+        unblock: next,
+        mergeOrDeploy:
+          "After a successful `/retry` opens a green PR, merge to land (or `/deploy` if depth allows).",
+      };
+    default:
+      return {
+        blocking: `Current state \`${state}\` may still be in progress.`,
+        unblock: next,
+        mergeOrDeploy:
+          "When a PR is open and CI is green, merge (or `/deploy` if depth allows).",
+      };
+  }
+}
+
 export function shouldExpandTechnical(
   labels?: string,
   commandBody?: string,
