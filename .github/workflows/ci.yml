@@ -30,3 +30,6 @@ jobs:
 
       - name: Launch readiness gate
         run: npm run launch:readiness
+
+      - name: Metrics guardrails
+        run: npm run metrics:check
