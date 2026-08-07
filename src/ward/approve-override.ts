@@ -1,8 +1,13 @@
 /**
- * /approve → short-lived signed override Mandate (same schema).
+ * Option B: keep plain-text /approve. CI may sign a short-lived override Mandate
+ * with runner key, but MUST tag override_kind and authorized_actor as the bot —
+ * never attribute runner-key signatures to the human principal.
+ *
  * Without VIBE_MANDATE_PRIVATE_KEY ⇒ legacy unsigned approve (no Mandate write).
  */
 import {
+  GITHUB_CI_BOT_OVERRIDE,
+  OVERRIDE_KIND_GITHUB_COMMENT,
   generateEd25519KeyPairRaw,
   loadActiveMandate,
   loadPrincipals,
@@ -21,13 +26,13 @@ export type ApprovalOverrideResult =
   | { issued: true; mandate: SignedMandate };
 
 /**
- * Issue a short-lived override Mandate after operator /approve.
- * Requires env VIBE_MANDATE_PRIVATE_KEY (pkcs8 base64url) and matching
- * public key in principals. Optional VIBE_MANDATE_PUBLIC_KEY if issuing
- * without an existing active Mandate (must still be trusted).
+ * Issue a short-lived CI-bot override Mandate after operator /approve comment.
+ * `approving_comment_actor` records who typed /approve (audit only).
+ * `authorized_actor` is always github-ci-bot-override (signing principal).
  */
 export async function maybeIssueApprovalOverride(opts: {
   rootDir?: string;
+  /** GitHub login who typed plain-text /approve (audit; not signing principal). */
   actor: string;
   pathConstraints?: string[];
   ttlMs?: number;
@@ -73,13 +78,15 @@ export async function maybeIssueApprovalOverride(opts: {
     ["src/", "tests/"];
 
   const unsigned = {
-    mandate_id: `approve-override-${opts.actor}-${now}`,
+    mandate_id: `approve-override-${GITHUB_CI_BOT_OVERRIDE}-${now}`,
     issued_at: new Date(now).toISOString(),
     expires_at: new Date(now + ttl).toISOString(),
-    authorized_actor: opts.actor,
+    authorized_actor: GITHUB_CI_BOT_OVERRIDE,
     path_constraints: pathConstraints,
     actions: existing?.actions ?? DEFAULT_OVERRIDE_ACTIONS,
     max_depth: existing?.max_depth,
+    override_kind: OVERRIDE_KIND_GITHUB_COMMENT,
+    approving_comment_actor: opts.actor,
     issuer_public_key: publicKey,
   };
 

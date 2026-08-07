@@ -33,6 +33,11 @@ export const WARD_ACTIONS = [
   "promote",
 ] as const satisfies readonly WardAction[];
 
+/** CI-signed /approve override — never attribute runner key to the human. */
+export const GITHUB_CI_BOT_OVERRIDE = "github-ci-bot-override";
+export const OVERRIDE_KIND_GITHUB_COMMENT = "github_comment_approve" as const;
+export type MandateOverrideKind = typeof OVERRIDE_KIND_GITHUB_COMMENT;
+
 /** Unsigned body + crypto fields (catalog SignedMandate). */
 export type SignedMandate = {
   mandate_id: string;
@@ -42,6 +47,9 @@ export type SignedMandate = {
   path_constraints: string[];
   actions: WardAction[];
   max_depth?: number;
+  override_kind?: MandateOverrideKind;
+  /** Audit: who typed /approve — not the Ed25519 principal. */
+  approving_comment_actor?: string;
   issuer_public_key: string;
   signature: string;
 };
@@ -59,6 +67,7 @@ export type WardDecision = {
   verdict: "ALLOW" | "DENY";
   reason: string;
   at: string;
+  override_kind?: MandateOverrideKind;
 };
 
 export type WardAssertResult = {
@@ -162,6 +171,8 @@ export function canonicalizeMandateForSign(
     path_constraints,
     actions,
     max_depth,
+    override_kind,
+    approving_comment_actor,
     issuer_public_key,
   } = mandate;
   const body: Record<string, unknown> = {
@@ -174,6 +185,10 @@ export function canonicalizeMandateForSign(
     issuer_public_key,
   };
   if (max_depth !== undefined) body.max_depth = max_depth;
+  if (override_kind !== undefined) body.override_kind = override_kind;
+  if (approving_comment_actor !== undefined) {
+    body.approving_comment_actor = approving_comment_actor;
+  }
   return canonicalize(body);
 }
 
@@ -370,8 +385,15 @@ export function assertWard(
   const mandate = verified.mandate;
   const at = now.toISOString();
 
+  const withOverride = (
+    decision: Omit<WardDecision, "override_kind">,
+  ): WardDecision =>
+    mandate.override_kind
+      ? { ...decision, override_kind: mandate.override_kind }
+      : decision;
+
   const deny = (reason: string): WardAssertResult => {
-    const decision: WardDecision = {
+    const decision = withOverride({
       type: "ward_decision",
       mandate_id: mandate.mandate_id,
       action,
@@ -379,13 +401,13 @@ export function assertWard(
       verdict: "DENY",
       reason,
       at,
-    };
+    });
     if (opts?.runId) appendWardDecision(rootDir, opts.runId, decision);
     return { ok: false, decision };
   };
 
   const allow = (reason: string): WardAssertResult => {
-    const decision: WardDecision = {
+    const decision = withOverride({
       type: "ward_decision",
       mandate_id: mandate.mandate_id,
       action,
@@ -393,7 +415,7 @@ export function assertWard(
       verdict: "ALLOW",
       reason,
       at,
-    };
+    });
     if (opts?.runId) appendWardDecision(rootDir, opts.runId, decision);
     return { ok: true, decision };
   };
@@ -406,7 +428,9 @@ export function assertWard(
     return deny(`action_not_authorized:${action}`);
   }
 
+  // Override Mandates are CI-bot signed; do not require runtime actor === bot id.
   if (
+    !mandate.override_kind &&
     opts?.actor &&
     mandate.authorized_actor &&
     opts.actor !== mandate.authorized_actor &&

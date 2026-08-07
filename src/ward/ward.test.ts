@@ -285,3 +285,92 @@ describe("Mandate–Ward", () => {
     );
   });
 });
+
+describe("Option B /approve override", () => {
+  const tmpDirs: string[] = [];
+
+  afterEach(() => {
+    clearVerifyCache();
+    for (const dir of tmpDirs) {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("CI-signed override tags bot principal + override_kind, not the human", async () => {
+    const { maybeIssueApprovalOverride } = await import("./approve-override.js");
+    const {
+      GITHUB_CI_BOT_OVERRIDE,
+      OVERRIDE_KIND_GITHUB_COMMENT,
+      assertWard,
+      generateEd25519KeyPairRaw,
+      verifyOnce,
+      clearVerifyCache: clear,
+    } = await import("./index.js");
+
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "ward-ov-"));
+    tmpDirs.push(root);
+    fs.mkdirSync(path.join(root, ".vibe"), { recursive: true });
+    fs.mkdirSync(path.join(root, "src", "ward"), { recursive: true });
+    fs.mkdirSync(path.join(root, "src", "policy"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "src", "policy", "mandates.json"),
+      JSON.stringify({
+        forbidden_prefixes: ["src/auth/"],
+        require_approval_prefixes: [],
+        max_attempts: 3,
+      }),
+      "utf8",
+    );
+
+    const keys = await generateEd25519KeyPairRaw();
+    fs.writeFileSync(
+      path.join(root, ".vibe", "principals.json"),
+      JSON.stringify({
+        principals: [{ id: "ci", public_key: keys.publicKey }],
+      }),
+      "utf8",
+    );
+
+    const human = "afelin";
+    const result = await maybeIssueApprovalOverride({
+      rootDir: root,
+      actor: human,
+      pathConstraints: ["src/ward/"],
+      privateKeyEnv: keys.privateKey,
+      publicKeyEnv: keys.publicKey,
+    });
+
+    expect(result.issued).toBe(true);
+    if (!result.issued) return;
+
+    expect(result.mandate.authorized_actor).toBe(GITHUB_CI_BOT_OVERRIDE);
+    expect(result.mandate.authorized_actor).not.toBe(human);
+    expect(result.mandate.override_kind).toBe(OVERRIDE_KIND_GITHUB_COMMENT);
+    expect(result.mandate.approving_comment_actor).toBe(human);
+
+    clear();
+    const verified = await verifyOnce(result.mandate, root);
+    const ward = assertWard("promote", undefined, verified, {
+      rootDir: root,
+      actor: human,
+    });
+    expect(ward.ok).toBe(true);
+    expect(ward.decision.override_kind).toBe(OVERRIDE_KIND_GITHUB_COMMENT);
+  });
+
+  it("plain-text /approve stays legacy when no runner key", async () => {
+    const { maybeIssueApprovalOverride } = await import("./approve-override.js");
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "ward-legacy-"));
+    tmpDirs.push(root);
+    fs.mkdirSync(path.join(root, ".vibe"), { recursive: true });
+
+    const result = await maybeIssueApprovalOverride({
+      rootDir: root,
+      actor: "afelin",
+      privateKeyEnv: "",
+    });
+    expect(result.issued).toBe(false);
+    if (result.issued) return;
+    expect(result.reason).toMatch(/legacy_approve/);
+  });
+});

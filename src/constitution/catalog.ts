@@ -227,14 +227,21 @@ export const wardActionSchema = z.enum([
  * Signed session Mandate (opt-in). Absent file ⇒ legacy house rules only.
  * House mandates.json AND this budget — Mandate cannot widen forbids.
  */
+export const mandateOverrideKindSchema = z.enum(["github_comment_approve"]);
+
 export const signedMandateSchema = z.object({
   mandate_id: z.string().min(1),
   issued_at: z.string().datetime(),
   expires_at: z.string().datetime(),
+  /** Signing principal / budget actor — never the human for CI-signed overrides. */
   authorized_actor: z.string().min(1),
   path_constraints: z.array(z.string()).min(1),
   actions: z.array(wardActionSchema).min(1),
   max_depth: z.number().int().min(0).max(5).optional(),
+  /** Present on CI-signed /approve overrides; plain-text approve stays human-side. */
+  override_kind: mandateOverrideKindSchema.optional(),
+  /** Audit only: GitHub login who typed /approve (not the signing principal). */
+  approving_comment_actor: z.string().min(1).optional(),
   issuer_public_key: z.string().min(1),
   signature: z.string().min(1),
 });
@@ -247,6 +254,7 @@ export const wardDecisionSchema = z.object({
   verdict: z.enum(["ALLOW", "DENY"]),
   reason: z.string().min(1),
   at: z.string().datetime(),
+  override_kind: mandateOverrideKindSchema.optional(),
 });
 
 export const principalsFileSchema = z.object({

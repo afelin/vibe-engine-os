@@ -80,15 +80,15 @@ async function runOS() {
         if (route.event.type === "approval.granted") {
           persistApproval(".", ISSUE_NUMBER, route.event.actor);
           markApprovedBy(route.event.actor);
-          // Seam: when signing key present, write short-lived signed override Mandate.
-          // Otherwise legacy unsigned approve (today's behavior).
+          // Option B: plain-text /approve stays; optional CI-bot override Mandate
+          // tags override_kind (never attributes runner key to the human).
           const override = await maybeIssueApprovalOverride({
             rootDir: ".",
             actor: route.event.actor,
           });
           if (override.issued) {
             console.log(
-              `🔐 Approval override Mandate issued: ${override.mandate.mandate_id}`,
+              `🔐 CI-bot approval override Mandate issued: ${override.mandate.mandate_id} (comment_actor=${route.event.actor})`,
             );
           }
         }
