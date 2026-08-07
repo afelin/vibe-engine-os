@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -13,12 +13,26 @@ import {
   writeCorewardModeConfig,
 } from "./mode.js";
 import { listReleaseGateIds } from "../release-gate/registry.js";
+import {
+  generateEd25519KeyPairRaw,
+  signMandate,
+  verifyOnce,
+  writeActiveMandate,
+  assertWard,
+  clearVerifyCache,
+} from "../ward/index.js";
 
 function tmpRoot(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), "coreward-aw-"));
 }
 
 describe("authorize_write", () => {
+  afterEach(() => {
+    delete process.env.COREWARD_AUTHORIZE_TICKET;
+    delete process.env.VIBE_WARD_STRICT;
+    clearVerifyCache();
+  });
+
   it("mints a ticket for safe paths and prefers a covering gate", () => {
     const root = tmpRoot();
     try {
@@ -35,6 +49,7 @@ describe("authorize_write", () => {
       expect(result.ticket_id).toMatch(/^aw_/);
       expect(result.prefer_gate).toBe("add-unit-test");
       expect(result.reason).toContain("prefer_gate");
+      expect(process.env.COREWARD_AUTHORIZE_TICKET).toBe(result.ticket_id);
 
       const validated = validateAuthorizeTicket(
         root,
@@ -42,6 +57,29 @@ describe("authorize_write", () => {
         result.paths,
       );
       expect(validated.ok).toBe(true);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("same-path refresh reuses ticket id and extends TTL", () => {
+    const root = tmpRoot();
+    try {
+      const first = authorizeWrite({
+        root_dir: root,
+        proposed_files: ["src/ok.ts"],
+        ttl_ms: 60_000,
+      });
+      expect(first.ok).toBe(true);
+      const second = authorizeWrite({
+        root_dir: root,
+        proposed_files: ["src/ok.ts"],
+        ttl_ms: 120_000,
+      });
+      expect(second.ok).toBe(true);
+      expect(second.refreshed).toBe(true);
+      expect(second.ticket_id).toBe(first.ticket_id);
+      expect(second.reason).toContain("refreshed");
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
@@ -75,12 +113,104 @@ describe("authorize_write", () => {
   it("preferGateForPaths returns null when no gate covers", () => {
     expect(preferGateForPaths(["src/unique-unmatched-path.ts"])).toBeNull();
   });
+
+  it("rejects expired Mandate via verifyOnce (property)", async () => {
+    const root = tmpRoot();
+    try {
+      const keys = await generateEd25519KeyPairRaw();
+      fs.mkdirSync(path.join(root, ".vibe"), { recursive: true });
+      fs.writeFileSync(
+        path.join(root, ".vibe", "principals.json"),
+        JSON.stringify({
+          principals: [
+            {
+              id: "cursor-bot",
+              public_key: keys.publicKey,
+              default: true,
+              default_path_constraints: ["src/"],
+            },
+          ],
+        }),
+        "utf8",
+      );
+      const now = Date.now();
+      const mandate = await signMandate(
+        {
+          mandate_id: "m-expired-aw",
+          issued_at: new Date(now - 2 * 3600_000).toISOString(),
+          expires_at: new Date(now - 60_000).toISOString(),
+          authorized_actor: "cursor-bot",
+          path_constraints: ["src/"],
+          actions: ["codegen", "promote"],
+          issuer_public_key: keys.publicKey,
+        },
+        keys.privateKey,
+      );
+      writeActiveMandate(root, mandate);
+      await expect(verifyOnce(mandate, root)).rejects.toThrow(/expired/i);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("STRICT rejects unknown actor (not in principals)", async () => {
+    const root = tmpRoot();
+    try {
+      const keys = await generateEd25519KeyPairRaw();
+      fs.mkdirSync(path.join(root, ".vibe"), { recursive: true });
+      fs.writeFileSync(
+        path.join(root, ".vibe", "principals.json"),
+        JSON.stringify({
+          principals: [
+            {
+              id: "known-bot",
+              public_key: keys.publicKey,
+              default: true,
+              default_path_constraints: ["src/"],
+            },
+          ],
+        }),
+        "utf8",
+      );
+      const now = Date.now();
+      const mandate = await signMandate(
+        {
+          mandate_id: "m-unknown",
+          issued_at: new Date(now).toISOString(),
+          expires_at: new Date(now + 8 * 3600_000).toISOString(),
+          authorized_actor: "unknown-attacker",
+          path_constraints: ["src/"],
+          actions: ["codegen", "promote"],
+          issuer_public_key: keys.publicKey,
+        },
+        keys.privateKey,
+      );
+      clearVerifyCache();
+      process.env.VIBE_WARD_STRICT = "1";
+      const verified = await verifyOnce(mandate, root);
+      const denied = assertWard("promote", undefined, verified, {
+        rootDir: root,
+        actor: "unknown-attacker",
+      });
+      expect(denied.ok).toBe(false);
+      expect(denied.decision.reason).toMatch(/unknown_actor_strict/);
+    } finally {
+      delete process.env.VIBE_WARD_STRICT;
+      clearVerifyCache();
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
 });
 
 describe("Coreward Mode", () => {
+  afterEach(() => {
+    delete process.env.COREWARD_AUTHORIZE_TICKET;
+  });
+
   it("fail-closes engine path without ticket or mandate when enabled", () => {
     const root = tmpRoot();
     try {
+      delete process.env.COREWARD_AUTHORIZE_TICKET;
       writeCorewardModeConfig(root, { enabled: true });
       expect(isCorewardMode(root)).toBe(true);
       const denied = assertCorewardMode(root, "codegen", {

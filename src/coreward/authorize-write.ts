@@ -2,6 +2,7 @@
  * authorize_write — single preflight for any coding agent.
  * House evaluate_mandate AND Signed Mandate pathFilter (when present)
  * AND AgentId effective budget. Prefer resolve_gate when paths ⊆ a gate.
+ * Same-path refresh reuses/extends a fresh ticket without a new human prompt.
  */
 import * as crypto from "node:crypto";
 import * as fs from "node:fs";
@@ -42,6 +43,8 @@ export type AuthorizeWriteResult = {
   reason: string;
   prefer_gate?: string | null;
   requiresApproval?: boolean;
+  /** True when an existing same-path ticket was refreshed. */
+  refreshed?: boolean;
 };
 
 export type AuthorizeTicket = {
@@ -72,7 +75,15 @@ function normalizePaths(files: string[]): string[] {
         .map((f) => normalizeProposedPath(f.trim()))
         .filter((f) => f.length > 0),
     ),
-  ];
+  ].sort();
+}
+
+function pathsEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
 }
 
 /** True when every proposed path is among the gate's compiled file paths. */
@@ -139,12 +150,17 @@ function agentBudgetPaths(
 export function mintAuthorizeTicket(
   rootDir: string,
   paths: string[],
-  opts?: { prefer_gate?: string | null; actor?: string; ttl_ms?: number },
+  opts?: {
+    prefer_gate?: string | null;
+    actor?: string;
+    ttl_ms?: number;
+    ticket_id?: string;
+  },
 ): AuthorizeTicket {
   const now = Date.now();
   const ttl = opts?.ttl_ms ?? DEFAULT_TTL_MS;
   const ticket: AuthorizeTicket = {
-    ticket_id: `aw_${crypto.randomBytes(8).toString("hex")}`,
+    ticket_id: opts?.ticket_id ?? `aw_${crypto.randomBytes(8).toString("hex")}`,
     paths: normalizePaths(paths),
     issued_at: new Date(now).toISOString(),
     expires_at: new Date(now + ttl).toISOString(),
@@ -176,6 +192,89 @@ export function readAuthorizeTicket(
   }
 }
 
+/** Find a non-expired ticket whose path set exactly matches (same-path refresh). */
+export function findFreshTicketForPaths(
+  rootDir: string,
+  paths: string[],
+  now = new Date(),
+): AuthorizeTicket | null {
+  const wanted = normalizePaths(paths);
+  const dir = ticketsDir(rootDir);
+  if (!fs.existsSync(dir)) return null;
+  let best: AuthorizeTicket | null = null;
+  let bestExp = -1;
+  for (const name of fs.readdirSync(dir)) {
+    if (!name.endsWith(".json")) continue;
+    try {
+      const raw = JSON.parse(
+        fs.readFileSync(path.join(dir, name), "utf8"),
+      ) as AuthorizeTicket;
+      if (!raw?.ticket_id || !Array.isArray(raw.paths)) continue;
+      if (now.getTime() > Date.parse(raw.expires_at)) continue;
+      if (!pathsEqual(normalizePaths(raw.paths), wanted)) continue;
+      const exp = Date.parse(raw.expires_at);
+      if (exp >= bestExp) {
+        bestExp = exp;
+        best = raw;
+      }
+    } catch {
+      /* skip */
+    }
+  }
+  return best;
+}
+
+/** Find a non-expired ticket that covers all requested paths (superset OK). */
+export function findCoveringTicket(
+  rootDir: string,
+  paths: string[],
+  now = new Date(),
+): AuthorizeTicket | null {
+  const wanted = normalizePaths(paths);
+  if (wanted.length === 0) return null;
+  const dir = ticketsDir(rootDir);
+  if (!fs.existsSync(dir)) return null;
+  let best: AuthorizeTicket | null = null;
+  let bestExp = -1;
+  for (const name of fs.readdirSync(dir)) {
+    if (!name.endsWith(".json")) continue;
+    try {
+      const raw = JSON.parse(
+        fs.readFileSync(path.join(dir, name), "utf8"),
+      ) as AuthorizeTicket;
+      if (!raw?.ticket_id || !Array.isArray(raw.paths)) continue;
+      if (now.getTime() > Date.parse(raw.expires_at)) continue;
+      const allowed = new Set(normalizePaths(raw.paths));
+      if (!wanted.every((p) => allowed.has(p))) continue;
+      const exp = Date.parse(raw.expires_at);
+      if (exp >= bestExp) {
+        bestExp = exp;
+        best = raw;
+      }
+    } catch {
+      /* skip */
+    }
+  }
+  return best;
+}
+
+/**
+ * Bind a covering ticket into COREWARD_AUTHORIZE_TICKET for the engine path.
+ * Returns the ticket id when bound.
+ */
+export function bindAuthorizeTicketEnv(
+  rootDir: string,
+  paths: string[],
+  now = new Date(),
+): string | undefined {
+  const ticket =
+    findCoveringTicket(rootDir, paths, now) ??
+    findFreshTicketForPaths(rootDir, paths, now);
+  if (!ticket) return process.env.COREWARD_AUTHORIZE_TICKET?.trim() || undefined;
+  process.env.COREWARD_AUTHORIZE_TICKET = ticket.ticket_id;
+  return ticket.ticket_id;
+}
+
 /**
  * Validate a ticket covers the requested paths and has not expired.
  */
@@ -204,7 +303,8 @@ export function validateAuthorizeTicket(
 
 /**
  * One-call authorize: house AND Mandate pathFilter AND AgentId budget.
- * On success mints a ticket for Coreward Mode engine-path checks.
+ * On success mints (or same-path refreshes) a ticket for Coreward Mode engine-path checks.
+ * Auto-exports ticket id into COREWARD_AUTHORIZE_TICKET.
  */
 export function authorizeWrite(input: AuthorizeWriteInput): AuthorizeWriteResult {
   const rootDir = input.root_dir ?? ".";
@@ -262,20 +362,30 @@ export function authorizeWrite(input: AuthorizeWriteInput): AuthorizeWriteResult
     input.body ?? "",
   );
 
+  const existing = findFreshTicketForPaths(rootDir, paths);
   const ticket = mintAuthorizeTicket(rootDir, paths, {
     prefer_gate,
     actor: input.actor,
     ttl_ms: input.ttl_ms,
+    ...(existing ? { ticket_id: existing.ticket_id } : {}),
   });
 
+  process.env.COREWARD_AUTHORIZE_TICKET = ticket.ticket_id;
+
+  const refreshed = Boolean(existing);
   return {
     ok: true,
     ticket_id: ticket.ticket_id,
     paths,
-    reason: prefer_gate
-      ? `authorized;prefer_gate:${prefer_gate}`
-      : "authorized",
+    reason: refreshed
+      ? prefer_gate
+        ? `authorized;refreshed;prefer_gate:${prefer_gate}`
+        : "authorized;refreshed"
+      : prefer_gate
+        ? `authorized;prefer_gate:${prefer_gate}`
+        : "authorized",
     prefer_gate,
     requiresApproval: house.requiresApproval,
+    ...(refreshed ? { refreshed: true } : {}),
   };
 }

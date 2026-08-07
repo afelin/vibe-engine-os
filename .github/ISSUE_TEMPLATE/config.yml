@@ -1,5 +1,8 @@
 blank_issues_enabled: true
 contact_links:
-  - name: Coreward docs
-    url: https://github.com/afelin/coreward/blob/main/docs/agent-protocol.md
-    about: Depth labels, operator commands, and MCP protocol
+  - name: Coreward start here
+    url: https://github.com/afelin/coreward/blob/main/docs/start-here.md
+    about: Activate, operate (Go/Approve/Merge), and Ward security
+  - name: Coreward operate
+    url: https://github.com/afelin/coreward/blob/main/docs/operate.md
+    about: Day-to-day Go / Approve / Merge loop

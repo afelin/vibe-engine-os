@@ -127,12 +127,12 @@ export function runZeroTokenSmoke(rootDir = "."): void {
 export function printPersonaQuickstart(): void {
   const lines = [
     "",
-    "✅ Vibe Engine activated",
+    "✅ Coreward activated",
     "",
     "Persona quickstart:",
-    "  Lone AI engineer:  npm run activate  →  issue + vibe/run label or /vibe in body",
-    "  Agentic engineer:  enable MCP (mcp.json) + .cursor/skills/coreward",
-    "  Agents:            docs/agent-protocol.md + authorize_write + constitution_schemas",
+    "  Lone AI engineer:  npm run activate  →  Coreward Request + /go",
+    "  Agentic engineer:  enable MCP (mcp.json) + .cursor/skills/coreward (call preflight once)",
+    "  Agents:            docs/start-here.md + docs/operate.md + preflight",
     "  Enterprise:        required Coreward Promotion Gate check on PR",
     "",
   ];

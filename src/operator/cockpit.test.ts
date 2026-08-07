@@ -33,6 +33,7 @@ describe("operator cockpit", () => {
     const text = renderCockpitComment("learning", baseContext);
 
     expect(text).toContain("## Coreward");
+    expect(text).toMatch(/Ward (LEGACY|ON) · Mode (OFF|ON) · ticket/);
     expect(text).toContain("### What's happening");
     expect(text).toContain("### Next step");
     expect(text).toContain("### Outcome checklist");
@@ -42,6 +43,7 @@ describe("operator cockpit", () => {
     expect(text).toContain("/details");
     expect(text).toContain("src/index.ts");
     expect(text).toContain("compile: Missing .js import extension");
+    expect(text).not.toMatch(/### Commands\n`\/approve`/);
   });
 
   it("expands technical details for /details and vibe:technical", () => {
