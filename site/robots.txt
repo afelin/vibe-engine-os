@@ -1,0 +1,10 @@
+# Coreward Pages
+User-agent: *
+Allow: /
+
+# Agent / LLM discovery
+# https://afelin.github.io/coreward/llms.txt
+Sitemap: https://afelin.github.io/coreward/llms.txt
+
+# Prefer white paper + trust + community for human crawlers
+# /whitepaper/ /trust/ /community/

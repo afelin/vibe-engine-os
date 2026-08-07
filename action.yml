@@ -1,5 +1,6 @@
-name: vibe-validate
+name: Coreward validate
 description: Validate a Coreward run capsule (manifest + vows hash) without LLM
+# Wire id / marketplace slug may remain vibe-validate in historical badges; display name is Coreward validate.
 inputs:
   run_dir:
     description: Path to .runs/<runId> directory

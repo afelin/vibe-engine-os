@@ -1,6 +1,6 @@
-name: Vibe Starter
+name: Coreward Starter
 description: Prefilled safe starter — cloud-loop smoke for a first green PR
-title: "[vibe] cloud-loop smoke — verify forever loop is alive"
+title: "[coreward] cloud-loop smoke — verify forever loop is alive"
 labels:
   - vibe/run
   - vibe:safe

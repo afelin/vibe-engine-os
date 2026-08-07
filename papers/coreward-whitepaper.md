@@ -3,7 +3,7 @@
 **Technical white paper (claim-safe)**  
 **Version:** `2.0.0`  
 **Date:** `2026-08-07`  
-**Source SHA:** `db4e75d20321a640622f7f9cfad71bd4fa70e2e1` — HEAD at fill time; update to the publish commit SHA when merged  
+**Source SHA:** `1b84892a17229e24b7237bfa0e87cb6565e1477d` — post-uptake sync tree; update to the next publish commit SHA when tagged  
 **How to cite:** see [How to cite](#how-to-cite) and repository root [`CITATION.cff`](../CITATION.cff)
 
 > **Honesty note.** This document describes free open-source software mechanisms that run on the operator’s own GitHub repository and CI. It does not claim certification, legal compliance, absolute percentages, or commercial product tiers. Capsules are **tamper-evident**, not tamper-proof. Hosted receipt verify and live CyberReady signed buyer proof remain **unclaimed** until those products exist. An optional signed **Mandate** (session budget) enables engine-path **Ward** checks on CI/promote when present; IDE Edit/Shell and out-of-band MCP soft paths can still bypass Ward—product claim is limited to *CI/promote cannot move without Ward when a Mandate is on*, not universal IDE interception.
@@ -341,7 +341,7 @@ Preferred machine-readable citation: repository root [`CITATION.cff`](../CITATIO
 
 Plain-text form (fill version, date, and SHA at publish):
 
-> Coreward contributors. *Coreward: Portable Promotion Primitives for Agent-Written Code*. Technical white paper, version 2.0.0 (2026-08-07). Source SHA: db4e75d20321a640622f7f9cfad71bd4fa70e2e1. Available at: https://github.com/afelin/coreward
+> Coreward contributors. *Coreward: Portable Promotion Primitives for Agent-Written Code*. Technical white paper, version 2.0.0 (2026-08-07). Source SHA: 1b84892a17229e24b7237bfa0e87cb6565e1477d. Available at: https://github.com/afelin/coreward
 
 When citing a specific mechanism (bond, capsule, gauntlet), include the commit SHA so readers can resolve exact schemas and baselines.
 

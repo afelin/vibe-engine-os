@@ -1,0 +1,14 @@
+{
+  "telegram_url": "https://t.me/YOUR_HANDLE",
+  "stripe_payment_link": "https://donate.stripe.com/8x24gzfZy2gG0g3bRCbsc00",
+  "stripe": {
+    "product_id": "prod_V1yl0rYP0MudKs",
+    "price_id": "price_1U1uneDbnoHN44eEaP4KUjkp",
+    "payment_link_id": "plink_1U1vBeDbnoHN44eERUFZShOJ",
+    "account": "Creaido"
+  },
+  "notes": {
+    "telegram": "TODO: replace with real Telegram group/channel invite after creating it (see docs/community.md).",
+    "stripe": "Live Payment Link (custom amount, min $5, preset $25). Voluntary tip — not a license purchase."
+  }
+}

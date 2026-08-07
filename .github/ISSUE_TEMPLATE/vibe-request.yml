@@ -1,6 +1,6 @@
-name: Vibe Request
+name: Coreward Request
 description: Structured task for Coreward — intent, outcome, and file paths
-title: "[vibe] "
+title: "[coreward] "
 labels:
   - vibe/run
   - vibe:safe

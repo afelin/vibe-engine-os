@@ -183,6 +183,6 @@ Operator slash commands override labels.
 
 Coreward is the reference implementation. External repos may use:
 
-- `action.yml` (`vibe-validate` composite action)
+- `action.yml` (`Coreward validate` composite action; wire/badge id may remain `vibe-validate`)
 - `runs/install-into-repo.sh`
 - Required **Coreward Promotion Gate** GitHub Check

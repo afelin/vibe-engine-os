@@ -3,7 +3,7 @@ name: vibe-auto-merge
 description: Opt-in autonomous PR merge when Coreward Promotion Gate and branch protection checks are green.
 ---
 
-# Vibe Auto Merge
+# Coreward Auto Merge
 
 ## Instructions
 

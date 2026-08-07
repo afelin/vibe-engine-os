@@ -1,12 +1,30 @@
 # Coreward
 
-Sovereign AI dev cluster (**Coreward** promotion gate) with a **headless xmachines Play constitution**: one Zod catalog for all law artifacts, `definePlayer` for promotion authority, and crawl-based CI proof that the OS machine matches `gates.json`.
+**Coreward** is a promotion gate for AI-assisted code: agents may propose changes; house rules, optional Mandate–Ward session budgets, and CI checks decide what lands in Git—with tamper-**evident** receipts, not certification. Free for internal use under [FSL-1.1-Apache-2.0](LICENSE) (Competing Use restricted until Change Date; FAQ: [LICENSE.md](LICENSE.md)). **Start here:** [docs/start-here.md](docs/start-here.md).
 
-**Repo:** [github.com/afelin/coreward](https://github.com/afelin/coreward) · **Start here:** [docs/start-here.md](docs/start-here.md) — 5 minutes, any tool (GitHub-only, Cursor + MCP, external agent, or legal-space dial). Deeper walks: [Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md) · [Nocode Quickstart](docs/nocode-quickstart.md) · [Plain-Language Briefing](docs/plain-language-briefing.md).
+Sovereign AI dev cluster with a **headless xmachines Play constitution**: one Zod catalog for all law artifacts, `definePlayer` for promotion authority, and crawl-based CI proof that the OS machine matches `gates.json`.
 
-**License:** [FSL-1.1-Apache-2.0](LICENSE) — free internal use on your runners; Competing Use restricted until Change Date. FAQ: [LICENSE.md](LICENSE.md).
+[![CI](https://github.com/afelin/coreward/actions/workflows/ci.yml/badge.svg)](https://github.com/afelin/coreward/actions/workflows/ci.yml)
+[![Pages](https://img.shields.io/badge/GitHub%20Pages-live-2ea44f)](https://afelin.github.io/coreward/)
+[![License: FSL-1.1-Apache-2.0](https://img.shields.io/badge/License-FSL--1.1--Apache--2.0-blue)](LICENSE.md)
 
-**Public surface (GitHub Pages):** [white paper](https://afelin.github.io/coreward/whitepaper/) · [adopt](https://afelin.github.io/coreward/adopt/) · [status](https://afelin.github.io/coreward/status/) · [site source](site/). Manuscript: `papers/coreward-whitepaper.md` (when present; `npm run site:build` regenerates HTML).
+**Repo:** [github.com/afelin/coreward](https://github.com/afelin/coreward) · **Start here:** [docs/start-here.md](docs/start-here.md) — 5 minutes, any tool (GitHub-only, Cursor + MCP, external agent, or legal-space dial). Deeper walks: [Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md) · [Nocode Quickstart](docs/nocode-quickstart.md) · [Plain-Language Briefing](docs/plain-language-briefing.md) · [Trust](https://afelin.github.io/coreward/trust/).
+
+**Public surface (GitHub Pages):** [white paper](https://afelin.github.io/coreward/whitepaper/) · [adopt](https://afelin.github.io/coreward/adopt/) · [status](https://afelin.github.io/coreward/status/) · [trust](https://afelin.github.io/coreward/trust/) · [community](https://afelin.github.io/coreward/community/) (Telegram + support) · [site source](site/). Manuscript: `papers/coreward-whitepaper.md` (`npm run site:build` regenerates HTML). Owner: set URLs in [`site/community/config.json`](site/community/config.json) — see [`docs/community.md`](docs/community.md).
+
+> **Nomenclature.** Product name is **Coreward**. Wire aliases `vibe/*` labels, `.vibe/` runtime, `VIBE_*` env vars, and `vibe-release-gates` MCP remain dual-read for compatibility—see [docs/start-here.md](docs/start-here.md).
+
+## Agent day-1
+
+```bash
+npm run activate
+npm run coreward:authorize -- --files path/to/file.ts
+npm run gate:mcp
+npm run ward:doctor
+npm run savings:attest
+```
+
+Enable MCP `coreward-release-gates` (alias `vibe-release-gates`) and follow [AGENTS.md](AGENTS.md) / [`.cursor/skills/coreward`](.cursor/skills/coreward/SKILL.md).
 
 ## What it is
 
@@ -32,7 +50,7 @@ Truth-driven gates (TDD): **deterministic replay** from `events.ndjson`, **Assis
 | **Replay gate** | Flight recorder — re-run `events.ndjson`; mismatch blocks promotion | `npm run replay -- . <runId>`; CI replay determinism check on PRs | Built-in |
 | **Anti-rot** | Scoped context (capped snippets, no repomix fallback), bond compliance (paths outside plan ∪ bound blocked), evidence-linked lessons | MCP `build_scoped_context`, `recall_lessons`; lessons in `.evomem/lessons.ndjson` | Built-in |
 | **MCP tools** | Live rulebook in Cursor: `authorize_write` first, then gates, bonds, mandates, schemas, capsule verify | Enable `coreward-release-gates` (alias `vibe-release-gates`) in `mcp.json`; `npm run gate:mcp` smoke | Built-in |
-| **Forever loop** | GitHub issue → plan → codegen → verify → PR + cockpit comment; runs while you sleep | Label `vibe/run` on issue; **Sovereign OS Event Bus** workflow | Built-in |
+| **Forever loop** | GitHub issue → plan → codegen → verify → PR + cockpit comment; runs while you sleep | Label `vibe/run` on issue; **Coreward Forever Loop** workflow | Built-in |
 | **Cockpit + explain dial** | Issue/PR comment dashboard: depth, hashes, next action, decision explain (off/short/long/expand) | Auto-posted on runs; labels `vibe:explain-short` / `vibe:explain-long` or `VIBE_EXPLAIN` | Built-in |
 | **Operator commands** | Human steering without terminal: `/status`, `/approve`, `/continue`, `/retry`, `/rollback`, `/details`, `/troubleshoot` | Reply on the issue; see [Agent Protocol](docs/agent-protocol.md) | Built-in |
 | **Option B `/approve`** | When Mandate path is on, CI may issue a short-lived signed override Mandate (`github-ci-bot-override`); human is audit-only (`approving_comment_actor`)—not human crypto | Issue comment `/approve` with runner key available | Built-in |
@@ -49,7 +67,7 @@ Truth-driven gates (TDD): **deterministic replay** from `events.ndjson`, **Assis
 | Combo | Flow |
 | --- | --- |
 | **Nocode loop** | [Nocode Quickstart](docs/nocode-quickstart.md) → Vibe Request issue → forever loop → receipt → merge (optional `vibe/auto-merge`) — no terminal |
-| **Cursor + MCP** | `npm run activate` + MCP + `.cursor/skills/Coreward` → live mandate/gate checks while you edit |
+| **Cursor + MCP** | `npm run activate` + MCP + `.cursor/skills/coreward` → live mandate/gate checks while you edit |
 | **Zero-token chores** | Match gate in `gates.json` + depth 0–2 → deterministic patch, no API keys |
 | **High-trust ship** | TaskBond + Signed Mandate/Ward + gauntlet + replay + promotion gate + attribution → audit-ready PR with capsule receipt |
 
@@ -136,7 +154,7 @@ npm run activate
 | Persona | One step | Daily use |
 | --- | --- | --- |
 | **Solo vibe coder** | [Solo guide](docs/solo-vibe-coder-guide.md) → `npm run activate` | Vibe Request issue + `vibe/run` label |
-| **Agentic engineer** | activate + enable MCP in Cursor | `.cursor/skills/Coreward` enforces vows |
+| **Agentic engineer** | activate + enable MCP in Cursor | `.cursor/skills/coreward` enforces vows |
 | **Agents** | `docs/agent-protocol.md` + schemas URL | `authorize_write`, `evaluate_mandate`, `resolve_gate`, catalog JSON |
 | **Enterprise** | Install App doc + required check branch rule | Green **Coreward Promotion Gate** + capsule hash on PR |
 
@@ -170,7 +188,7 @@ npm run constitution:export
 npm run constitution:serve   # local verify API :8787
 ```
 
-[![vibe-validate](https://img.shields.io/badge/action-vibe--validate-blue)](action.yml)
+[![Coreward validate](https://img.shields.io/badge/action-Coreward%20validate-blue)](action.yml)
 
 Install bundle only: `bash runs/install-into-repo.sh /path/to/repo`
 
@@ -184,7 +202,7 @@ npm run launch:readiness          # local file + gauntlet + MCP checks
 npm run launch:scar               # GTM snippet from proof artifacts
 ```
 
-When `.vibe/launch-proof.json` exists, it records `issueNumber`, `prUrl`, `capsuleHash`, and `checksGreen`. See [Launch Proof runbook](docs/launch-proof.md). Public repo + Pages deferred until private smoke passes.
+When `.vibe/launch-proof.json` exists, it records `issueNumber`, `prUrl`, `capsuleHash`, and `checksGreen`. See [Launch Proof runbook](docs/launch-proof.md). Public docs: [GitHub Pages](https://afelin.github.io/coreward/).
 
 ## Zero-token smoke
 
@@ -217,6 +235,10 @@ Repo root ships `mcp.json`. For project-scoped MCP in Cursor, copy or symlink to
 ```json
 {
   "mcpServers": {
+    "coreward-release-gates": {
+      "command": "npx",
+      "args": ["tsx", "src/release-gate/mcp.ts"]
+    },
     "vibe-release-gates": {
       "command": "npx",
       "args": ["tsx", "src/release-gate/mcp.ts"]
@@ -225,7 +247,7 @@ Repo root ships `mcp.json`. For project-scoped MCP in Cursor, copy or symlink to
 }
 ```
 
-**Enable in Cursor:** Settings → MCP → ensure `vibe-release-gates` is on. Run from repo root so `npx tsx src/release-gate/mcp.ts` resolves.
+**Enable in Cursor:** Settings → MCP → ensure `coreward-release-gates` is on (alias `vibe-release-gates` also works). Run from repo root so `npx tsx src/release-gate/mcp.ts` resolves.
 
 Use `constitution_schemas` for HPURL-ready JSON Schema and `validate_capsule` to verify a local run bundle.
 
@@ -234,10 +256,10 @@ Use `constitution_schemas` for HPURL-ready JSON Schema and `validate_capsule` to
 Full walkthrough: **[Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md)**
 
 1. `npm run activate` on `main`
-2. Enable MCP (`mcp.json` / `.cursor/mcp.json`) + `.cursor/skills/Coreward`
-3. Open a [Vibe Request](.github/ISSUE_TEMPLATE/vibe-request.yml) issue with **2–4 bound file paths**, intent, and outcome
+2. Enable MCP (`mcp.json` / `.cursor/mcp.json`) + `.cursor/skills/coreward`
+3. Open a [Coreward Request](.github/ISSUE_TEMPLATE/vibe-request.yml) issue with **2–4 bound file paths**, intent, and outcome
 4. Add label `vibe/run` (and `vibe:ship` for deploy depth)
-5. Watch **Sovereign OS Event Bus** workflow; green **Coreward Promotion Gate** on the PR
+5. Watch **Coreward Forever Loop** workflow; green **Coreward Promotion Gate** on the PR
 6. Operator: `/status`, `/approve` (protected paths), `/retry`, `/rollback` via issue comments
 7. Optional: verify determinism with `npm run replay -- . <runId>` (see run folder under `.runs/`)
 
@@ -298,4 +320,4 @@ npm run gate:resolve   # CLI gate resolution
 npm test
 ```
 
-See `agent.md` for the full operator protocol and `docs/os-phases.md` for auto-derived promotion phases.
+See [AGENTS.md](AGENTS.md) for agent law and `docs/os-phases.md` for auto-derived promotion phases.

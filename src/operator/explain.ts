@@ -36,7 +36,7 @@ export const DECISION_CATALOG: Record<string, DecisionExplainEntry> = {
     long:
       "The zero-token E2E creates a labeled issue, polls until the engine posts a PR link and capsule receipt, then waits for **Coreward Promotion Gate** and **Audit Assisted-by attribution** on that PR. Success writes `.vibe/launch-proof.json` as an artifact.",
     expand:
-      "This is the full product loop without Cursor tokens: issue body is the contract, Actions runs the agent path, checks enforce constitution. If proof times out, inspect the issue comments and Actions logs for **Sovereign OS Event Bus**. Do not enable branch protection until this workflow is green on `main`.",
+      "This is the full product loop without Cursor tokens: issue body is the contract, Actions runs the agent path, checks enforce constitution. If proof times out, inspect the issue comments and Actions logs for **Coreward Forever Loop**. Do not enable branch protection until this workflow is green on `main`.",
   },
   "launch.branch_protection": {
     short:
@@ -60,7 +60,7 @@ export const DECISION_CATALOG: Record<string, DecisionExplainEntry> = {
     long:
       "Auto-merge waits for CI (including promotion gate) then merges without a manual button click. Remove the label to cancel.",
     expand:
-      "Use auto-merge when you trust the issue contract and gates. If checks flap or branch protection is misconfigured, merge will stall — watch the PR checks tab and the **Vibe Auto Merge** workflow.",
+      "Use auto-merge when you trust the issue contract and gates. If checks flap or branch protection is misconfigured, merge will stall — watch the PR checks tab and the **Coreward Auto Merge** workflow.",
   },
   "operator.receipt": {
     short:

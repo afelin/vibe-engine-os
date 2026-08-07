@@ -1,4 +1,4 @@
-name: Vibe Auto Merge
+name: Coreward Auto Merge
 
 on:
   pull_request:

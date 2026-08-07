@@ -96,7 +96,7 @@ Fill in:
 
 Submit. The template adds `vibe/run` by default.
 
-**Watch:** GitHub Actions workflow **Sovereign OS Event Bus** (`forever.yml`). When it finishes, you get a PR with checks including **Coreward Promotion Gate**.
+**Watch:** GitHub Actions workflow **Coreward Forever Loop** (`forever.yml`). When it finishes, you get a PR with checks including **Coreward Promotion Gate**.
 
 ---
 

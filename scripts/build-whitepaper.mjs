@@ -29,7 +29,7 @@ const FONT_LINKS = `  <link rel="preconnect" href="https://fonts.googleapis.com"
 const REPO_BLOB = "https://github.com/afelin/coreward/blob/main";
 
 /** Site-local path segments under site/ — keep relative for project Pages. */
-const SITE_LOCAL = /^(?:\.\.\/)?(?:css|adopt|status|legal|proof|whitepaper)(?:\/|$)/;
+const SITE_LOCAL = /^(?:\.\.\/)?(?:css|adopt|status|legal|proof|whitepaper|trust)(?:\/|$)/;
 
 function escapeHtml(s) {
   return s
@@ -236,7 +236,9 @@ ${FONT_LINKS}
           <li><a href="./" aria-current="page">White paper</a></li>
           <li><a href="../adopt/">Adopt</a></li>
           <li><a href="../status/">Status</a></li>
+          <li><a href="../trust/">Trust</a></li>
           <li><a href="../proof/">Proof</a></li>
+          <li><a href="../community/">Community</a></li>
           <li><a href="../legal/">Legal</a></li>
         </ul>
       </nav>
@@ -327,6 +329,33 @@ function copyProof() {
   console.log(`copied proof/ → ${path.relative(ROOT, PROOF_DST)}`);
 }
 
+function copyDiscoveryAssets() {
+  const llmsSrc = path.join(ROOT, "llms.txt");
+  const llmsDst = path.join(ROOT, "site", "llms.txt");
+  if (fs.existsSync(llmsSrc)) {
+    fs.copyFileSync(llmsSrc, llmsDst);
+    console.log(`copied llms.txt → ${path.relative(ROOT, llmsDst)}`);
+  } else {
+    console.warn("llms.txt missing — skip site/llms.txt copy");
+  }
+
+  const robotsDst = path.join(ROOT, "site", "robots.txt");
+  const robots = `# Coreward Pages
+User-agent: *
+Allow: /
+
+# Agent / LLM discovery
+# https://afelin.github.io/coreward/llms.txt
+Sitemap: https://afelin.github.io/coreward/llms.txt
+
+# Prefer white paper + trust + community for human crawlers
+# /whitepaper/ /trust/ /community/
+`;
+  fs.writeFileSync(robotsDst, robots, "utf8");
+  console.log(`wrote ${path.relative(ROOT, robotsDst)}`);
+}
+
 buildWhitepaper();
 copyProof();
+copyDiscoveryAssets();
 console.log("build-whitepaper: ok");

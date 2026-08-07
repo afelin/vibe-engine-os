@@ -8,8 +8,9 @@ Short contract for what may appear on GitHub Pages, a RISE mirror, or RI.SE deep
 |------|----------|
 | Engine source | `src/`, `runs/`, `scripts/` (non-secret), `package.json`, vows/constitution |
 | Papers & citation | `papers/`, `CITATION.cff` |
-| Site & proof | `site/`, `proof/` |
-| Operator how-tos | `docs/start-here.md`, `docs/agent-protocol.md`, `docs/rise-export.md`, this file |
+| Site & proof | `site/` (incl. `site/trust/`, `site/community/`), `proof/` |
+| Community links | Telegram invite + voluntary Stripe tip URL in `site/community/config.json` (no secrets; chat ≠ SLA; tip ≠ license) |
+| Operator how-tos | `docs/start-here.md`, `docs/agent-protocol.md`, `docs/rise-export.md`, `docs/community.md`, this file |
 | Eval / evidence harness | `evals/`, public claim-ledger code |
 
 Tone: portable **free** OSS primitives — how to run and verify, not how to monetize.

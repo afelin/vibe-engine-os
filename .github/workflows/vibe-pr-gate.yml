@@ -1,4 +1,4 @@
-name: Vibe PR Promotion Gate
+name: Coreward Promotion Gate
 
 on:
   pull_request:
