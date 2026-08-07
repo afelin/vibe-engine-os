@@ -1,5 +1,5 @@
 name: Vibe Request
-description: Structured task for vibe-engine-os — intent, outcome, and file paths
+description: Structured task for Coreward — intent, outcome, and file paths
 title: "[vibe] "
 labels:
   - vibe/run
@@ -8,7 +8,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        **How this works:** Fill the fields below, submit the issue, and vibe-engine runs from the issue body — not from Cursor chat history.
+        **How this works:** Fill the fields below, submit the issue, and Coreward runs from the issue body — not from Cursor chat history.
 
         **Depth labels** (change after submit if needed):
         - `vibe:safe` — small/safe codegen (default on this template)

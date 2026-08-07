@@ -98,7 +98,7 @@ describe("GitHub comment router", () => {
     });
 
     expect(result.event?.type).toBe("operator.status_requested");
-    expect(result.responseBody).toContain("## Vibe Engine OS");
+    expect(result.responseBody).toContain("## Coreward");
     expect(result.responseBody).toContain("learning");
   });
 

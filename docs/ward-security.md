@@ -31,4 +31,4 @@ When a Signed Mandate is in play, **authorization = `verifyOnce(principals)` + h
 - **Option B** — plain-text `/approve` may mint a short-lived CI-bot override (not human-attributed crypto).
 - **Not eIDAS / not FROST / not KMS** — Ed25519 principals + house AND only.
 
-See also: [Agent Identity](agent-identity.md) · [README Mandate–Ward](../README.md) · [Whitepaper](../papers/vibe-engine-whitepaper.md)
+See also: [Agent Identity](agent-identity.md) · [README Mandate–Ward](../README.md) · [Whitepaper](../papers/coreward-whitepaper.md)

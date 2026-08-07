@@ -200,7 +200,7 @@ async function waitForPrChecks(prUrl) {
   while (Date.now() - started < CHECKS_MAX_WAIT_MS) {
     const checks = ghJson(`pr checks ${prNumber} --json name,state,bucket`);
     const checkList = Array.isArray(checks) ? checks : checks?.checks ?? [];
-    const gate = checkList.find((check) => check.name === "Vibe Promotion Gate");
+    const gate = checkList.find((check) => check.name === "Coreward Promotion Gate" || check.name === "Vibe Promotion Gate");
     const attribution = checkList.find(
       (check) => check.name === "Audit Assisted-by attribution",
     );

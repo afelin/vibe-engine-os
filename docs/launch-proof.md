@@ -27,7 +27,7 @@ Runs feel slow when healthy — this is normal. Use the table below so you know 
 1. Creates a Vibe Request issue with cloud-loop smoke paths (no LLM secrets)
 2. Dispatches `forever.yml` (Actions-created issues do not auto-trigger workflows)
 3. Polls issue comments for PR link + capsule receipt
-4. Polls PR checks for **Vibe Promotion Gate** (+ attribution when present)
+4. Polls PR checks for **Coreward Promotion Gate** (+ attribution when present)
 5. Writes `.vibe/launch-proof.json`
 
 Local dry-run (requires `gh` auth): `node scripts/launch-e2e.mjs`
@@ -52,7 +52,7 @@ Fill after a successful run (local `.vibe/launch-proof.json` is gitignored; copy
 - [ ] `npm run launch:readiness` exits 0 on `main`
 - [ ] `.vibe/launch-proof.json` has `issueNumber`, `prUrl`, `capsuleHash`, `checksGreen: true`
 - [ ] Issue comment contains PR link + receipt
-- [ ] **Vibe Promotion Gate** green on vibe branch PR
+- [ ] **Coreward Promotion Gate** green on vibe branch PR
 
 ## Manual ops (after proof passes)
 
@@ -62,7 +62,7 @@ Do **not** automate these in launch PRs — complete in GitHub UI when acceptanc
 
 Per [GitHub App / branch protection](./github-app.md):
 
-- [ ] Require **Vibe Promotion Gate** on PRs to `main`
+- [ ] Require **Coreward Promotion Gate** on PRs to `main`
 - [ ] Require **Audit Assisted-by attribution** on PRs to `main`
 - [ ] Require status checks to pass before merge
 

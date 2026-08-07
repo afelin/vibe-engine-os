@@ -25,13 +25,13 @@ Delivery idempotency: `src/os/idempotency.ts` key `event_name:delivery_id:issue_
 1. Create GitHub App from manifest (future PR).
 2. Install on org/repo.
 3. Replace `GITHUB_TOKEN` with app installation token in workflow.
-4. Enable branch protection: required checks **Vibe Promotion Gate** and **Audit Assisted-by attribution**.
+4. Enable branch protection: required checks **Coreward Promotion Gate** and **Audit Assisted-by attribution**.
 
 ## Current State (Tier 1)
 
 `src/publishing/github-checks.ts` posts Check Runs via REST with `GITHUB_TOKEN`.
 
-`npm run promote:apply` (wired in `.github/workflows/forever.yml` **vibe-promote** job) creates or updates a check named **Vibe Promotion Gate** on the pushed vibe-branch head SHA (`VIBE_HEAD_SHA`, falling back to `GITHUB_SHA`) after capsule validation and bond preflight.
+`npm run promote:apply` (wired in `.github/workflows/forever.yml` **vibe-promote** job) creates or updates a check named **Coreward Promotion Gate** on the pushed vibe-branch head SHA (`VIBE_HEAD_SHA`, falling back to `GITHUB_SHA`) after capsule validation and bond preflight.
 
 No App certification required for initial adoption.
 
@@ -39,10 +39,10 @@ No App certification required for initial adoption.
 
 The check names to require on `main` are exactly:
 
-1. **`Vibe Promotion Gate`**
+1. **`Coreward Promotion Gate`**
 2. **`Audit Assisted-by attribution`**
 
-**Vibe Promotion Gate** is registered when a vibe run promotes successfully (`src/promote/apply-cli.ts` → `createOrUpdateCheckRun`). **Audit Assisted-by attribution** comes from `.github/workflows/tdd-attribution.yml` on every PR to `main`. Until at least one run has executed on a branch, a check may not appear in the branch-protection picker.
+**Coreward Promotion Gate** is registered when a vibe run promotes successfully (`src/promote/apply-cli.ts` → `createOrUpdateCheckRun`). **Audit Assisted-by attribution** comes from `.github/workflows/tdd-attribution.yml` on every PR to `main`. Until at least one run has executed on a branch, a check may not appear in the branch-protection picker.
 
 ### Manual setup for `afelin/coreward` (GitHub UI)
 
@@ -50,7 +50,7 @@ Repo admin access is required; the REST API cannot set required checks without a
 
 1. Open **Settings → Branches** → **Branch protection rules** → **Add rule** (or edit existing rule for `main`).
 2. Enable **Require status checks to pass before merging**.
-3. Search for **`Vibe Promotion Gate`** and **`Audit Assisted-by attribution`**, and select both.
+3. Search for **`Coreward Promotion Gate`** and **`Audit Assisted-by attribution`**, and select both.
 4. Enable **Require branches to be up to date before merging** (recommended).
 5. Save the rule.
 

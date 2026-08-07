@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Build public white paper HTML and unify publish root.
- * - MD → site/whitepaper/index.html (from papers/vibe-engine-whitepaper.md)
+ * - MD → site/whitepaper/index.html (from papers/coreward-whitepaper.md)
  * - proof/ → site/proof/ (receipt viewer under the same Pages root)
  *
  * Zero npm deps — Node built-ins only. Safe when the manuscript is still landing:
@@ -13,7 +13,8 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
-const MD_PATH = path.join(ROOT, "papers", "vibe-engine-whitepaper.md");
+const MD_PATH = path.join(ROOT, "papers", "coreward-whitepaper.md");
+const MD_PATH_LEGACY = path.join(ROOT, "papers", "vibe-engine-whitepaper.md");
 const OUT_DIR = path.join(ROOT, "site", "whitepaper");
 const OUT_HTML = path.join(OUT_DIR, "index.html");
 const PROOF_SRC = path.join(ROOT, "proof");
@@ -250,7 +251,7 @@ ${bodyHtml}
 
   <footer class="site-footer">
     <div class="site-footer__inner">
-      <span><a href="../">vibe-engine</a></span>
+      <span><a href="../">Coreward</a></span>
       <span><a href="../legal/">Legal notices</a></span>
     </div>
   </footer>
@@ -269,21 +270,28 @@ function copyDir(src, dst) {
   }
 }
 
+function resolveManuscriptPath() {
+  if (fs.existsSync(MD_PATH)) return MD_PATH;
+  if (fs.existsSync(MD_PATH_LEGACY)) return MD_PATH_LEGACY;
+  return null;
+}
+
 function buildWhitepaper() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
-  if (!fs.existsSync(MD_PATH)) {
+  const manuscript = resolveManuscriptPath();
+  if (!manuscript) {
     // Content may land via a separate PR (papers/). Keep committed HTML so
     // Pages stays green; after that merge, this script regenerates from MD.
     if (fs.existsSync(OUT_HTML)) {
       console.log(
-        `papers/vibe-engine-whitepaper.md missing — keeping existing ${path.relative(ROOT, OUT_HTML)} (build after content merges to refresh)`,
+        `papers/coreward-whitepaper.md missing — keeping existing ${path.relative(ROOT, OUT_HTML)} (build after content merges to refresh)`,
       );
       return;
     }
-    const title = "vibe-engine White Paper";
+    const title = "Coreward White Paper";
     const body = `<h1>${title}</h1>
-<p>Manuscript source <code>papers/vibe-engine-whitepaper.md</code> is not in this tree yet.</p>
+<p>Manuscript source <code>papers/coreward-whitepaper.md</code> is not in this tree yet.</p>
 <p>When that file lands, re-run <code>node scripts/build-whitepaper.mjs</code> (or the Pages workflow) to regenerate this page.</p>
 <p>See <a href="https://github.com/afelin/coreward">the repository</a> and <a href="../adopt/">Adopt</a> for how to run the engine.</p>`;
     fs.writeFileSync(
@@ -292,7 +300,7 @@ function buildWhitepaper() {
         title,
         bodyHtml: body,
         notice:
-          "Placeholder page — full white paper HTML is generated from papers/vibe-engine-whitepaper.md.",
+          "Placeholder page — full white paper HTML is generated from papers/coreward-whitepaper.md.",
       }),
       "utf8",
     );
@@ -300,11 +308,13 @@ function buildWhitepaper() {
     return;
   }
 
-  const md = fs.readFileSync(MD_PATH, "utf8");
+  const md = fs.readFileSync(manuscript, "utf8");
   const title = extractTitle(md);
   const bodyHtml = mdToHtml(md);
   fs.writeFileSync(OUT_HTML, wrapPage({ title, bodyHtml, notice: null }), "utf8");
-  console.log(`wrote ${path.relative(ROOT, OUT_HTML)} from papers/vibe-engine-whitepaper.md`);
+  console.log(
+    `wrote ${path.relative(ROOT, OUT_HTML)} from ${path.relative(ROOT, manuscript)}`,
+  );
 }
 
 function copyProof() {

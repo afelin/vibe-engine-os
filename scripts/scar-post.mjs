@@ -180,7 +180,7 @@ function formatScarPost({ l0Win, proof, gauntletOutput }) {
     lines.push(
       `**Launch proof:** issue #${proof.issueNumber} → [PR](${proof.prUrl})`,
       proof.capsuleHash ? `**Capsule:** \`sha256:${proof.capsuleHash}\`` : "",
-      proof.checksGreen ? "**Checks:** Vibe Promotion Gate green" : "",
+      proof.checksGreen ? "**Checks:** Coreward Promotion Gate green" : "",
       "",
     );
   }

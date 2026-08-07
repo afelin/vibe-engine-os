@@ -1,14 +1,14 @@
-# coreward
+# Coreward
 
-Sovereign AI dev cluster (**vibe-engine** promotion gate) with a **headless xmachines Play constitution**: one Zod catalog for all law artifacts, `definePlayer` for promotion authority, and crawl-based CI proof that the OS machine matches `gates.json`.
+Sovereign AI dev cluster (**Coreward** promotion gate) with a **headless xmachines Play constitution**: one Zod catalog for all law artifacts, `definePlayer` for promotion authority, and crawl-based CI proof that the OS machine matches `gates.json`.
 
 **Repo:** [github.com/afelin/coreward](https://github.com/afelin/coreward) · **Start here:** [docs/start-here.md](docs/start-here.md) — 5 minutes, any tool (GitHub-only, Cursor + MCP, external agent, or legal-space dial). Deeper walks: [Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md) · [Nocode Quickstart](docs/nocode-quickstart.md) · [Plain-Language Briefing](docs/plain-language-briefing.md).
 
-**Public surface (GitHub Pages):** [white paper](https://afelin.github.io/coreward/whitepaper/) · [adopt](https://afelin.github.io/coreward/adopt/) · [status](https://afelin.github.io/coreward/status/) · [site source](site/). Manuscript: `papers/vibe-engine-whitepaper.md` (when present; `npm run site:build` regenerates HTML).
+**Public surface (GitHub Pages):** [white paper](https://afelin.github.io/coreward/whitepaper/) · [adopt](https://afelin.github.io/coreward/adopt/) · [status](https://afelin.github.io/coreward/status/) · [site source](site/). Manuscript: `papers/coreward-whitepaper.md` (when present; `npm run site:build` regenerates HTML).
 
 ## What it is
 
-**coreward** (vibe-engine) is a **promotion gate**, not a codegen toy. Models propose JSON-shaped artifacts; the constitution catalog and OS machine guards reject bad input before disk write. Only verified snapshots promote to Git.
+**Coreward** is a **promotion gate**, not a codegen toy. Models propose JSON-shaped artifacts; the constitution catalog and OS machine guards reject bad input before disk write. Only verified snapshots promote to Git.
 
 Truth-driven gates (TDD): **deterministic replay** from `events.ndjson`, **Assisted-by** attribution on PRs, and an **adversarial gauntlet** that proves guardrails block forbidden changes.
 
@@ -16,7 +16,7 @@ Truth-driven gates (TDD): **deterministic replay** from `events.ndjson`, **Assis
 
 ## Capabilities
 
-**coreward** (vibe-engine) is a **promotion gate**, not a codegen toy. Models propose JSON-shaped artifacts; the constitution catalog and OS machine guards reject bad input before disk write. Only verified snapshots promote to Git. Walkthroughs: [Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md) · [Nocode Quickstart](docs/nocode-quickstart.md) · [Agent Protocol](docs/agent-protocol.md).
+**Coreward** is a **promotion gate**, not a codegen toy. Models propose JSON-shaped artifacts; the constitution catalog and OS machine guards reject bad input before disk write. Only verified snapshots promote to Git. Walkthroughs: [Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md) · [Nocode Quickstart](docs/nocode-quickstart.md) · [Agent Protocol](docs/agent-protocol.md).
 
 | Capability | What you get | How to activate | Status |
 | --- | --- | --- | --- |
@@ -26,15 +26,15 @@ Truth-driven gates (TDD): **deterministic replay** from `events.ndjson`, **Assis
 | **Zero-token gates** | Deterministic patch templates — no LLM, $0 cost for templated chores | Match issue title/body to `src/release-gate/gates.json`; MCP `resolve_gate` / `list_gates` | Built-in |
 | **VIBE_DEPTH dial** | Volume knob 0–5: explain → plan → safe files → tests → deploy → protected `/approve` | `VIBE_DEPTH` env or labels `vibe:plan-only` / `vibe:safe` / `vibe:ship` | Built-in |
 | **Capsule + receipt** | Tamper-evident run fingerprint (`capsuleHash`, `vowsHash`) + **View proof** HPURL in issue comment (not a certificate) | Runs automatically; inspect `proof/index.html` or MCP `validate_capsule` | Built-in |
-| **TaskBond gauntlet** | 32/32 adversarial bond + mandate scenarios; baseline ratchet blocks guard drift | `npm run eval:bond`; wired into **Vibe Promotion Gate** preflight | Built-in |
+| **TaskBond gauntlet** | 32/32 adversarial bond + mandate scenarios; baseline ratchet blocks guard drift | `npm run eval:bond`; wired into **Coreward Promotion Gate** preflight | Built-in |
 | **Replay gate** | Flight recorder — re-run `events.ndjson`; mismatch blocks promotion | `npm run replay -- . <runId>`; CI replay determinism check on PRs | Built-in |
 | **Anti-rot** | Scoped context (capped snippets, no repomix fallback), bond compliance (paths outside plan ∪ bound blocked), evidence-linked lessons | MCP `build_scoped_context`, `recall_lessons`; lessons in `.evomem/lessons.ndjson` | Built-in |
-| **MCP tools** | Live rulebook in Cursor: gates, bonds, mandates, schemas, capsule verify | Enable `vibe-release-gates` in `mcp.json`; `npm run gate:mcp` smoke | Built-in |
+| **MCP tools** | Live rulebook in Cursor: gates, bonds, mandates, schemas, capsule verify | Enable `coreward-release-gates` (alias `vibe-release-gates`) in `mcp.json`; `npm run gate:mcp` smoke | Built-in |
 | **Forever loop** | GitHub issue → plan → codegen → verify → PR + cockpit comment; runs while you sleep | Label `vibe/run` on issue; **Sovereign OS Event Bus** workflow | Built-in |
 | **Cockpit + explain dial** | Issue/PR comment dashboard: depth, hashes, next action, decision explain (off/short/long/expand) | Auto-posted on runs; labels `vibe:explain-short` / `vibe:explain-long` or `VIBE_EXPLAIN` | Built-in |
 | **Operator commands** | Human steering without terminal: `/status`, `/approve`, `/continue`, `/retry`, `/rollback`, `/details`, `/troubleshoot` | Reply on the issue; see [Agent Protocol](docs/agent-protocol.md) | Built-in |
 | **Option B `/approve`** | When Mandate path is on, CI may issue a short-lived signed override Mandate (`github-ci-bot-override`); human is audit-only (`approving_comment_actor`)—not human crypto | Issue comment `/approve` with runner key available | Built-in |
-| **Promotion gate** | **Vibe Promotion Gate** — gauntlet green, bond valid, capsule/replay OK before merge | Require check on `main`; runs on vibe PRs via `vibe-pr-gate.yml` | Built-in |
+| **Promotion gate** | **Coreward Promotion Gate** — gauntlet green, bond valid, capsule/replay OK before merge | Require check on `main`; runs on vibe PRs via `vibe-pr-gate.yml` | Built-in |
 | **Assisted-by attribution** | PR blocked if commits mention AI tools without `Assisted-by:` trailer | Automatic on PRs; engine tags its own commits | Built-in |
 | **Auto-merge** | Squash-merge when branch protection + promotion gate green | Label `vibe/auto-merge` or repo var `VIBE_AUTO_MERGE=1` | Built-in |
 | **Activate / adopt** | One-command bootstrap: check, zero-token smoke, MCP smoke, schema export, vows attestation | `npm run activate` or `bash runs/adopt.sh /path/to/repo` | Built-in |
@@ -47,7 +47,7 @@ Truth-driven gates (TDD): **deterministic replay** from `events.ndjson`, **Assis
 | Combo | Flow |
 | --- | --- |
 | **Nocode loop** | [Nocode Quickstart](docs/nocode-quickstart.md) → Vibe Request issue → forever loop → receipt → merge (optional `vibe/auto-merge`) — no terminal |
-| **Cursor + MCP** | `npm run activate` + MCP + `.cursor/skills/vibe-engine` → live mandate/gate checks while you edit |
+| **Cursor + MCP** | `npm run activate` + MCP + `.cursor/skills/Coreward` → live mandate/gate checks while you edit |
 | **Zero-token chores** | Match gate in `gates.json` + depth 0–2 → deterministic patch, no API keys |
 | **High-trust ship** | TaskBond + Signed Mandate/Ward + gauntlet + replay + promotion gate + attribution → audit-ready PR with capsule receipt |
 
@@ -117,9 +117,9 @@ npm run activate
 | Persona | One step | Daily use |
 | --- | --- | --- |
 | **Solo vibe coder** | [Solo guide](docs/solo-vibe-coder-guide.md) → `npm run activate` | Vibe Request issue + `vibe/run` label |
-| **Agentic engineer** | activate + enable MCP in Cursor | `.cursor/skills/vibe-engine` enforces vows |
+| **Agentic engineer** | activate + enable MCP in Cursor | `.cursor/skills/Coreward` enforces vows |
 | **Agents** | `docs/agent-protocol.md` + schemas URL | `evaluate_mandate`, `resolve_gate`, catalog JSON |
-| **Enterprise** | Install App doc + required check branch rule | Green **Vibe Promotion Gate** + capsule hash on PR |
+| **Enterprise** | Install App doc + required check branch rule | Green **Coreward Promotion Gate** + capsule hash on PR |
 
 ## 5-minute adoption
 
@@ -157,7 +157,7 @@ Install bundle only: `bash runs/install-into-repo.sh /path/to/repo`
 
 ## Launch proof
 
-Zero-token E2E on private GitHub: issue → PR → receipt → green **Vibe Promotion Gate**.
+Zero-token E2E on private GitHub: issue → PR → receipt → green **Coreward Promotion Gate**.
 
 ```bash
 npm run launch:readiness          # local file + gauntlet + MCP checks
@@ -215,10 +215,10 @@ Use `constitution_schemas` for HPURL-ready JSON Schema and `validate_capsule` to
 Full walkthrough: **[Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md)**
 
 1. `npm run activate` on `main`
-2. Enable MCP (`mcp.json` / `.cursor/mcp.json`) + `.cursor/skills/vibe-engine`
+2. Enable MCP (`mcp.json` / `.cursor/mcp.json`) + `.cursor/skills/Coreward`
 3. Open a [Vibe Request](.github/ISSUE_TEMPLATE/vibe-request.yml) issue with **2–4 bound file paths**, intent, and outcome
 4. Add label `vibe/run` (and `vibe:ship` for deploy depth)
-5. Watch **Sovereign OS Event Bus** workflow; green **Vibe Promotion Gate** on the PR
+5. Watch **Sovereign OS Event Bus** workflow; green **Coreward Promotion Gate** on the PR
 6. Operator: `/status`, `/approve` (protected paths), `/retry`, `/rollback` via issue comments
 7. Optional: verify determinism with `npm run replay -- . <runId>` (see run folder under `.runs/`)
 
@@ -228,7 +228,7 @@ PR commits that mention AI tooling must include an `Assisted-by:` trailer (enfor
 
 ## Optional auto-merge on green CI
 
-Add label **`vibe/auto-merge`** to a PR (or set repo variable **`VIBE_AUTO_MERGE=1`** for repo-wide opt-in). When branch protection checks and **Vibe Promotion Gate** are green, `.github/workflows/vibe-auto-merge.yml` squash-merges the PR.
+Add label **`vibe/auto-merge`** to a PR (or set repo variable **`VIBE_AUTO_MERGE=1`** for repo-wide opt-in). When branch protection checks and **Coreward Promotion Gate** are green, `.github/workflows/vibe-auto-merge.yml` squash-merges the PR.
 
 ```bash
 npm run pr:auto-merge -- 15 --dry-run   # verify readiness locally
@@ -244,7 +244,7 @@ For [tabdab-link-proof](https://github.com/afelin/tabdab-link-proof) or other Lo
 # In target repo after install:
 cp .env.example .env   # set VIBE_PROJECT_PROFILE=tabdab
 
-# Or install the coreward / vibe-engine layer into an existing repo:
+# Or install the coreward / Coreward layer into an existing repo:
 bash runs/install-into-repo.sh /path/to/tabdab-link-proof
 cd /path/to/tabdab-link-proof && npm install && npm run activate
 ```

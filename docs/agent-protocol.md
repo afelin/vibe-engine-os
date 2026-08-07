@@ -1,6 +1,6 @@
 # Vibe Engine Agent Protocol
 
-Open specification for agents (any framework) integrating with vibe-engine-os.
+Open specification for agents (any framework) integrating with Coreward.
 
 **Solo operators:** start with the [Solo Vibe Coder Guide](./solo-vibe-coder-guide.md). **Stakeholders:** see [Plain-Language Briefing](./plain-language-briefing.md).
 
@@ -65,7 +65,7 @@ Bond evaluation uses **agent mandates** (`evaluate_mandates`) plus bond policy i
 
 ## Anti-rot primitives
 
-Promotion context and hallucination guards stay in vibe-engine (CyberReady OPA handles compliance separately).
+Promotion context and hallucination guards stay in Coreward (CyberReady OPA handles compliance separately).
 
 | Primitive | Module | Purpose |
 |-----------|--------|---------|
@@ -141,7 +141,7 @@ Enforced twice before promotion:
 
 ## Attribution
 
-PRs to `main` must carry an `Assisted-by:` trailer on any commit whose message mentions AI tooling (cursor, claude, gpt, copilot, gemini, groq). Enforced by `.github/workflows/tdd-attribution.yml` running `scripts/audit-attribution.mjs` (fail-open on git errors). The engine holds itself to the rule: promotion commits from `forever.yml` append `Assisted-by: vibe-engine-os`.
+PRs to `main` must carry an `Assisted-by:` trailer on any commit whose message mentions AI tooling (cursor, claude, gpt, copilot, gemini, groq). Enforced by `.github/workflows/tdd-attribution.yml` running `scripts/audit-attribution.mjs` (fail-open on git errors). The engine holds itself to the rule: promotion commits from `forever.yml` append `Assisted-by: coreward`.
 
 ## Auto-merge (optional)
 
@@ -150,7 +150,7 @@ Opt-in autonomous squash merge when CI is green:
 - **Label:** `vibe/auto-merge` on the PR (default — per-PR opt-in)
 - **Repo variable:** `VIBE_AUTO_MERGE=1` skips the label requirement
 - **Workflow:** `.github/workflows/vibe-auto-merge.yml` (triggers on PR updates + `check_suite: completed`)
-- **Gate:** requires `mergeable_state: clean`, successful **Vibe Promotion Gate**, and **Audit Assisted-by attribution** on the PR head SHA
+- **Gate:** requires `mergeable_state: clean`, successful **Coreward Promotion Gate**, and **Audit Assisted-by attribution** on the PR head SHA
 - **CLI:** `npm run pr:auto-merge -- <pr_number> [--dry-run]` or `--sha <commit>`
 
 Cursor skill: `.cursor/skills/vibe-auto-merge`
@@ -178,8 +178,8 @@ Operator slash commands override labels.
 
 ## Reference Runtime
 
-vibe-engine-os is the reference implementation. External repos may use:
+Coreward is the reference implementation. External repos may use:
 
 - `action.yml` (`vibe-validate` composite action)
 - `runs/install-into-repo.sh`
-- Required **Vibe Promotion Gate** GitHub Check
+- Required **Coreward Promotion Gate** GitHub Check

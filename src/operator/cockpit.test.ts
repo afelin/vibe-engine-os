@@ -32,7 +32,7 @@ describe("operator cockpit", () => {
   it("renders plain-language block with technical details collapsed", () => {
     const text = renderCockpitComment("learning", baseContext);
 
-    expect(text).toContain("## Vibe Engine OS");
+    expect(text).toContain("## Coreward");
     expect(text).toContain("### What's happening");
     expect(text).toContain("### Next step");
     expect(text).toContain("### Outcome checklist");
@@ -188,6 +188,38 @@ describe("operator cockpit", () => {
     expect(text.indexOf("View proof")).toBeLessThan(detailsIndex);
     expect(text.indexOf("Gauntlet:")).toBeLessThan(detailsIndex);
     expect(text).toContain("zero-token gate path");
+  });
+
+  it("shows savings line with gate_hit / contextChars / tokensEstimate", () => {
+    const text = renderCockpitComment(
+      "completed",
+      {
+        issueNumber: "1",
+        issueTitle: "Done",
+        issueBody: "",
+        attempts: 1,
+        maxAttempts: 3,
+        findings: [],
+        generatedFiles: [],
+        verificationResults: [],
+        failures: [],
+      } satisfies OSContext,
+      ".",
+      {
+        runId: "run-1",
+        capsuleHash: "abc123",
+        vowsHash: "vows456",
+        metrics: {
+          firstPassGreen: true,
+          tokensEstimate: 0,
+          contextChars: 1200,
+          gateHit: true,
+        },
+      },
+    );
+    expect(text).toContain("gate_hit=yes");
+    expect(text).toContain("contextChars=1200");
+    expect(text).toContain("tokensEstimate=0");
   });
 
   it("renders gauntlet and tokens saved helpers", () => {

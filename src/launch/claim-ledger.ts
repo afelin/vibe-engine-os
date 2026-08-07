@@ -138,6 +138,16 @@ export const CLAIM_CATALOG: readonly ClaimDefinition[] = Object.freeze([
     assert: null,
   },
   {
+    id: "authorize_write",
+    text: "authorize_write MCP/CLI mints tickets; Coreward Mode fail-closes without ticket or Mandate",
+    assert: "authorize_write_sacred",
+  },
+  {
+    id: "coreward_mode",
+    text: "Coreward Mode fail-closed on engine path without ticket or Mandate",
+    assert: "authorize_write_sacred",
+  },
+  {
     id: "ward_promote_reverify",
     text: "Forged promote receipts cannot authorize; promote re-verifies Mandate live",
     assert: "ward_sacred",

@@ -10,7 +10,7 @@ import {
 import { computeVowsHash } from "../constitution/vows.js";
 
 describe("release gate MCP handlers", () => {
-  it("advertises fifteen deterministic tools", () => {
+  it("advertises seventeen deterministic tools", () => {
     expect(RELEASE_GATE_TOOLS.map((tool) => tool.name)).toEqual([
       "list_gates",
       "resolve_gate",
@@ -27,6 +27,8 @@ describe("release gate MCP handlers", () => {
       "get_active_stack",
       "cyberready_validate_delta",
       "resolve_agent_profile",
+      "authorize_write",
+      "coreward_mode_status",
     ]);
   });
 
@@ -39,7 +41,7 @@ describe("release gate MCP handlers", () => {
     });
 
     expect(init?.result).toMatchObject({
-      serverInfo: { name: "vibe-release-gates" },
+      serverInfo: { name: "coreward-release-gates" },
     });
 
     const tools = handleMcpRequest({
@@ -51,6 +53,7 @@ describe("release gate MCP handlers", () => {
     expect(tools?.result).toMatchObject({
       tools: expect.arrayContaining([
         expect.objectContaining({ name: "resolve_gate" }),
+        expect.objectContaining({ name: "authorize_write" }),
         expect.objectContaining({ name: "list_stackables" }),
         expect.objectContaining({ name: "set_legal_space" }),
         expect.objectContaining({ name: "get_active_stack" }),

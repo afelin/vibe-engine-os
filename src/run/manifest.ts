@@ -16,6 +16,8 @@ export type RunMetrics = {
   contextChars?: number;
   truncated?: boolean;
   hallucinationBlocked?: boolean;
+  /** True when a zero-token release gate supplied the patch (no LLM). */
+  gateHit?: boolean;
   healLevel?: number;
   agentSlot?: string;
   deterministicFix?: boolean;

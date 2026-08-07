@@ -22,7 +22,9 @@ export type CheckRunResult = {
   conclusion: string | null;
 };
 
-export const PROMOTION_CHECK_NAME = "Vibe Promotion Gate";
+export const PROMOTION_CHECK_NAME = "Coreward Promotion Gate";
+/** Dual-read: legacy check name still accepted by auto-merge pickers. */
+export const PROMOTION_CHECK_NAME_ALIAS = "Vibe Promotion Gate";
 export const ATTRIBUTION_CHECK_NAME = "Audit Assisted-by attribution";
 
 const DEFAULT_NAME = PROMOTION_CHECK_NAME;
@@ -74,7 +76,7 @@ export function buildPromotionSummary(args: {
   runDir?: string;
 }): string {
   const lines = [
-    `## Vibe Promotion Gate`,
+    `## Coreward Promotion Gate`,
     "",
     `**State:** ${args.state}`,
     args.vowsHash ? `**Vows hash:** \`sha256:${args.vowsHash}\`` : undefined,

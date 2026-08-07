@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Turn `vibe-engine-os` from a single autonomous script into a production-grade, low-maintenance, no-code-friendly recursive software delivery runtime.
+**Goal:** Turn `Coreward` from a single autonomous script into a production-grade, low-maintenance, no-code-friendly recursive software delivery runtime.
 
 **Architecture:** xmachines/XState owns authority, LLMs propose bounded artifacts, deterministic validators decide promotion, Pearl-style causal measurement determines which interventions improve the system, and Cloudflare/GitHub/Oracle provide the operator and execution planes. The system should feel like the nanochat of autonomous software delivery: tiny core, complete loop, one complexity dial, ruthless metrics, repeatable scripts, and a living wiki generated from reality.
 
@@ -333,7 +333,7 @@ export const osMachine = setup({
     events: {} as OSEvent,
   },
 }).createMachine({
-  id: "vibe-engine-os",
+  id: "Coreward",
   initial: "received",
   context: createInitialOSContext(),
   states: {
@@ -402,7 +402,7 @@ import { createActor } from "xstate";
 import { describe, expect, it } from "vitest";
 import { osMachine } from "./machine.js";
 
-describe("vibe-engine-os machine", () => {
+describe("Coreward machine", () => {
   it("pauses for human approval when a high-risk plan requires it", () => {
     const actor = createActor(osMachine).start();
 

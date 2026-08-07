@@ -1,10 +1,10 @@
-# vibe-engine-os: Plain-Language Briefing
+# Coreward: Plain-Language Briefing
 
 *For founders, operators, and stakeholders who orchestrate AI agents — no engineering background required.*
 
 ## Executive summary
 
-**coreward (vibe-engine) is a rulebook-and-checkpoint system that sits between AI coding agents and your product.** Nothing an AI writes becomes permanent until it passes inspection and leaves a tamper-evident paper trail.
+**coreward (Coreward) is a rulebook-and-checkpoint system that sits between AI coding agents and your product.** Nothing an AI writes becomes permanent until it passes inspection and leaves a tamper-evident paper trail.
 
 **The “so what”:** you can let AI build largely unattended — nights, weekends, while you sleep — and still prove to a customer, investor, or auditor exactly what changed, why, and that every safety rule was enforced. It is not a tool that writes code; it is **border control** for code that AI writes.
 
@@ -90,7 +90,7 @@
 
 ### Assisted-by attribution audit — honest labeling, enforced
 
-**What it is.** A CI check on every pull request: if commit messages mention AI tooling without an `Assisted-by:` attribution tag, the PR is blocked. The engine tags its own commits `Assisted-by: vibe-engine-os`.
+**What it is.** A CI check on every pull request: if commit messages mention AI tooling without an `Assisted-by:` attribution tag, the PR is blocked. The engine tags its own commits `Assisted-by: coreward`.
 
 **Problem solved.** Undisclosed AI authorship is becoming a legal, licensing, and customer-trust liability.
 

@@ -34,7 +34,7 @@ export const DECISION_CATALOG: Record<string, DecisionExplainEntry> = {
     short:
       "Launch proof opens a real issue, waits for PR + receipt, and requires promotion checks to pass.",
     long:
-      "The zero-token E2E creates a labeled issue, polls until the engine posts a PR link and capsule receipt, then waits for **Vibe Promotion Gate** and **Audit Assisted-by attribution** on that PR. Success writes `.vibe/launch-proof.json` as an artifact.",
+      "The zero-token E2E creates a labeled issue, polls until the engine posts a PR link and capsule receipt, then waits for **Coreward Promotion Gate** and **Audit Assisted-by attribution** on that PR. Success writes `.vibe/launch-proof.json` as an artifact.",
     expand:
       "This is the full product loop without Cursor tokens: issue body is the contract, Actions runs the agent path, checks enforce constitution. If proof times out, inspect the issue comments and Actions logs for **Sovereign OS Event Bus**. Do not enable branch protection until this workflow is green on `main`.",
   },
@@ -42,7 +42,7 @@ export const DECISION_CATALOG: Record<string, DecisionExplainEntry> = {
     short:
       "Branch protection blocks direct pushes to `main` until required CI checks pass on PRs.",
     long:
-      "After smoke passes, we require **Vibe Promotion Gate** and **Audit Assisted-by attribution** on every merge to `main`. That keeps promotion and attribution from being skipped accidentally.",
+      "After smoke passes, we require **Coreward Promotion Gate** and **Audit Assisted-by attribution** on every merge to `main`. That keeps promotion and attribution from being skipped accidentally.",
     expand:
       "Enabling protection needs admin repo scope (often a PAT, not the default `GITHUB_TOKEN`). If the API call fails, use GitHub → Settings → Branches → Add rule for `main`, enable required status checks, and select those two check names (they must have run at least once to appear).",
   },

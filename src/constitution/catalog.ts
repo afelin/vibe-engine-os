@@ -47,6 +47,8 @@ export const runMetricsSchema = z.object({
   contextChars: z.number().nonnegative().optional(),
   truncated: z.boolean().optional(),
   hallucinationBlocked: z.boolean().optional(),
+  /** True when a zero-token release gate supplied the patch (no LLM). */
+  gateHit: z.boolean().optional(),
   healLevel: z.number().int().min(0).max(4).optional(),
   agentSlot: z.string().optional(),
   deterministicFix: z.boolean().optional(),

@@ -1,20 +1,21 @@
 cff-version: 1.2.0
-title: "coreward (vibe-engine): Portable Promotion Primitives for Agent-Written Code"
+title: "Coreward: Portable Promotion Primitives for Agent-Written Code"
 message: >-
-  If you use coreward / vibe-engine in research or engineering work, please cite
+  If you use Coreward in research or engineering work, please cite
   this software using the metadata in this file (and the white paper when
   discussing mechanisms).
 type: software
 authors:
-  - name: "coreward contributors"
+  - name: "Coreward contributors"
     website: "https://github.com/afelin/coreward"
 repository-code: "https://github.com/afelin/coreward"
 url: "https://github.com/afelin/coreward"
 abstract: >-
   Free open-source promotion-gate primitives for AI-assisted software change:
-  TaskBond, mandates, zero-token gates, depth dial, forever loop, tamper-evident
-  capsules and HPURL proof links, deterministic replay, adversarial gauntlet,
-  MCP rulebook tools, light heal/Pearl operators, and Assisted-by attribution.
+  authorize_write, Coreward Mode, TaskBond, Mandates, Ward, AgentId, zero-token
+  gates, depth dial, forever loop, tamper-evident capsules and HPURL proof links,
+  deterministic replay, adversarial gauntlet, MCP rulebook tools, local lessons
+  as IP, light heal/Pearl operators, and Assisted-by attribution.
   Regulation-agnostic; posture packs are house-rule overlays, not law.
   CyberReady remains Planned when not installed (fail-open).
 keywords:
@@ -32,12 +33,12 @@ identifiers:
     description: "Git commit SHA of the cited published tree; fill at publish"
 preferred-citation:
   type: article
-  title: "coreward (vibe-engine): Portable Promotion Primitives for Agent-Written Code"
+  title: "Coreward: Portable Promotion Primitives for Agent-Written Code"
   authors:
-    - name: "coreward contributors"
+    - name: "Coreward contributors"
   year: 2026
   journal: "Technical white paper"
-  url: "https://github.com/afelin/coreward/blob/main/papers/vibe-engine-whitepaper.md"
+  url: "https://github.com/afelin/coreward/blob/main/papers/coreward-whitepaper.md"
   notes: >-
     Version, date, and source SHA are placeholders until publish.
     Capsules are tamper-evident, not tamper-proof; no certification claims.

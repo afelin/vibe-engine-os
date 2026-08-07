@@ -2,7 +2,7 @@
 
 *Production moves from a validated capsule—not from whatever happens to be on `main`.*
 
-This document explains how vibe-engine-os enforces deploy authority without GitHub Pro branch protection UI.
+This document explains how Coreward enforces deploy authority without GitHub Pro branch protection UI.
 
 ---
 
@@ -18,7 +18,7 @@ A bad merge to `main` does **not** update production when deploy is wired correc
 
 ## GitHub Pro-free hard block
 
-Branch protection on private repos requires GitHub Pro. vibe-engine-os avoids that dependency:
+Branch protection on private repos requires GitHub Pro. Coreward avoids that dependency:
 
 | Layer | Enforcement |
 | --- | --- |

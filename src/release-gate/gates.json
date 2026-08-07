@@ -300,6 +300,32 @@
           }
         }
       ]
+    },
+    {
+      "id": "add-type-guard",
+      "planLines": [
+        "Scaffold a TypeScript type-guard helper + Vitest.",
+        "Gate: add-type-guard"
+      ],
+      "match": [
+        {
+          "titleOrBodyIncludesLower": ["gate:add-type-guard", "add-type-guard"]
+        }
+      ],
+      "files": [
+        {
+          "path": "src/gate-add-type-guard.ts",
+          "content": "export const addTypeGuardGateStatus = \"v1-add-type-guard-ok\";\nexport function isNonEmptyString(value: unknown): value is string {\n  return typeof value === \"string\" && value.length > 0;\n}\n"
+        },
+        {
+          "path": "src/gate-add-type-guard.test.ts",
+          "smokeTest": {
+            "moduleBase": "gate-add-type-guard",
+            "exportName": "addTypeGuardGateStatus",
+            "token": "v1-add-type-guard-ok"
+          }
+        }
+      ]
     }
   ]
 }

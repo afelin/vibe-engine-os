@@ -33,7 +33,7 @@ const GAUNTLET_PATTERNS = /gauntlet|taskbond/i;
 const BOND_PATTERNS = /bond|bound.?file/i;
 const READINESS_PATTERNS = /readiness|workflow|proof page|launch/i;
 const PROMOTION_PATTERNS =
-  /promotion\s*gate|vibe\s*promotion|promotion\s*check|pr.?promotion|preflight.*promot/i;
+  /promotion\s*gate|vibe\s*promotion|coreward\s*promotion|promotion\s*check|pr.?promotion|preflight.*promot/i;
 
 /**
  * Static classify rows from top scoreboard `gateIdsFailed` + known gate cache ids.

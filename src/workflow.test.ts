@@ -213,7 +213,7 @@ describe("GitHub Actions workflow", () => {
       "utf8",
     );
 
-    expect(workflow).toContain("Assisted-by: vibe-engine-os");
+    expect(workflow).toContain("Assisted-by: coreward");
   });
 
   it("wires optional auto-merge when CI is green", () => {

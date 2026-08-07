@@ -6,7 +6,7 @@ import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const REQUIRED_CHECKS = [
-  "Vibe Promotion Gate",
+  "Coreward Promotion Gate",
   "Audit Assisted-by attribution",
 ];
 
@@ -32,7 +32,7 @@ Do this in the GitHub UI:
 2. Add or edit a rule for branch \`main\`
 3. Enable "Require status checks to pass before merging"
 4. Search and select:
-   - Vibe Promotion Gate
+   - Coreward Promotion Gate
    - Audit Assisted-by attribution
    (If a check is missing, merge one PR that ran CI first.)
 5. Save changes
