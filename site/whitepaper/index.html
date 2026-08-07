@@ -33,7 +33,7 @@
 <strong>Version:</strong> <code>UNPUBLISHED</code> — replace with release tag at publish<br />
 <strong>Date:</strong> <code>YYYY-MM-DD</code> — fill at publish<br />
 <strong>Source SHA:</strong> <code>TO_BE_FILLED_AT_PUBLISH</code> — set to the git commit SHA of the published tree<br />
-<strong>How to cite:</strong> see <a href="#how-to-cite">How to cite</a> and repository root <a href="https://github.com/afelin/vibe-engine-os/blob/main/CITATION.cff"><code>CITATION.cff</code></a></p>
+<strong>How to cite:</strong> see <a href="#how-to-cite">How to cite</a> and repository root <a href="https://github.com/afelin/coreward/blob/main/CITATION.cff"><code>CITATION.cff</code></a></p>
 <blockquote><p><strong>Honesty note.</strong> This document describes free open-source software mechanisms that run on the operator’s own GitHub repository and CI. It does not claim certification, legal compliance, absolute percentages, or commercial product tiers. Capsules are <strong>tamper-evident</strong>, not tamper-proof. Hosted receipt verify and live CyberReady signed buyer proof remain <strong>unclaimed</strong> until those products exist. An optional signed <strong>Mandate</strong> (session budget) enables engine-path <strong>Ward</strong> checks on CI/promote when present; IDE Edit/Shell and out-of-band MCP soft paths can still bypass Ward—product claim is limited to <em>CI/promote cannot move without Ward when a Mandate is on</em>, not universal IDE interception.</p></blockquote>
 <p><strong>In plain terms:</strong> vibe-engine-os is a <strong>promotion gate</strong>—models may propose changes; house rules and automated checks decide what may land in Git. A signed <strong>Mandate</strong> is a session work-order (budget); <strong>Ward</strong> is the CI/promote check that enforces it when present. Capsule and <code>ward_decision</code> <strong>receipts are evidence, never authorization</strong>—promote always re-verifies.</p>
 <hr />
@@ -181,7 +181,7 @@
 <hr />
 <h2>13. Assisted-by attribution and AgentId</h2>
 <p>On pull requests, an attribution audit blocks merge when commit messages mention AI tooling without an <code>Assisted-by:</code> trailer. The engine tags its own commits <code>Assisted-by: vibe-engine-os</code>.</p>
-<p><strong>AgentId</strong> (<code>src/agent-id</code>) is the portable actor-profile primitive shared by Ward, MCP, and CI. Session identity on a Signed Mandate is the string field <code>authorized_actor</code>, resolved via <code>resolveProfile(actor)</code> against the principals trust file (optional path/budget caps tighten only). That is <strong>authorized actor + optional efficiency defaults</strong>, not organizational PKI and not eIDAS QWAC/QES conformity. A lean interoperable “Agent Binding” (key + optional attestation ref) may extend principals later without claiming legal identity assurance. Ward imports AgentId; AgentId must not import Ward. Operator note: <a href="https://github.com/afelin/vibe-engine-os/blob/main/docs/agent-identity.md">docs/agent-identity.md</a>.</p>
+<p><strong>AgentId</strong> (<code>src/agent-id</code>) is the portable actor-profile primitive shared by Ward, MCP, and CI. Session identity on a Signed Mandate is the string field <code>authorized_actor</code>, resolved via <code>resolveProfile(actor)</code> against the principals trust file (optional path/budget caps tighten only). That is <strong>authorized actor + optional efficiency defaults</strong>, not organizational PKI and not eIDAS QWAC/QES conformity. A lean interoperable “Agent Binding” (key + optional attestation ref) may extend principals later without claiming legal identity assurance. Ward imports AgentId; AgentId must not import Ward. Operator note: <a href="https://github.com/afelin/coreward/blob/main/docs/agent-identity.md">docs/agent-identity.md</a>.</p>
 <p><strong>Claim boundary:</strong> enforcement is mechanical on <strong>mentioned</strong> AI tools in commit text for PRs that run the check. It does not detect silent omissions where no AI tooling is named.</p>
 <hr />
 <h2>14. Threat model</h2>
@@ -245,7 +245,7 @@ bash runs/adopt.sh .</code></pre>
 <li>Open a Vibe Request or Starter issue; label <code>vibe/run</code> for the forever loop.  </li>
 <li>Optionally set legal space via MCP (<code>set_legal_space</code>) — house rules only.</li>
 </ol>
-<p>The Aha path (issue → PR + receipt, gauntlet, MCP, zero-token gates) is intended to remain free to run on the operator’s own infrastructure. Internal monetization notes, if any, are <strong>not</strong> part of this paper or the public site allowlist (see <a href="https://github.com/afelin/vibe-engine-os/blob/main/docs/rise-export.md"><code>docs/rise-export.md</code></a>).</p>
+<p>The Aha path (issue → PR + receipt, gauntlet, MCP, zero-token gates) is intended to remain free to run on the operator’s own infrastructure. Internal monetization notes, if any, are <strong>not</strong> part of this paper or the public site allowlist (see <a href="https://github.com/afelin/coreward/blob/main/docs/rise-export.md"><code>docs/rise-export.md</code></a>).</p>
 <hr />
 <h2>18. Limits and non-goals</h2>
 <ul>
@@ -257,9 +257,9 @@ bash runs/adopt.sh .</code></pre>
 </ul>
 <hr />
 <h2>19. How to cite</h2>
-<p>Preferred machine-readable citation: repository root <a href="https://github.com/afelin/vibe-engine-os/blob/main/CITATION.cff"><code>CITATION.cff</code></a>.</p>
+<p>Preferred machine-readable citation: repository root <a href="https://github.com/afelin/coreward/blob/main/CITATION.cff"><code>CITATION.cff</code></a>.</p>
 <p>Plain-text form (fill version, date, and SHA at publish):</p>
-<blockquote><p>vibe-engine-os contributors. <em>vibe-engine-os: Portable Promotion Primitives for Agent-Written Code</em>. Technical white paper, version VERSION (YYYY-MM-DD). Source SHA: COMMIT_SHA. Available at: https://github.com/afelin/vibe-engine-os</p></blockquote>
+<blockquote><p>vibe-engine-os contributors. <em>vibe-engine-os: Portable Promotion Primitives for Agent-Written Code</em>. Technical white paper, version VERSION (YYYY-MM-DD). Source SHA: COMMIT_SHA. Available at: https://github.com/afelin/coreward</p></blockquote>
 <p>When citing a specific mechanism (bond, capsule, gauntlet), include the commit SHA so readers can resolve exact schemas and baselines.</p>
 <hr />
 <h2>20. Versioning and publish checklist</h2>
@@ -290,14 +290,14 @@ bash runs/adopt.sh .</code></pre>
 <hr />
 <h2>Appendix B — Related in-repo docs</h2>
 <ul>
-<li><a href="https://github.com/afelin/vibe-engine-os/blob/main/docs/start-here.md"><code>docs/start-here.md</code></a> — five-minute paths  </li>
-<li><a href="https://github.com/afelin/vibe-engine-os/blob/main/docs/ward-security.md"><code>docs/ward-security.md</code></a> — Mandate–Ward invariant, STRICT checklist, Actions secrets  </li>
-<li><a href="https://github.com/afelin/vibe-engine-os/blob/main/docs/agent-identity.md"><code>docs/agent-identity.md</code></a> — AgentId gel rules and claims  </li>
-<li><a href="https://github.com/afelin/vibe-engine-os/blob/main/docs/solo-vibe-coder-guide.md"><code>docs/solo-vibe-coder-guide.md</code></a> — daily operator loop  </li>
-<li><a href="https://github.com/afelin/vibe-engine-os/blob/main/docs/agent-protocol.md"><code>docs/agent-protocol.md</code></a> — schemas and slash commands  </li>
-<li><a href="https://github.com/afelin/vibe-engine-os/blob/main/docs/launch-proof.md"><code>docs/launch-proof.md</code></a> — zero-token cloud proof runbook  </li>
-<li><a href="https://github.com/afelin/vibe-engine-os/blob/main/docs/rise-export.md"><code>docs/rise-export.md</code></a> — public vs internal export allowlist  </li>
-<li><a href="https://github.com/afelin/vibe-engine-os/blob/main/VOWS.md"><code>VOWS.md</code></a> — normative vows  </li>
+<li><a href="https://github.com/afelin/coreward/blob/main/docs/start-here.md"><code>docs/start-here.md</code></a> — five-minute paths  </li>
+<li><a href="https://github.com/afelin/coreward/blob/main/docs/ward-security.md"><code>docs/ward-security.md</code></a> — Mandate–Ward invariant, STRICT checklist, Actions secrets  </li>
+<li><a href="https://github.com/afelin/coreward/blob/main/docs/agent-identity.md"><code>docs/agent-identity.md</code></a> — AgentId gel rules and claims  </li>
+<li><a href="https://github.com/afelin/coreward/blob/main/docs/solo-vibe-coder-guide.md"><code>docs/solo-vibe-coder-guide.md</code></a> — daily operator loop  </li>
+<li><a href="https://github.com/afelin/coreward/blob/main/docs/agent-protocol.md"><code>docs/agent-protocol.md</code></a> — schemas and slash commands  </li>
+<li><a href="https://github.com/afelin/coreward/blob/main/docs/launch-proof.md"><code>docs/launch-proof.md</code></a> — zero-token cloud proof runbook  </li>
+<li><a href="https://github.com/afelin/coreward/blob/main/docs/rise-export.md"><code>docs/rise-export.md</code></a> — public vs internal export allowlist  </li>
+<li><a href="https://github.com/afelin/coreward/blob/main/VOWS.md"><code>VOWS.md</code></a> — normative vows  </li>
 </ul>
 <hr />
 <p><em>End of white paper.</em></p>

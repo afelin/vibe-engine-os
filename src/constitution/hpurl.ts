@@ -29,7 +29,7 @@ const RESERVED_PUBKEY = "@";
 const RESERVED_SCOPE = "!";
 
 export const DEFAULT_PROOF_BASE =
-  "https://afelin.github.io/vibe-engine-os/proof";
+  "https://afelin.github.io/coreward/proof";
 
 function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.replace(/\/$/, "");

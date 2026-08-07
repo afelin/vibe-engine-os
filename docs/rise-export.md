@@ -8,7 +8,7 @@ See also: [`docs/PUBLIC.md`](./PUBLIC.md) (short public vs internal contract).
 
 | Repo | Role |
 |------|------|
-| **Engineering** (`afelin/vibe-engine-os` or successor) | Full source, CI, **`internal/`**, experiments |
+| **Engineering** (`afelin/coreward`, formerly `afelin/vibe-engine-os`) | Full source, CI, **`internal/`**, experiments |
 | **RISE public** (RISE GitHub org mirror or docs repo) | Allowlisted export only — white paper, site, proof, operator how-tos, optional engine source |
 
 Strategy **A (default):** keep application/runtime source of truth in the engineering repo; export **documentation and static public site** to RISE GitHub for institutional face and stable Pages URLs. Sync is one-way (engineering → RISE public) on tagged or approved publish SHAs via `npm run public:prepare` → `dist/public/`.
@@ -91,7 +91,7 @@ When mirroring to RISE Pages or a `docs/` site repo:
 2. **Deep links for RI.SE.** The blurb’s three URLs (white paper, repo, proof) should point at the **stable public** hosts after rewrite—not at private Actions artifact URLs.
 3. **Cross-repo.** Prefer absolute HTTPS links from RI.SE → RISE Pages and from Pages → `repository-code` on engineering or RISE mirror as published.
 4. **SHA pin.** At publish, fill white paper + `CITATION.cff` version/date/**source SHA** so institute citations resolve to an immutable tree.
-5. **Placeholder hygiene.** Blurb deep links default to `https://afelin.github.io/vibe-engine-os/...` (GitHub Pages). After RISE mirror publish, rewrite those hosts to the stable RISE Pages URLs before RI.SE paste.
+5. **Placeholder hygiene.** Blurb deep links default to `https://afelin.github.io/coreward/...` (GitHub Pages). After RISE mirror publish, rewrite those hosts to the stable RISE Pages URLs before RI.SE paste.
 
 ---
 

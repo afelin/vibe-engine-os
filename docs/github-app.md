@@ -44,7 +44,7 @@ The check names to require on `main` are exactly:
 
 **Vibe Promotion Gate** is registered when a vibe run promotes successfully (`src/promote/apply-cli.ts` → `createOrUpdateCheckRun`). **Audit Assisted-by attribution** comes from `.github/workflows/tdd-attribution.yml` on every PR to `main`. Until at least one run has executed on a branch, a check may not appear in the branch-protection picker.
 
-### Manual setup for `afelin/vibe-engine-os` (GitHub UI)
+### Manual setup for `afelin/coreward` (GitHub UI)
 
 Repo admin access is required; the REST API cannot set required checks without admin scope.
 

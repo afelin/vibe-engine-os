@@ -1,14 +1,14 @@
-# vibe-engine-os
+# coreward
 
-Sovereign AI dev cluster with a **headless xmachines Play constitution**: one Zod catalog for all law artifacts, `definePlayer` for promotion authority, and crawl-based CI proof that the OS machine matches `gates.json`.
+Sovereign AI dev cluster (**vibe-engine** promotion gate) with a **headless xmachines Play constitution**: one Zod catalog for all law artifacts, `definePlayer` for promotion authority, and crawl-based CI proof that the OS machine matches `gates.json`.
 
-**Start here:** [docs/start-here.md](docs/start-here.md) — 5 minutes, any tool (GitHub-only, Cursor + MCP, external agent, or legal-space dial). Deeper walks: [Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md) · [Nocode Quickstart](docs/nocode-quickstart.md) · [Plain-Language Briefing](docs/plain-language-briefing.md).
+**Repo:** [github.com/afelin/coreward](https://github.com/afelin/coreward) · **Start here:** [docs/start-here.md](docs/start-here.md) — 5 minutes, any tool (GitHub-only, Cursor + MCP, external agent, or legal-space dial). Deeper walks: [Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md) · [Nocode Quickstart](docs/nocode-quickstart.md) · [Plain-Language Briefing](docs/plain-language-briefing.md).
 
-**Public surface (GitHub Pages):** [white paper](https://afelin.github.io/vibe-engine-os/whitepaper/) · [adopt](https://afelin.github.io/vibe-engine-os/adopt/) · [status](https://afelin.github.io/vibe-engine-os/status/) · [site source](site/). Manuscript: `papers/vibe-engine-whitepaper.md` (when present; `npm run site:build` regenerates HTML).
+**Public surface (GitHub Pages):** [white paper](https://afelin.github.io/coreward/whitepaper/) · [adopt](https://afelin.github.io/coreward/adopt/) · [status](https://afelin.github.io/coreward/status/) · [site source](site/). Manuscript: `papers/vibe-engine-whitepaper.md` (when present; `npm run site:build` regenerates HTML).
 
 ## What it is
 
-vibe-engine-os is a **promotion gate**, not a codegen toy. Models propose JSON-shaped artifacts; the constitution catalog and OS machine guards reject bad input before disk write. Only verified snapshots promote to Git.
+**coreward** (vibe-engine) is a **promotion gate**, not a codegen toy. Models propose JSON-shaped artifacts; the constitution catalog and OS machine guards reject bad input before disk write. Only verified snapshots promote to Git.
 
 Truth-driven gates (TDD): **deterministic replay** from `events.ndjson`, **Assisted-by** attribution on PRs, and an **adversarial gauntlet** that proves guardrails block forbidden changes.
 
@@ -16,7 +16,7 @@ Truth-driven gates (TDD): **deterministic replay** from `events.ndjson`, **Assis
 
 ## Capabilities
 
-vibe-engine-os is a **promotion gate**, not a codegen toy. Models propose JSON-shaped artifacts; the constitution catalog and OS machine guards reject bad input before disk write. Only verified snapshots promote to Git. Walkthroughs: [Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md) · [Nocode Quickstart](docs/nocode-quickstart.md) · [Agent Protocol](docs/agent-protocol.md).
+**coreward** (vibe-engine) is a **promotion gate**, not a codegen toy. Models propose JSON-shaped artifacts; the constitution catalog and OS machine guards reject bad input before disk write. Only verified snapshots promote to Git. Walkthroughs: [Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md) · [Nocode Quickstart](docs/nocode-quickstart.md) · [Agent Protocol](docs/agent-protocol.md).
 
 | Capability | What you get | How to activate | Status |
 | --- | --- | --- | --- |
@@ -40,7 +40,7 @@ vibe-engine-os is a **promotion gate**, not a codegen toy. Models propose JSON-s
 | **Activate / adopt** | One-command bootstrap: check, zero-token smoke, MCP smoke, schema export, vows attestation | `npm run activate` or `bash runs/adopt.sh /path/to/repo` | Built-in |
 | **`launch:readiness`** | Local preflight: workflows, gauntlet vs baseline, MCP smoke, proof page | `npm run launch:readiness` on `main` | Built-in |
 | **`launch:ship`** | One-command ship after readiness green | `npm run launch:ship` — see [Launch Proof runbook](docs/launch-proof.md) | Built-in |
-| **Launch proof E2E** | Zero-token cloud proof: issue → PR → receipt → green checks; writes `.vibe/launch-proof.json` | Actions → **Launch Proof (zero-token E2E)**; [green run](https://github.com/afelin/vibe-engine-os/actions/runs/29321223413) on [issue #36](https://github.com/afelin/vibe-engine-os/issues/36) | **Claimable** |
+| **Launch proof E2E** | Zero-token cloud proof: issue → PR → receipt → green checks; writes `.vibe/launch-proof.json` | Actions → **Launch Proof (zero-token E2E)**; [green run](https://github.com/afelin/coreward/actions/runs/29321223413) on [issue #36](https://github.com/afelin/coreward/issues/36) | **Claimable** |
 
 ### Powerful combinations
 
@@ -81,7 +81,7 @@ See also the [Persona matrix](#persona-matrix) below for one-step activation pat
 ### Honest limits
 
 - **Branch protection on private free repos** — enabling required checks on `main` needs admin scope; use GitHub UI (Settings → Branches) when the API returns 403. See [Launch Proof runbook](docs/launch-proof.md#manual-ops-after-proof-passes).
-- **Hosted Pages receipts** — public proof URLs (`DEFAULT_PROOF_BASE`) stay deferred until the repo goes public and Pages is enabled; use local `proof/index.html` or comment hashes on private repos today.
+- **Hosted Pages receipts** — public proof base is `https://afelin.github.io/coreward/proof` (`DEFAULT_PROOF_BASE`); override with `VIBE_PROOF_BASE` when mirroring. Local `proof/index.html` still works offline.
 - **IDE Ward** — Edit/Shell and soft MCP paths can bypass Ward; do not claim universal IDE interception (`ide_ward_interceptor` stays unclaimed).
 - **Receipts ≠ certification** — capsules and `ward_decision` events are tamper-evident evidence, not legal or auditor certification.
 
@@ -90,7 +90,7 @@ See also the [Persona matrix](#persona-matrix) below for one-step activation pat
 Requires **Node.js ≥ 22** ([`.nvmrc`](.nvmrc) pins `22`; matches `package.json` `engines`).
 
 ```bash
-git clone <repo-url> && cd vibe-engine-os
+git clone https://github.com/afelin/coreward.git && cd coreward
 nvm use          # or: nvm install 22 && nvm use
 npm run activate
 ```
@@ -124,7 +124,7 @@ npm run activate
 ## 5-minute adoption
 
 ```bash
-git clone <repo-url> && cd vibe-engine-os
+git clone https://github.com/afelin/coreward.git && cd coreward
 bash runs/adopt.sh .
 
 # Or install into an existing repo:
@@ -244,7 +244,7 @@ For [tabdab-link-proof](https://github.com/afelin/tabdab-link-proof) or other Lo
 # In target repo after install:
 cp .env.example .env   # set VIBE_PROJECT_PROFILE=tabdab
 
-# Or install vibe-engine-os layer into an existing repo:
+# Or install the coreward / vibe-engine layer into an existing repo:
 bash runs/install-into-repo.sh /path/to/tabdab-link-proof
 cd /path/to/tabdab-link-proof && npm install && npm run activate
 ```

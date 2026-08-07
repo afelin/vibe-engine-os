@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Install vibe-engine-os promotion layer into a target repo.
+# Install coreward (vibe-engine) promotion layer into a target repo.
 # Usage: ./runs/install-into-repo.sh /path/to/target-repo
 
 TARGET="${1:-}"
@@ -24,7 +24,7 @@ copy_if_exists() {
   fi
 }
 
-echo "Installing vibe-engine-os into $TARGET"
+echo "Installing coreward (vibe-engine) into $TARGET"
 
 copy_if_exists "$SOURCE/src" "$TARGET/"
 copy_if_exists "$SOURCE/agent.ts" "$TARGET/agent.ts"

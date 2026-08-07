@@ -9,7 +9,7 @@ TARGET="${1:-.}"
 SOURCE="$(cd "$(dirname "$0")/.." && pwd)"
 
 if [ "$TARGET" != "." ] && [ ! -f "$TARGET/package.json" ] && [ ! -f "$TARGET/package.json.vibe-ref" ]; then
-  echo "Installing vibe-engine-os into $TARGET..."
+  echo "Installing coreward (vibe-engine) into $TARGET..."
   bash "$SOURCE/runs/install-into-repo.sh" "$TARGET"
 fi
 

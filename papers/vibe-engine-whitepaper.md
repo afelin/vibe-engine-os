@@ -299,7 +299,7 @@ Preferred machine-readable citation: repository root [`CITATION.cff`](../CITATIO
 
 Plain-text form (fill version, date, and SHA at publish):
 
-> vibe-engine-os contributors. *vibe-engine-os: Portable Promotion Primitives for Agent-Written Code*. Technical white paper, version VERSION (YYYY-MM-DD). Source SHA: COMMIT_SHA. Available at: https://github.com/afelin/vibe-engine-os
+> vibe-engine-os contributors. *vibe-engine-os: Portable Promotion Primitives for Agent-Written Code*. Technical white paper, version VERSION (YYYY-MM-DD). Source SHA: COMMIT_SHA. Available at: https://github.com/afelin/coreward
 
 When citing a specific mechanism (bond, capsule, gauntlet), include the commit SHA so readers can resolve exact schemas and baselines.
 
