@@ -24,7 +24,7 @@ After a successful run, the cockpit comment includes a **Receipt link** — clic
 
 **Built-in safety nets (no extra setup):**
 
-- **Mandates** — blocks forbidden areas (auth, workflows, secrets paths)
+- **House mandates** — standing forbids (auth, workflows, secrets paths); optional signed **Mandate** = session budget; **Ward** enforces it on CI/promote; **AgentId** names the actor; receipts never authorize
 - **Gauntlet** — 23+ scenarios including adversarial “break-in” attempts must stay blocked
 - **Replay gate** — re-runs every completed flight from its event ledger; mismatch blocks promotion
 - **Attribution audit** — PRs mentioning AI tools without `Assisted-by:` do not merge

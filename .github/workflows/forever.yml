@@ -249,6 +249,8 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           VIBE_APPROVERS: ${{ secrets.VIBE_APPROVERS }}
           VIBE_WARD_STRICT: "1"
+          VIBE_MANDATE_PRIVATE_KEY: ${{ secrets.VIBE_MANDATE_PRIVATE_KEY }}
+          VIBE_MANDATE_PUBLIC_KEY: ${{ secrets.VIBE_MANDATE_PUBLIC_KEY }}
         run: bun run agent.ts
 
       - name: Upload run artifact
@@ -340,6 +342,8 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
           VIBE_SKIP_CHECK: "1"
           VIBE_WARD_STRICT: "1"
+          VIBE_MANDATE_PRIVATE_KEY: ${{ secrets.VIBE_MANDATE_PRIVATE_KEY }}
+          VIBE_MANDATE_PUBLIC_KEY: ${{ secrets.VIBE_MANDATE_PUBLIC_KEY }}
         run: npm run promote:apply -- . "$RUN_ID"
 
       - name: Format
@@ -431,6 +435,8 @@ jobs:
           VIBE_HEAD_SHA: ${{ env.VIBE_HEAD_SHA }}
           VIBE_CHECK_ONLY: "1"
           VIBE_WARD_STRICT: "1"
+          VIBE_MANDATE_PRIVATE_KEY: ${{ secrets.VIBE_MANDATE_PRIVATE_KEY }}
+          VIBE_MANDATE_PUBLIC_KEY: ${{ secrets.VIBE_MANDATE_PUBLIC_KEY }}
           RUN_ID: ${{ env.RUN_ID }}
         run: npm run promote:apply -- . "$RUN_ID"
 

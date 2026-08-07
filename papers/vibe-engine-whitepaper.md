@@ -8,6 +8,8 @@
 
 > **Honesty note.** This document describes free open-source software mechanisms that run on the operator’s own GitHub repository and CI. It does not claim certification, legal compliance, absolute percentages, or commercial product tiers. Capsules are **tamper-evident**, not tamper-proof. Hosted receipt verify and live CyberReady signed buyer proof remain **unclaimed** until those products exist. An optional signed **Mandate** (session budget) enables engine-path **Ward** checks on CI/promote when present; IDE Edit/Shell and out-of-band MCP soft paths can still bypass Ward—product claim is limited to *CI/promote cannot move without Ward when a Mandate is on*, not universal IDE interception.
 
+**In plain terms:** vibe-engine-os is a **promotion gate**—models may propose changes; house rules and automated checks decide what may land in Git. A signed **Mandate** is a session work-order (budget); **Ward** is the CI/promote check that enforces it when present. Capsule and `ward_decision` **receipts are evidence, never authorization**—promote always re-verifies.
+
 ---
 
 ## Abstract
@@ -88,7 +90,7 @@ Constitution artifacts live under a Zod catalog (`@xmachines/play-*` + local sch
 | Capsule / HPURL | Tamper-evident fingerprint + proof link fragment |
 | Pearl | Ops narrative over heal/DENY deltas |
 | Claim ledger | Claims ↔ asserts; unclaimed IDs never pass |
-| Agent identity (today) | `src/agent-id` + `authorized_actor` + Assisted-by (+ principals)—not eIDAS |
+| **AgentId** | Portable actor profile (`src/agent-id`); gels via Mandate `authorized_actor` → `resolveProfile`—not eIDAS |
 
 ---
 
@@ -196,11 +198,11 @@ Default GitHub `/troubleshoot` caps at L1. Heal outcomes can be recorded in run 
 
 ---
 
-## 13. Assisted-by attribution and agent identity (today)
+## 13. Assisted-by attribution and AgentId
 
 On pull requests, an attribution audit blocks merge when commit messages mention AI tooling without an `Assisted-by:` trailer. The engine tags its own commits `Assisted-by: vibe-engine-os`.
 
-Session identity on a Signed Mandate is the string field `authorized_actor`, verified against issuer pubkeys in the principals trust file. That is **authorized actor + attribution**, not organizational PKI and not eIDAS QWAC/QES conformity. A lean interoperable “Agent Binding” (key + optional attestation ref) may extend principals later without claiming legal identity assurance.
+**AgentId** (`src/agent-id`) is the portable actor-profile primitive shared by Ward, MCP, and CI. Session identity on a Signed Mandate is the string field `authorized_actor`, resolved via `resolveProfile(actor)` against the principals trust file (optional path/budget caps tighten only). That is **authorized actor + optional efficiency defaults**, not organizational PKI and not eIDAS QWAC/QES conformity. A lean interoperable “Agent Binding” (key + optional attestation ref) may extend principals later without claiming legal identity assurance. Ward imports AgentId; AgentId must not import Ward. Operator note: [docs/agent-identity.md](../docs/agent-identity.md).
 
 **Claim boundary:** enforcement is mechanical on **mentioned** AI tools in commit text for PRs that run the check. It does not detect silent omissions where no AI tooling is named.
 
@@ -329,6 +331,8 @@ Until publish, leave placeholders (`UNPUBLISHED`, `YYYY-MM-DD`, `TO_BE_FILLED_AT
 ## Appendix B — Related in-repo docs
 
 - [`docs/start-here.md`](../docs/start-here.md) — five-minute paths  
+- [`docs/ward-security.md`](../docs/ward-security.md) — Mandate–Ward invariant, STRICT checklist, Actions secrets  
+- [`docs/agent-identity.md`](../docs/agent-identity.md) — AgentId gel rules and claims  
 - [`docs/solo-vibe-coder-guide.md`](../docs/solo-vibe-coder-guide.md) — daily operator loop  
 - [`docs/agent-protocol.md`](../docs/agent-protocol.md) — schemas and slash commands  
 - [`docs/launch-proof.md`](../docs/launch-proof.md) — zero-token cloud proof runbook  

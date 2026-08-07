@@ -4,6 +4,8 @@ See also: [start-here](./start-here.md) · [agent-adapter](./agent-adapter.md) �
 
 Machine-readable copy lives in `.vibe/agent-adapter.json` → `contract` (from `npm run activate`).
 
+**Nomenclature:** house `evaluate_mandate` = standing forbids; signed **Mandate** = session contract (budget); **Ward** = engine-path ALLOW/DENY when Mandate present; **AgentId** = portable actor profile. Receipts never authorize. IDE Edit/Shell can bypass Ward. See [ward-security.md](./ward-security.md).
+
 ## What to call
 
 | Phase | Tools (order) |

@@ -8,11 +8,11 @@ When a Signed Mandate is in play, **authorization = `verifyOnce(principals)` + h
 
 ## 15-minute regulated checklist
 
-1. Put Ed25519 keys in env: `VIBE_MANDATE_PRIVATE_KEY` + `VIBE_MANDATE_PUBLIC_KEY` (never commit private).
+1. Create GitHub Actions secrets (Settings → Secrets and variables → Actions): `VIBE_MANDATE_PRIVATE_KEY` + `VIBE_MANDATE_PUBLIC_KEY` (Ed25519; never commit the private key). Locally, the same names may live in env / `.env` (gitignored). Empty secrets ⇒ Ward stays dormant / legacy house-only—compat.
 2. Commit one default AgentProfile in `.vibe/principals.json` (or let first `npm run mandate:issue` write the issuer skeleton).
 3. `npm run mandate:issue` — set `VIBE_MANDATE_ACTOR` or rely on the default profile (**never invents `*`**).
-4. `npm run ward:doctor` — must be green (STRICT in `forever.yml`, no `*` on active Mandate, principals non-empty when Mandate present).
-5. CI already sets `VIBE_WARD_STRICT=1` on vibe-run / vibe-promote — no extra knobs.
+4. `npm run ward:doctor` — must be green (STRICT in `forever.yml`, no `*` on active Mandate, principals non-empty when Mandate present). Soft hints when keys are unset (`hint: set VIBE_MANDATE_*`) are OK until you enable Mandates.
+5. CI already sets `VIBE_WARD_STRICT=1` on vibe-run / vibe-promote and passes Mandate secrets when configured — no extra knobs.
 
 ## Scenarios
 

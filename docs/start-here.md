@@ -4,6 +4,8 @@
 
 This is the canonical entry for vibe-engine-os. Everything else (solo guide, nocode walkthrough, adapter protocol) deepens a path you choose here.
 
+**Nomenclature (one breath):** a signed **Mandate** is a session contract (budget); **Ward** enforces ALLOW/DENY on the CI/promote engine path when a Mandate is on; **AgentId** (`src/agent-id`) names the authorized actor. House `mandates.json` is standing forbids (separate). Receipts never authorize—promote re-verifies. IDE Edit/Shell can still bypass Ward. Security: [ward-security.md](./ward-security.md) · [agent-identity.md](./agent-identity.md).
+
 **Public white paper (GitHub Pages):** [afelin.github.io/vibe-engine-os/whitepaper/](https://afelin.github.io/vibe-engine-os/whitepaper/) — also [adopt](https://afelin.github.io/vibe-engine-os/adopt/), [status](https://afelin.github.io/vibe-engine-os/status/), [legal](https://afelin.github.io/vibe-engine-os/legal/). Source under [`site/`](../site/); build with `npm run site:build` (reads `papers/vibe-engine-whitepaper.md` when that file is present).
 
 ---
