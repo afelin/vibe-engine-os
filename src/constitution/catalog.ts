@@ -255,6 +255,19 @@ export const wardDecisionSchema = z.object({
   reason: z.string().min(1),
   at: z.string().datetime(),
   override_kind: mandateOverrideKindSchema.optional(),
+  /** Present when an AgentProfile resolved for the session actor. */
+  agent_id: z.string().min(1).optional(),
+});
+
+/** Portable AgentId profile (catalog AgentProfile). */
+export const agentProfileSchema = z.object({
+  agent_id: z.string().min(1),
+  default: z.boolean().optional(),
+  public_key: z.string().min(1).optional(),
+  default_path_constraints: z.array(z.string()).optional(),
+  max_bound_files: z.number().int().positive().optional(),
+  max_context_chars: z.number().int().positive().optional(),
+  max_depth: z.number().int().min(0).max(5).optional(),
 });
 
 export const principalsFileSchema = z.object({
@@ -262,6 +275,11 @@ export const principalsFileSchema = z.object({
     z.object({
       id: z.string().min(1),
       public_key: z.string().min(1),
+      default: z.boolean().optional(),
+      default_path_constraints: z.array(z.string()).optional(),
+      max_bound_files: z.number().int().positive().optional(),
+      max_context_chars: z.number().int().positive().optional(),
+      max_depth: z.number().int().min(0).max(5).optional(),
     }),
   ),
 });
@@ -399,6 +417,7 @@ export const constitutionCatalog = defineCatalog({
   SignedMandate: signedMandateSchema,
   WardDecision: wardDecisionSchema,
   WardAction: wardActionSchema,
+  AgentProfile: agentProfileSchema,
   PrincipalsFile: principalsFileSchema,
   MandateDeltas: mandateDeltasSchema,
   LegalSpacePack: legalSpacePackSchema,

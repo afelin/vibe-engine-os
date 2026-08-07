@@ -6,7 +6,11 @@ import {
 } from "../policy/evaluate.js";
 import { loadEffectiveMandates } from "../policy/stackables.js";
 import type { VerifiedMandate } from "../ward/index.js";
-import { pathFilter } from "../ward/index.js";
+import {
+  pathFilter,
+  resolveEffectiveBudget,
+  resolveMandateProfile,
+} from "../ward/index.js";
 import { loadProjectProfile, mergeAllowedPrefixes } from "./profile.js";
 
 export type TaskBondViolation = {
@@ -61,20 +65,20 @@ export function evaluateTaskBond(
   verifiedMandate: VerifiedMandate | null = null,
 ): TaskBondEval {
   const policy = bondPolicy(mandates);
-  const profile = loadProjectProfile(undefined, rootDir);
+  const projectProfile = loadProjectProfile(undefined, rootDir);
   const allowedPrefixes = mergeAllowedPrefixes(
     policy.allowed_file_prefixes,
-    profile,
+    projectProfile,
   );
 
   const violations: TaskBondViolation[] = [];
+  let maxBoundFiles = policy.max_bound_files;
 
   let boundFiles = draft.boundFiles;
   if (verifiedMandate) {
-    const filtered = pathFilter(
-      boundFiles,
-      verifiedMandate.mandate.path_constraints,
-    );
+    const agentProfile = resolveMandateProfile(rootDir, verifiedMandate.mandate);
+    const budget = resolveEffectiveBudget(verifiedMandate.mandate, agentProfile);
+    const filtered = pathFilter(boundFiles, budget.path_constraints);
     for (const filePath of boundFiles.filter((p) => !filtered.includes(p))) {
       violations.push({
         rule: "ward_path_denied",
@@ -83,6 +87,9 @@ export function evaluateTaskBond(
       });
     }
     boundFiles = filtered;
+    if (budget.max_bound_files !== undefined) {
+      maxBoundFiles = Math.min(maxBoundFiles, budget.max_bound_files);
+    }
   }
 
   if (!draft.intent.trim()) {
@@ -121,10 +128,10 @@ export function evaluateTaskBond(
     });
   }
 
-  if (boundFiles.length > policy.max_bound_files) {
+  if (boundFiles.length > maxBoundFiles) {
     violations.push({
       rule: "too_many_bound_files",
-      detail: `At most ${policy.max_bound_files} bound files allowed.`,
+      detail: `At most ${maxBoundFiles} bound files allowed.`,
     });
   }
 

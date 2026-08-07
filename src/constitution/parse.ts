@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  agentProfileSchema,
   constitutionCatalog,
   evoLessonSchema,
   executionDagSchema,
@@ -83,6 +84,10 @@ export function parseWardDecision(data: unknown) {
 
 export function parsePrincipalsFile(data: unknown) {
   return parseWith("PrincipalsFile", principalsFileSchema, data);
+}
+
+export function parseAgentProfile(data: unknown) {
+  return parseWith("AgentProfile", agentProfileSchema, data);
 }
 
 export function parseTaskBond(data: unknown) {

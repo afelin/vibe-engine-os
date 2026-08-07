@@ -85,6 +85,8 @@ import {
   assertWard,
   effectiveDepth,
   loadActiveMandate,
+  resolveEffectiveBudget,
+  resolveMandateProfile,
   verifyOnce,
   writeWardRunState,
   type VerifiedMandate,
@@ -207,18 +209,36 @@ export async function runOSActor(
 
   // Opt-in Ward: absent Mandate file ⇒ legacy house rules only.
   let verifiedMandate: VerifiedMandate | null = null;
+  let wardMaxContextChars: number | undefined;
   const activeMandate = loadActiveMandate(rootDir);
   if (activeMandate) {
     try {
       verifiedMandate = await verifyOnce(activeMandate, rootDir);
-      depth = effectiveDepth(depth, verifiedMandate) as typeof depth;
+      depth = effectiveDepth(depth, verifiedMandate, rootDir) as typeof depth;
+      const agentProfile = resolveMandateProfile(
+        rootDir,
+        verifiedMandate.mandate,
+      );
+      const budget = resolveEffectiveBudget(
+        verifiedMandate.mandate,
+        agentProfile,
+      );
+      wardMaxContextChars = budget.max_context_chars;
       writeWardRunState(rootDir, runId, {
         mandate_id: verifiedMandate.mandate.mandate_id,
         verified_at: verifiedMandate.verifiedAt,
-        path_constraints: verifiedMandate.mandate.path_constraints,
+        path_constraints: budget.path_constraints,
         actions: verifiedMandate.mandate.actions,
-        max_depth: verifiedMandate.mandate.max_depth,
+        max_depth: budget.max_depth,
         authorized_actor: verifiedMandate.mandate.authorized_actor,
+        ...(budget.agent_id ? { agent_id: budget.agent_id } : {}),
+        ...(budget.profile_hash ? { profile_hash: budget.profile_hash } : {}),
+        ...(budget.max_bound_files !== undefined
+          ? { max_bound_files: budget.max_bound_files }
+          : {}),
+        ...(budget.max_context_chars !== undefined
+          ? { max_context_chars: budget.max_context_chars }
+          : {}),
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
@@ -437,7 +457,11 @@ export async function runOSActor(
     const contextFiles = resolveContextFiles(rootDir, fallbackDag, boundFiles, {
       verifiedMandate,
     });
-    const plannerBundle = buildContextBundle(rootDir, contextFiles);
+    const plannerBundle = buildContextBundle(rootDir, contextFiles, {
+      ...(wardMaxContextChars !== undefined
+        ? { maxTotalChars: wardMaxContextChars }
+        : {}),
+    });
     const contextBlob =
       boundFiles.length > 0
         ? formatContextBundleForPrompt(plannerBundle)
@@ -708,7 +732,11 @@ ${vibe}`;
   const codegenContextFiles = resolveContextFiles(rootDir, dag, boundFiles, {
     verifiedMandate,
   });
-  const codegenBundle = buildContextBundle(rootDir, codegenContextFiles);
+  const codegenBundle = buildContextBundle(rootDir, codegenContextFiles, {
+    ...(wardMaxContextChars !== undefined
+      ? { maxTotalChars: wardMaxContextChars }
+      : {}),
+  });
   const allowedCodegenPaths = [...new Set([...plannedFiles, ...boundFiles])];
 
   while (attempts < mandates.max_attempts) {

@@ -11,6 +11,8 @@ export type ProofHpurlParams = {
   api?: string;
   /** Active legal-space id (e.g. eu-nis2-cra). */
   space?: string;
+  /** AgentId / authorized_actor for proof UX. */
+  agent?: string;
 };
 
 export type ParsedProofHpurl = ProofHpurlParams & {
@@ -44,6 +46,7 @@ function buildCanonicalSearchParams(
   if (params.repo) search.set("repo", params.repo);
   if (params.api) search.set("api", params.api);
   if (params.space) search.set("space", params.space);
+  if (params.agent) search.set("agent", params.agent);
   if (extra) {
     for (const [key, value] of Object.entries(extra)) {
       search.set(key, value);
@@ -80,6 +83,7 @@ export function parseProofHpurl(url: string): ParsedProofHpurl | null {
   const repo = search.get("repo") ?? undefined;
   const api = search.get("api") ?? undefined;
   const space = search.get("space") ?? undefined;
+  const agent = search.get("agent") ?? undefined;
   const signature = search.get(RESERVED_SIG) ?? undefined;
   const publicKey = search.get(RESERVED_PUBKEY) ?? undefined;
   const scope = search.get(RESERVED_SCOPE) ?? undefined;
@@ -91,6 +95,7 @@ export function parseProofHpurl(url: string): ParsedProofHpurl | null {
     repo,
     api,
     space,
+    agent,
     signature,
     publicKey,
     scope,
@@ -144,6 +149,7 @@ export async function verifyProofHpurl(url: string): Promise<boolean> {
     repo: parsed.repo,
     api: parsed.api,
     space: parsed.space,
+    agent: parsed.agent,
   }).toString();
 
   const publicKey = await crypto.subtle.importKey(

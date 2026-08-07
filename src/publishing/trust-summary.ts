@@ -34,6 +34,8 @@ export type TrustSummaryContext = {
   proofBase?: string;
   /** Explicit legal space id. When omitted, loaded from `rootDir` if set. */
   legalSpace?: string | null;
+  /** AgentId / authorized_actor for HPURL agent= param. */
+  agent?: string | null;
   rootDir?: string;
   pr?: PullRequestSnapshot | null;
   promotionCheck?: CheckRunSnapshot | null;
@@ -171,12 +173,17 @@ export function renderTrustSummary(ctx: TrustSummaryContext): string {
       ctx.proofBase ?? process.env.VIBE_PROOF_BASE ?? DEFAULT_PROOF_BASE;
     const space =
       legalSpace && legalSpace !== "none" ? legalSpace : undefined;
+    const agent =
+      typeof ctx.agent === "string" && ctx.agent.trim()
+        ? ctx.agent.trim()
+        : undefined;
     const proofUrl = buildProofHpurl(proofBase, {
       runId: ctx.runId,
       capsuleHash: ctx.capsuleHash,
       vowsHash: ctx.vowsHash,
       repo: ctx.repository,
       space,
+      agent,
     });
     lines.push(`- **HPURL:** [View proof](${proofUrl})`);
   }
