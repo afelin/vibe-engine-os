@@ -42,11 +42,15 @@ describe("deterministic validators", () => {
     const result = validateProtectedFiles([
       { path: ".github/workflows/forever.yml", content: "" },
       { path: "package.json", content: "" },
+      { path: "src/policy/mandates.json", content: "" },
+      { path: ".vibe/active_mandate.json", content: "" },
     ]);
 
     expect(result.passed).toBe(false);
     expect(result.output).toContain(".github/workflows/forever.yml");
     expect(result.output).toContain("package.json");
+    expect(result.output).toContain("src/policy/mandates.json");
+    expect(result.output).toContain(".vibe/active_mandate.json");
   });
 
   it("rejects path traversal", () => {

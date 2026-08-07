@@ -47,7 +47,14 @@ export type MandateEvaluation = {
 };
 
 const defaultMandates: Mandates = {
-  forbidden_prefixes: ["src/auth/", ".github/workflows/"],
+  forbidden_prefixes: [
+    "src/auth/",
+    ".github/workflows/",
+    "src/policy/mandates.json",
+    "src/policy/principals.json",
+    ".vibe/principals.json",
+    ".vibe/active_mandate.json",
+  ],
   require_approval_prefixes: [".github/", "package.json"],
   max_attempts: 3,
   approved_operators: [],

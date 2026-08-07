@@ -115,6 +115,23 @@ describe("GitHub Actions workflow", () => {
     expect(workflow).toContain("VIBE_APPROVERS: ${{ secrets.VIBE_APPROVERS }}");
   });
 
+  it("regulated CI mode sets VIBE_WARD_STRICT on run and promote", () => {
+    const workflow = fs.readFileSync(
+      path.join(process.cwd(), ".github/workflows/forever.yml"),
+      "utf8",
+    );
+
+    expect(workflow).toContain('VIBE_WARD_STRICT: "1"');
+    const runAgent = workflow.indexOf("bun run agent.ts");
+    const promoteApply = workflow.indexOf("npm run promote:apply");
+    expect(workflow.lastIndexOf("VIBE_WARD_STRICT", runAgent)).toBeGreaterThan(
+      -1,
+    );
+    expect(
+      workflow.indexOf("VIBE_WARD_STRICT", promoteApply - 200),
+    ).toBeGreaterThan(-1);
+  });
+
   it("promote job depends on gate-check for issue number context", () => {
     const workflow = fs.readFileSync(
       path.join(process.cwd(), ".github/workflows/forever.yml"),

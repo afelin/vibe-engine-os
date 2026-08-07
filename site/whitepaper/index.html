@@ -105,7 +105,7 @@
 <tr><td>Capsule / HPURL</td><td>Tamper-evident fingerprint + proof link fragment</td></tr>
 <tr><td>Pearl</td><td>Ops narrative over heal/DENY deltas</td></tr>
 <tr><td>Claim ledger</td><td>Claims ↔ asserts; unclaimed IDs never pass</td></tr>
-<tr><td>Agent identity (today)</td><td><code>authorized_actor</code> + Assisted-by (+ principals pubkeys)—not eIDAS</td></tr>
+<tr><td>Agent identity (today)</td><td><code>src/agent-id</code> + <code>authorized_actor</code> + Assisted-by (+ principals)—not eIDAS</td></tr>
 </tbody>
 </table>
 <hr />
@@ -118,7 +118,7 @@
 <h2>5. House mandates, Signed Mandate, Ward, and zero-token gates</h2>
 <p><strong>House mandates</strong> (<code>src/policy/mandates.json</code>, MCP <code>evaluate_mandate</code>) are standing law: forbidden path prefixes, approval prefixes, max attempts, approver allowlist. High-risk paths require operator <code>/approve</code> on the controlling issue.</p>
 <p>A <strong>Signed Mandate</strong> (catalog <code>SignedMandate</code>, file <code>.vibe/active_mandate.json</code>) is an opt-in <strong>session contract (budget)</strong>—paths, allowed Ward actions, optional <code>max_depth</code>, expiry, and <code>authorized_actor</code>—signed Ed25519 and verified against a principals trust file. It is a work-order for the run, not a statement of AI ethics. Absent the file ⇒ legacy house-rules-only behavior (compat). House rules <strong>AND</strong> Mandate: the Mandate cannot widen house forbids.</p>
-<p><strong>Ward</strong> enforces ALLOW/DENY before bond seal, codegen, patch apply, and promote <strong>on the engine path</strong> when a Mandate is present. Decisions append as <code>ward_decision</code> receipts in <code>events.ndjson</code>. Product claim: <em>CI/promote cannot move without Ward when a Mandate is on.</em> IDE Edit/Shell and soft MCP paths can still bypass Ward—do not claim universal IDE interception.</p>
+<p><strong>Ward</strong> enforces ALLOW/DENY before bond seal, codegen, patch apply, and promote <strong>on the engine path</strong> when a Mandate is present. Decisions append as <code>ward_decision</code> receipts in <code>events.ndjson</code>. Receipts never authorize promote—promote re-verifies the Mandate live. Product claim: <em>CI/promote cannot move without Ward when a Mandate is on.</em> IDE Edit/Shell and soft MCP paths can still bypass Ward—do not claim universal IDE interception. Operator runbook: <code>docs/ward-security.md</code>.</p>
 <p><strong>Option B <code>/approve</code>:</strong> when the Mandate path is active and a runner key is available, <code>/approve</code> may mint a short-lived CI-signed override Mandate (<code>authorized_actor=github-ci-bot-override</code>). The human who typed the comment is recorded as <code>approving_comment_actor</code> for audit only—this is <strong>not</strong> human cryptographic signature.</p>
 <p><strong>Zero-token gates</strong> (<code>src/release-gate/gates.json</code>, MCP <code>resolve_gate</code> / <code>list_gates</code>) match issue title/body to deterministic patch templates. Matched chores need no LLM call—by construction, token cost for those templates is zero. Agents are expected to call <code>resolve_gate</code> before invoking generative codegen; when Mandate paths ⊆ a gate, prefer the gate.</p>
 <hr />

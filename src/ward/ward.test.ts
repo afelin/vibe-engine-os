@@ -164,6 +164,7 @@ describe("Mandate–Ward", () => {
     const root = makeRoot();
     const { mandate } = await issueFixture(root, {
       path_constraints: ["src/ward/", "src/auth/"],
+      authorized_actor: "tester",
     });
     const verified = await verifyOnce(mandate, root);
     initializeEventLedger(root, "run-1", {
@@ -181,6 +182,7 @@ describe("Mandate–Ward", () => {
     const denyPath = assertWard("codegen", "src/os/run.ts", verified, {
       rootDir: root,
       runId: "run-1",
+      actor: "tester",
     });
     expect(denyPath.ok).toBe(false);
     expect(denyPath.decision.reason).toMatch(/path_outside/);
@@ -188,6 +190,7 @@ describe("Mandate–Ward", () => {
     const houseDeny = assertWard("codegen", "src/auth/session.ts", verified, {
       rootDir: root,
       runId: "run-1",
+      actor: "tester",
     });
     expect(houseDeny.ok).toBe(false);
     expect(houseDeny.decision.reason).toMatch(/house_forbidden/);
@@ -195,8 +198,16 @@ describe("Mandate–Ward", () => {
     const allow = assertWard("codegen", "src/ward/index.ts", verified, {
       rootDir: root,
       runId: "run-1",
+      actor: "tester",
     });
     expect(allow.ok).toBe(true);
+
+    const missingActor = assertWard("codegen", "src/ward/index.ts", verified, {
+      rootDir: root,
+      runId: "run-1",
+    });
+    expect(missingActor.ok).toBe(false);
+    expect(missingActor.decision.reason).toBe("actor_required");
 
     const decisions = readWardDecisions(root, "run-1");
     expect(decisions.some((d) => d.verdict === "DENY")).toBe(true);
@@ -205,24 +216,29 @@ describe("Mandate–Ward", () => {
 
   it("assertWard DENY when expired at call time", async () => {
     const root = makeRoot();
-    const { mandate } = await issueFixture(root);
+    const { mandate } = await issueFixture(root, {
+      authorized_actor: "tester",
+    });
     const verified = await verifyOnce(mandate, root);
     const later = new Date(Date.parse(mandate.expires_at) + 1000);
-    const result = assertWard("promote", undefined, verified, { now: later });
+    const result = assertWard("promote", undefined, verified, {
+      now: later,
+      actor: "tester",
+    });
     expect(result.ok).toBe(false);
     expect(result.decision.reason).toBe("mandate_expired");
   });
 
-  it("promote fail-closed when ward.json present without ALLOW", async () => {
+  it("promote fail-closed: ward.json without mandate.json; forged receipts never authorize", async () => {
     const root = makeRoot();
     writeWardRunState(root, "run-p", {
       mandate_id: "m-p",
       verified_at: new Date().toISOString(),
       path_constraints: ["src/"],
       actions: ["promote", "codegen"],
-      authorized_actor: "*",
+      authorized_actor: "tester",
     });
-    expect(assertPromoteWard(root, "run-p").ok).toBe(false);
+    expect((await assertPromoteWard(root, "run-p")).ok).toBe(false);
 
     initializeEventLedger(root, "run-p", {
       issueNumber: "1",
@@ -240,10 +256,15 @@ describe("Mandate–Ward", () => {
       mandate_id: "m-p",
       action: "promote",
       verdict: "ALLOW",
-      reason: "ward_allow",
+      reason: "forged_receipt",
       at: new Date().toISOString(),
     });
-    expect(assertPromoteWard(root, "run-p").ok).toBe(true);
+    // Forged ALLOW receipt alone must not authorize promote.
+    const forgedOnly = await assertPromoteWard(root, "run-p", {
+      actor: "tester",
+    });
+    expect(forgedOnly.ok).toBe(false);
+    expect(forgedOnly.reason).toMatch(/mandate\.json|re-verify|receipts never authorize/);
   });
 
   it("no-mandate bond eval stays legacy", () => {
@@ -403,8 +424,10 @@ describe("AgentId gel — effective budget + STRICT", () => {
     return root;
   }
 
-  it("resolveEffectiveBudget tightens paths; no profile is bit-identical", async () => {
-    const { resolveEffectiveBudget } = await import("./index.js");
+  it("resolveEffectiveBudget tightens paths; empty ∩ DENY via strict", async () => {
+    const { resolveEffectiveBudget, resolveEffectiveBudgetStrict } = await import(
+      "./index.js"
+    );
     const mandate = {
       path_constraints: ["src/", "tests/"],
       max_depth: 4,
@@ -425,6 +448,13 @@ describe("AgentId gel — effective budget + STRICT", () => {
     expect(tightened.max_context_chars).toBe(4000);
     expect(tightened.agent_id).toBe("bot");
     expect(tightened.profile_hash).toMatch(/^[a-f0-9]{64}$/);
+
+    const empty = resolveEffectiveBudgetStrict(
+      { path_constraints: ["src/os/"], authorized_actor: "bot" },
+      { agent_id: "bot", default_path_constraints: ["src/ward/"] },
+    );
+    expect(empty.ok).toBe(false);
+    if (!empty.ok) expect(empty.reason).toBe("empty_path_intersection");
   });
 
   it("stamps agent_id on ward_decision when profile present", async () => {
@@ -467,20 +497,27 @@ describe("AgentId gel — effective budget + STRICT", () => {
     expect(result.decision.agent_id).toBe("cursor-bot");
   });
 
-  it("VIBE_WARD_STRICT denies unknown actor without profile", async () => {
+  it("VIBE_WARD_STRICT denies * and unknown actor without profile", async () => {
     const root = makeRoot();
     const keys = await generateEd25519KeyPairRaw();
     fs.writeFileSync(
       path.join(root, ".vibe", "principals.json"),
       JSON.stringify({
-        principals: [{ id: "issuer", public_key: keys.publicKey }],
+        principals: [
+          {
+            id: "issuer",
+            public_key: keys.publicKey,
+            default: true,
+            default_path_constraints: ["src/"],
+          },
+        ],
       }),
       "utf8",
     );
     const now = Date.now();
-    const mandate = await signMandate(
+    const starMandate = await signMandate(
       {
-        mandate_id: "m-strict",
+        mandate_id: "m-strict-star",
         issued_at: new Date(now).toISOString(),
         expires_at: new Date(now + 3600_000).toISOString(),
         authorized_actor: "*",
@@ -490,19 +527,40 @@ describe("AgentId gel — effective budget + STRICT", () => {
       },
       keys.privateKey,
     );
-    const verified = await verifyOnce(mandate, root);
+    const verifiedStar = await verifyOnce(starMandate, root);
     process.env.VIBE_WARD_STRICT = "1";
-    const denied = assertWard("promote", undefined, verified, {
+    const starDenied = assertWard("promote", undefined, verifiedStar, {
+      rootDir: root,
+      actor: "issuer",
+    });
+    expect(starDenied.ok).toBe(false);
+    expect(starDenied.decision.reason).toBe("wildcard_actor_strict");
+
+    clearVerifyCache();
+    const specific = await signMandate(
+      {
+        mandate_id: "m-strict-unknown",
+        issued_at: new Date(now).toISOString(),
+        expires_at: new Date(now + 3600_000).toISOString(),
+        authorized_actor: "stranger",
+        path_constraints: ["src/"],
+        actions: ["promote"],
+        issuer_public_key: keys.publicKey,
+      },
+      keys.privateKey,
+    );
+    const verifiedSpecific = await verifyOnce(specific, root);
+    const unknownDenied = assertWard("promote", undefined, verifiedSpecific, {
       rootDir: root,
       actor: "stranger",
     });
-    expect(denied.ok).toBe(false);
-    expect(denied.decision.reason).toMatch(/unknown_actor_strict/);
+    expect(unknownDenied.ok).toBe(false);
+    expect(unknownDenied.decision.reason).toMatch(/unknown_actor_strict/);
 
     delete process.env.VIBE_WARD_STRICT;
-    const allowed = assertWard("promote", undefined, verified, {
+    const allowed = assertWard("promote", undefined, verifiedStar, {
       rootDir: root,
-      actor: "stranger",
+      actor: "anyone",
     });
     expect(allowed.ok).toBe(true);
   });

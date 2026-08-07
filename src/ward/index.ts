@@ -161,18 +161,39 @@ export function clearActiveMandate(rootDir: string): void {
   if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 }
 
+export type EffectiveBudgetResult =
+  | { ok: true; budget: EffectiveBudget }
+  | { ok: false; reason: string };
+
 /**
  * Tighten-only budget: profile ∩ mandate (never widens).
  * No profile ⇒ mandate paths/depth unchanged (legacy bit-identical).
+ * Empty intersection ⇒ DENY (fail-closed; never fall back to wider mandate).
  */
 export function resolveEffectiveBudget(
   mandate: Pick<SignedMandate, "path_constraints" | "max_depth" | "authorized_actor">,
   profile: AgentProfile | null,
 ): EffectiveBudget {
+  const result = resolveEffectiveBudgetStrict(mandate, profile);
+  if (!result.ok) {
+    // Compat for callers that ignore empty-intersection DENY — return empty paths.
+    return { path_constraints: [] };
+  }
+  return result.budget;
+}
+
+/** Fail-closed budget resolve (empty ∩ ⇒ DENY). Prefer this at Ward gates. */
+export function resolveEffectiveBudgetStrict(
+  mandate: Pick<SignedMandate, "path_constraints" | "max_depth" | "authorized_actor">,
+  profile: AgentProfile | null,
+): EffectiveBudgetResult {
   if (!profile) {
     return {
-      path_constraints: [...mandate.path_constraints],
-      ...(mandate.max_depth !== undefined ? { max_depth: mandate.max_depth } : {}),
+      ok: true,
+      budget: {
+        path_constraints: [...mandate.path_constraints],
+        ...(mandate.max_depth !== undefined ? { max_depth: mandate.max_depth } : {}),
+      },
     };
   }
 
@@ -185,8 +206,10 @@ export function resolveEffectiveBudget(
       mandate.path_constraints,
       profile.default_path_constraints,
     );
-    // Empty intersection would brick the session — keep mandate (no widen).
-    if (intersected.length > 0) path_constraints = intersected;
+    if (intersected.length === 0) {
+      return { ok: false, reason: "empty_path_intersection" };
+    }
+    path_constraints = intersected;
   }
 
   let max_depth = mandate.max_depth;
@@ -209,7 +232,7 @@ export function resolveEffectiveBudget(
   if (profile.max_context_chars !== undefined) {
     budget.max_context_chars = profile.max_context_chars;
   }
-  return budget;
+  return { ok: true, budget };
 }
 
 /** Resolve profile for mandate authorized_actor (builtin CI included). */
@@ -366,6 +389,38 @@ function wardStatePath(rootDir: string, runId: string): string {
   return path.join(resolveRunDir(rootDir, sanitizeRunId(runId)), "ward.json");
 }
 
+function runMandatePath(rootDir: string, runId: string): string {
+  return path.join(resolveRunDir(rootDir, sanitizeRunId(runId)), "mandate.json");
+}
+
+/** Persist Mandate copy under `.runs/<id>/` for promote re-verify (evidence + authz input). */
+export function persistRunMandate(
+  rootDir: string,
+  runId: string,
+  mandate: SignedMandate,
+): void {
+  const filePath = runMandatePath(rootDir, runId);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, `${JSON.stringify(mandate, null, 2)}\n`, "utf8");
+}
+
+export function readRunMandate(
+  rootDir: string,
+  runId: string,
+): SignedMandate | null {
+  const filePath = runMandatePath(rootDir, runId);
+  if (!fs.existsSync(filePath)) return null;
+  try {
+    const raw = JSON.parse(fs.readFileSync(filePath, "utf8")) as SignedMandate;
+    if (!raw?.mandate_id || !raw?.signature || !raw?.issuer_public_key) {
+      return null;
+    }
+    return raw;
+  } catch {
+    return null;
+  }
+}
+
 export function writeWardRunState(
   rootDir: string,
   runId: string,
@@ -428,8 +483,9 @@ export function hasWardAllow(
 
 /**
  * Gate B/C (Mandate budget) + house D (mandates.json). Mandate cannot widen forbids.
- * Profile only tightens effective path_constraints / depth. VIBE_WARD_STRICT denies
- * unknown actors (no AgentProfile) unless override_kind is set.
+ * Profile only tightens effective path_constraints / depth.
+ * Invariant: when Mandate present, authz = verifyOnce + house AND + actor
+ * (STRICT / no `*`). Receipts never authorize.
  */
 export function assertWard(
   action: WardAction,
@@ -448,14 +504,15 @@ export function assertWard(
   const mandate = verified.mandate;
   const at = now.toISOString();
   const profile = resolveMandateProfile(rootDir, mandate);
-  const budget = resolveEffectiveBudget(mandate, profile);
+  const budgetResult = resolveEffectiveBudgetStrict(mandate, profile);
+  const budgetMeta = budgetResult.ok ? budgetResult.budget : undefined;
 
   const withMeta = (
     decision: Omit<WardDecision, "override_kind" | "agent_id">,
   ): WardDecision => {
     const next: WardDecision = { ...decision };
     if (mandate.override_kind) next.override_kind = mandate.override_kind;
-    if (budget.agent_id) next.agent_id = budget.agent_id;
+    if (budgetMeta?.agent_id) next.agent_id = budgetMeta.agent_id;
     return next;
   };
 
@@ -495,25 +552,37 @@ export function assertWard(
     return deny(`action_not_authorized:${action}`);
   }
 
-  // Override Mandates are CI-bot signed; do not require runtime actor === bot id.
-  if (
-    !mandate.override_kind &&
-    opts?.actor &&
-    mandate.authorized_actor &&
-    opts.actor !== mandate.authorized_actor &&
-    mandate.authorized_actor !== "*"
-  ) {
-    return deny(`actor_not_authorized:${opts.actor}`);
+  if (!budgetResult.ok) {
+    return deny(budgetResult.reason);
   }
+  const budget = budgetResult.budget;
 
-  // Regulated CI: unknown actor (no profile) ⇒ DENY. Local without STRICT allows string actor.
-  if (
-    !mandate.override_kind &&
-    isWardStrict() &&
-    opts?.actor &&
-    !resolveProfile(rootDir, opts.actor)
-  ) {
-    return deny(`unknown_actor_strict:${opts.actor}`);
+  // Override Mandates are CI-bot signed; do not require runtime actor === bot id.
+  if (!mandate.override_kind) {
+    const actor = opts?.actor?.trim();
+    // Missing actor ⇒ DENY whenever Mandate is in play (fail-closed).
+    if (!actor) {
+      return deny("actor_required");
+    }
+
+    // STRICT / regulated: wildcard actor never authorizes.
+    if (isWardStrict() && mandate.authorized_actor === "*") {
+      return deny("wildcard_actor_strict");
+    }
+
+    if (
+      mandate.authorized_actor &&
+      actor !== mandate.authorized_actor &&
+      mandate.authorized_actor !== "*"
+    ) {
+      return deny(`actor_not_authorized:${actor}`);
+    }
+
+    // Non-STRICT still rejects `*` mismatch only when actor provided vs specific;
+    // STRICT also rejects unknown actors (no AgentProfile).
+    if (isWardStrict() && !resolveProfile(rootDir, actor)) {
+      return deny(`unknown_actor_strict:${actor}`);
+    }
   }
 
   if (filePath) {
@@ -543,27 +612,163 @@ export function assertWard(
 /**
  * Fail-closed promote when this run had a VerifiedMandate.
  * No ward.json ⇒ legacy promote (today's behavior).
+ * Receipts (`ward_decision` / ward.json) are evidence only — never authorization.
+ * Authz = live verifyOnce(principals) + expiry + pathFilter over bundle + actor/STRICT.
  */
-export function assertPromoteWard(
+export async function assertPromoteWard(
   rootDir: string,
   runId: string,
-  opts?: { codegenRan?: boolean },
-): { ok: boolean; reason?: string } {
+  opts?: {
+    codegenRan?: boolean;
+    now?: Date;
+    actor?: string;
+    /** Bundle paths to pathFilter; defaults to promotion index when present. */
+    bundlePaths?: string[];
+  },
+): Promise<{ ok: boolean; reason?: string }> {
   const state = readWardRunState(rootDir, runId);
   if (!state) return { ok: true };
 
-  if (!hasWardAllow(rootDir, runId, "promote")) {
+  const mandate = readRunMandate(rootDir, runId);
+  if (!mandate) {
     return {
       ok: false,
-      reason: `ward: promote requires ALLOW receipt (mandate_id=${state.mandate_id})`,
+      reason: `ward: promote requires persisted mandate.json (mandate_id=${state.mandate_id}); receipts never authorize`,
     };
   }
+
+  let verified: VerifiedMandate;
+  try {
+    verified = await verifyOnce(mandate, rootDir, { now: opts?.now });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { ok: false, reason: `ward: promote re-verify failed: ${message}` };
+  }
+
+  const now = opts?.now ?? new Date();
+  if (now.getTime() > Date.parse(mandate.expires_at)) {
+    return {
+      ok: false,
+      reason: `ward: mandate_expired at promote (mandate_id=${mandate.mandate_id})`,
+    };
+  }
+
+  if (!mandate.actions.includes("promote")) {
+    return {
+      ok: false,
+      reason: `ward: promote not in mandate actions (mandate_id=${mandate.mandate_id})`,
+    };
+  }
+
+  const profile = resolveMandateProfile(rootDir, mandate);
+  const budgetResult = resolveEffectiveBudgetStrict(mandate, profile);
+  if (!budgetResult.ok) {
+    return {
+      ok: false,
+      reason: `ward: ${budgetResult.reason} (mandate_id=${mandate.mandate_id})`,
+    };
+  }
+
+  if (isWardStrict() && mandate.authorized_actor === "*") {
+    return {
+      ok: false,
+      reason: `ward: wildcard_actor_strict at promote (mandate_id=${mandate.mandate_id})`,
+    };
+  }
+
+  const actor = opts?.actor?.trim();
+  if (!mandate.override_kind) {
+    if (!actor) {
+      return {
+        ok: false,
+        reason: `ward: actor_required at promote (mandate_id=${mandate.mandate_id})`,
+      };
+    }
+    if (
+      mandate.authorized_actor &&
+      actor !== mandate.authorized_actor &&
+      mandate.authorized_actor !== "*"
+    ) {
+      return {
+        ok: false,
+        reason: `ward: actor_not_authorized:${actor} (mandate_id=${mandate.mandate_id})`,
+      };
+    }
+    if (isWardStrict() && !resolveProfile(rootDir, actor)) {
+      return {
+        ok: false,
+        reason: `ward: unknown_actor_strict:${actor} (mandate_id=${mandate.mandate_id})`,
+      };
+    }
+  }
+
+  let bundlePaths = opts?.bundlePaths;
+  if (!bundlePaths) {
+    const indexPath = path.join(
+      resolveRunDir(rootDir, sanitizeRunId(runId)),
+      "promotion",
+      "index.json",
+    );
+    if (fs.existsSync(indexPath)) {
+      try {
+        const index = JSON.parse(fs.readFileSync(indexPath, "utf8")) as {
+          files?: Array<{ path?: string }>;
+        };
+        bundlePaths = (index.files ?? [])
+          .map((f) => f.path)
+          .filter((p): p is string => typeof p === "string" && p.length > 0);
+      } catch {
+        bundlePaths = [];
+      }
+    } else {
+      bundlePaths = [];
+    }
+  }
+
+  if (bundlePaths.length > 0) {
+    const allowed = pathFilter(bundlePaths, budgetResult.budget.path_constraints);
+    if (allowed.length !== bundlePaths.length) {
+      const denied = bundlePaths.filter((p) => !allowed.includes(p));
+      return {
+        ok: false,
+        reason: `ward: promote pathFilter denied: ${denied.join(",")}`,
+      };
+    }
+    const house = loadMandates(rootDir);
+    const houseEval = evaluateMandates(bundlePaths, house);
+    if (!houseEval.passed) {
+      return {
+        ok: false,
+        reason: `ward: house_forbidden at promote:${houseEval.violations
+          .filter((v) => v.rule === "forbidden")
+          .map((v) => v.prefix)
+          .join(",")}`,
+      };
+    }
+  }
+
+  // Live gate (records receipt as evidence only — does not authorize via prior receipts).
+  const live = assertWard("promote", undefined, verified, {
+    rootDir,
+    runId,
+    now,
+    actor: mandate.override_kind ? undefined : actor,
+  });
+  if (!live.ok) {
+    return {
+      ok: false,
+      reason: `ward: promote live assert DENY (${live.decision.reason})`,
+    };
+  }
+
+  // Evidence trail (non-authorizing): warn-style require when codegen ran in-session.
   if (opts?.codegenRan && !hasWardAllow(rootDir, runId, "codegen")) {
     return {
       ok: false,
-      reason: `ward: codegen ALLOW required before promote (mandate_id=${state.mandate_id})`,
+      reason: `ward: codegen evidence missing before promote (mandate_id=${mandate.mandate_id})`,
     };
   }
+
   return { ok: true };
 }
 

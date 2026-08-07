@@ -129,6 +129,13 @@ else
   set_assert mcp_stackables_smoke false
 fi
 
+# Sacred Ward eval — claim ledger ward_* asserts only after green
+if run_step "ward sacred" npx vitest run src/ward/sacred-eval.test.ts; then
+  set_assert ward_sacred true
+else
+  set_assert ward_sacred false
+fi
+
 # Soft CyberReady — not_installed is success for free path; soft-fail does not hard-fail battery
 if soft_step "CyberReady soft" npx tsx -e '
 import { cyberreadyValidateDelta } from "./src/release-gate/cyberready-bridge.ts";

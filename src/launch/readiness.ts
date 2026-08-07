@@ -8,6 +8,7 @@ import {
   readBaselineMap,
   runTaskBondGauntlet,
 } from "../bond/gauntletRunner.js";
+import { runWardDoctor } from "../ward/doctor.js";
 
 export type LaunchReadinessCheck = {
   id: string;
@@ -164,6 +165,18 @@ export function checkActivatedJson(rootDir = "."): LaunchReadinessCheck {
   }
 }
 
+export function checkWardDoctor(rootDir = "."): LaunchReadinessCheck {
+  const result = runWardDoctor(rootDir);
+  const hardFails = result.checks.filter((c) => !c.soft && !c.ok);
+  return {
+    id: "ward:doctor",
+    ok: result.ok,
+    detail: result.ok
+      ? `${result.checks.length} checks (STRICT + mandate/principals)`
+      : hardFails.map((c) => c.detail).join("; "),
+  };
+}
+
 export function runLaunchReadiness(rootDir = "."): LaunchReadinessResult {
   const checks: LaunchReadinessCheck[] = [
     ...checkRequiredWorkflows(rootDir),
@@ -174,6 +187,7 @@ export function runLaunchReadiness(rootDir = "."): LaunchReadinessResult {
     checkGauntletBaseline(rootDir),
     checkMcpSmoke(),
     checkActivatedJson(rootDir),
+    checkWardDoctor(rootDir),
   ];
 
   return {

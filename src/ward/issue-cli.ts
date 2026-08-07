@@ -10,7 +10,7 @@
  * Env:
  *   VIBE_MANDATE_PRIVATE_KEY  (required, pkcs8 base64url)
  *   VIBE_MANDATE_PUBLIC_KEY   (required, raw base64url — must match private)
- *   VIBE_MANDATE_ACTOR        (default: profile.agent_id or *)
+ *   VIBE_MANDATE_ACTOR        (default: profile.agent_id; never invents *)
  *   VIBE_MANDATE_PATHS        (comma prefixes; default: profile paths or src/,tests/)
  *   VIBE_MANDATE_ACTIONS      (comma, default: all)
  *   VIBE_MANDATE_TTL_HOURS    (default: 8)
@@ -81,10 +81,13 @@ async function main(): Promise<void> {
   }
 
   const actorEnv = process.env.VIBE_MANDATE_ACTOR?.trim();
-  const actor =
-    actorEnv ||
-    defaultProfile?.agent_id ||
-    "*";
+  const actor = actorEnv || defaultProfile?.agent_id;
+  if (!actor || actor === "*") {
+    console.error(
+      "mandate:issue failed: authorized_actor required (set VIBE_MANDATE_ACTOR or a default AgentProfile). Never invents '*'.",
+    );
+    process.exit(1);
+  }
 
   const pathsEnv = process.env.VIBE_MANDATE_PATHS?.trim();
   let pathConstraints: string[];

@@ -15,11 +15,24 @@ import {
   writeActiveMandate,
   type SignedMandate,
   type WardAction,
-  WARD_ACTIONS,
 } from "./index.js";
 
-const DEFAULT_OVERRIDE_ACTIONS: WardAction[] = [...WARD_ACTIONS];
+/** Minimal override surface when no prior Mandate — never invents wider than needed. */
+const DEFAULT_OVERRIDE_ACTIONS: WardAction[] = [
+  "codegen",
+  "patch.apply",
+  "promote",
+];
 const DEFAULT_TTL_MS = 8 * 60 * 60 * 1000;
+
+/** Tighten-only: override actions ⊆ base (never widen to full WARD_ACTIONS). */
+export function narrowOverrideActions(
+  base: WardAction[] | undefined,
+): WardAction[] {
+  if (!base || base.length === 0) return [...DEFAULT_OVERRIDE_ACTIONS];
+  const allowed = new Set(base);
+  return DEFAULT_OVERRIDE_ACTIONS.filter((a) => allowed.has(a));
+}
 
 export type ApprovalOverrideResult =
   | { issued: false; reason: string }
@@ -77,13 +90,21 @@ export async function maybeIssueApprovalOverride(opts: {
     existing?.path_constraints ??
     ["src/", "tests/"];
 
+  const actions = narrowOverrideActions(existing?.actions);
+  if (actions.length === 0) {
+    return {
+      issued: false,
+      reason: "legacy_approve: override actions empty after ⊆ narrowing",
+    };
+  }
+
   const unsigned = {
     mandate_id: `approve-override-${GITHUB_CI_BOT_OVERRIDE}-${now}`,
     issued_at: new Date(now).toISOString(),
     expires_at: new Date(now + ttl).toISOString(),
     authorized_actor: GITHUB_CI_BOT_OVERRIDE,
     path_constraints: pathConstraints,
-    actions: existing?.actions ?? DEFAULT_OVERRIDE_ACTIONS,
+    actions,
     max_depth: existing?.max_depth,
     override_kind: OVERRIDE_KIND_GITHUB_COMMENT,
     approving_comment_actor: opts.actor,

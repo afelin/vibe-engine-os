@@ -137,6 +137,21 @@ export const CLAIM_CATALOG: readonly ClaimDefinition[] = Object.freeze([
     text: "IDE host interceptor for Ward",
     assert: null,
   },
+  {
+    id: "ward_promote_reverify",
+    text: "Forged promote receipts cannot authorize; promote re-verifies Mandate live",
+    assert: "ward_sacred",
+  },
+  {
+    id: "ward_strict_ci",
+    text: "Regulated CI sets VIBE_WARD_STRICT; STRICT rejects wildcard actors",
+    assert: "ward_sacred",
+  },
+  {
+    id: "ward_no_star_strict",
+    text: "Issue never invents *; STRICT denies authorized_actor=*",
+    assert: "ward_sacred",
+  },
 ]);
 
 const UNCLAIMABLE_SET = new Set<string>(UNCLAIMABLE_IDS);

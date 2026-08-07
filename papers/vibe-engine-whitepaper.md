@@ -109,7 +109,7 @@ At seal and preflight time, the engine rejects bonds that violate house mandates
 
 A **Signed Mandate** (catalog `SignedMandate`, file `.vibe/active_mandate.json`) is an opt-in **session contract (budget)**—paths, allowed Ward actions, optional `max_depth`, expiry, and `authorized_actor`—signed Ed25519 and verified against a principals trust file. It is a work-order for the run, not a statement of AI ethics. Absent the file ⇒ legacy house-rules-only behavior (compat). House rules **AND** Mandate: the Mandate cannot widen house forbids.
 
-**Ward** enforces ALLOW/DENY before bond seal, codegen, patch apply, and promote **on the engine path** when a Mandate is present. Decisions append as `ward_decision` receipts in `events.ndjson`. Product claim: *CI/promote cannot move without Ward when a Mandate is on.* IDE Edit/Shell and soft MCP paths can still bypass Ward—do not claim universal IDE interception.
+**Ward** enforces ALLOW/DENY before bond seal, codegen, patch apply, and promote **on the engine path** when a Mandate is present. Decisions append as `ward_decision` receipts in `events.ndjson`. Receipts never authorize promote—promote re-verifies the Mandate live. Product claim: *CI/promote cannot move without Ward when a Mandate is on.* IDE Edit/Shell and soft MCP paths can still bypass Ward—do not claim universal IDE interception. Operator runbook: `docs/ward-security.md`.
 
 **Option B `/approve`:** when the Mandate path is active and a runner key is available, `/approve` may mint a short-lived CI-signed override Mandate (`authorized_actor=github-ci-bot-override`). The human who typed the comment is recorded as `approving_comment_actor` for audit only—this is **not** human cryptographic signature.
 

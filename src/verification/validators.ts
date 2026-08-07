@@ -21,6 +21,10 @@ const protectedPaths = [
   "package.json",
   "package-lock.json",
   "bun.lockb",
+  "src/policy/mandates.json",
+  "src/policy/principals.json",
+  ".vibe/principals.json",
+  ".vibe/active_mandate.json",
 ];
 
 export function validateFilePolicy(
