@@ -25,6 +25,8 @@ Tone: portable **free** OSS primitives — how to run and verify, not how to mon
 
 **GitHub visibility ≠ Pages/RISE denylist.** Anyone who clones this public repo sees `internal/`. Soft denylist only helps `public:prepare` / Pages — it does **not** hide files from GitHub. Do **not** commit commercial GTM, secrets, or paid packaging into this tree; keep that in private notes / RISE-internal.
 
+Paid GTM, hosted offerings, and monetization packaging stay **private** until the claim ledger allows those claims—public tree remains free OSS + soft denylist only. Mandate signing keys belong in GitHub Actions secrets / local env (`VIBE_MANDATE_*`), never in committed files.
+
 Do **not** put spin-off, equity, or governance-handoff strategy in any public file.
 
 ## How RISE / public export works

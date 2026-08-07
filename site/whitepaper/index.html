@@ -35,6 +35,7 @@
 <strong>Source SHA:</strong> <code>TO_BE_FILLED_AT_PUBLISH</code> — set to the git commit SHA of the published tree<br />
 <strong>How to cite:</strong> see <a href="#how-to-cite">How to cite</a> and repository root <a href="https://github.com/afelin/vibe-engine-os/blob/main/CITATION.cff"><code>CITATION.cff</code></a></p>
 <blockquote><p><strong>Honesty note.</strong> This document describes free open-source software mechanisms that run on the operator’s own GitHub repository and CI. It does not claim certification, legal compliance, absolute percentages, or commercial product tiers. Capsules are <strong>tamper-evident</strong>, not tamper-proof. Hosted receipt verify and live CyberReady signed buyer proof remain <strong>unclaimed</strong> until those products exist. An optional signed <strong>Mandate</strong> (session budget) enables engine-path <strong>Ward</strong> checks on CI/promote when present; IDE Edit/Shell and out-of-band MCP soft paths can still bypass Ward—product claim is limited to <em>CI/promote cannot move without Ward when a Mandate is on</em>, not universal IDE interception.</p></blockquote>
+<p><strong>In plain terms:</strong> vibe-engine-os is a <strong>promotion gate</strong>—models may propose changes; house rules and automated checks decide what may land in Git. A signed <strong>Mandate</strong> is a session work-order (budget); <strong>Ward</strong> is the CI/promote check that enforces it when present. Capsule and <code>ward_decision</code> <strong>receipts are evidence, never authorization</strong>—promote always re-verifies.</p>
 <hr />
 <h2>Abstract</h2>
 <p>vibe-engine-os is a <strong>promotion gate</strong> for AI-assisted software change: generative models may propose artifacts; house rules (vows, house mandates, bonds, gates) and automated checks decide what may land in Git. The portable core is a set of OSS primitives—TaskBond, house mandate evaluation, optional signed <strong>Mandate</strong> (session contract) with engine-path <strong>Ward</strong>, zero-token release gates, a depth dial, forever-loop automation, capsules with HPURL proof links, deterministic replay, an adversarial gauntlet, MCP tool surfaces, light heal/Pearl operators, and Assisted-by attribution—that make agent work <strong>bounded, replayable, and evidence-bearing</strong>.</p>
@@ -105,7 +106,7 @@
 <tr><td>Capsule / HPURL</td><td>Tamper-evident fingerprint + proof link fragment</td></tr>
 <tr><td>Pearl</td><td>Ops narrative over heal/DENY deltas</td></tr>
 <tr><td>Claim ledger</td><td>Claims ↔ asserts; unclaimed IDs never pass</td></tr>
-<tr><td>Agent identity (today)</td><td><code>src/agent-id</code> + <code>authorized_actor</code> + Assisted-by (+ principals)—not eIDAS</td></tr>
+<tr><td><strong>AgentId</strong></td><td>Portable actor profile (<code>src/agent-id</code>); gels via Mandate <code>authorized_actor</code> → <code>resolveProfile</code>—not eIDAS</td></tr>
 </tbody>
 </table>
 <hr />
@@ -178,9 +179,9 @@
 <p>Default GitHub <code>/troubleshoot</code> caps at L1. Heal outcomes can be recorded in run metrics (<code>healLevel</code>, <code>deterministicFix</code>).</p>
 <p><strong>Pearl</strong> is a compact weekly summary of heal/intervention deltas for operators (first-pass green, L0/L1 heal share, token medians, intervention stages). It is an <strong>ops narrative over measured deltas</strong>, not a performance guarantee.</p>
 <hr />
-<h2>13. Assisted-by attribution and agent identity (today)</h2>
+<h2>13. Assisted-by attribution and AgentId</h2>
 <p>On pull requests, an attribution audit blocks merge when commit messages mention AI tooling without an <code>Assisted-by:</code> trailer. The engine tags its own commits <code>Assisted-by: vibe-engine-os</code>.</p>
-<p>Session identity on a Signed Mandate is the string field <code>authorized_actor</code>, verified against issuer pubkeys in the principals trust file. That is <strong>authorized actor + attribution</strong>, not organizational PKI and not eIDAS QWAC/QES conformity. A lean interoperable “Agent Binding” (key + optional attestation ref) may extend principals later without claiming legal identity assurance.</p>
+<p><strong>AgentId</strong> (<code>src/agent-id</code>) is the portable actor-profile primitive shared by Ward, MCP, and CI. Session identity on a Signed Mandate is the string field <code>authorized_actor</code>, resolved via <code>resolveProfile(actor)</code> against the principals trust file (optional path/budget caps tighten only). That is <strong>authorized actor + optional efficiency defaults</strong>, not organizational PKI and not eIDAS QWAC/QES conformity. A lean interoperable “Agent Binding” (key + optional attestation ref) may extend principals later without claiming legal identity assurance. Ward imports AgentId; AgentId must not import Ward. Operator note: <a href="https://github.com/afelin/vibe-engine-os/blob/main/docs/agent-identity.md">docs/agent-identity.md</a>.</p>
 <p><strong>Claim boundary:</strong> enforcement is mechanical on <strong>mentioned</strong> AI tools in commit text for PRs that run the check. It does not detect silent omissions where no AI tooling is named.</p>
 <hr />
 <h2>14. Threat model</h2>
@@ -290,6 +291,8 @@ bash runs/adopt.sh .</code></pre>
 <h2>Appendix B — Related in-repo docs</h2>
 <ul>
 <li><a href="https://github.com/afelin/vibe-engine-os/blob/main/docs/start-here.md"><code>docs/start-here.md</code></a> — five-minute paths  </li>
+<li><a href="https://github.com/afelin/vibe-engine-os/blob/main/docs/ward-security.md"><code>docs/ward-security.md</code></a> — Mandate–Ward invariant, STRICT checklist, Actions secrets  </li>
+<li><a href="https://github.com/afelin/vibe-engine-os/blob/main/docs/agent-identity.md"><code>docs/agent-identity.md</code></a> — AgentId gel rules and claims  </li>
 <li><a href="https://github.com/afelin/vibe-engine-os/blob/main/docs/solo-vibe-coder-guide.md"><code>docs/solo-vibe-coder-guide.md</code></a> — daily operator loop  </li>
 <li><a href="https://github.com/afelin/vibe-engine-os/blob/main/docs/agent-protocol.md"><code>docs/agent-protocol.md</code></a> — schemas and slash commands  </li>
 <li><a href="https://github.com/afelin/vibe-engine-os/blob/main/docs/launch-proof.md"><code>docs/launch-proof.md</code></a> — zero-token cloud proof runbook  </li>

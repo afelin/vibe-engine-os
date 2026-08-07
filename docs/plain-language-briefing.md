@@ -12,9 +12,9 @@
 
 ## Capability walkthrough
 
-### Agent mandates & task bonds — the work order and the security guard
+### House mandates, Signed Mandate, Ward & task bonds — the work order and the guard
 
-**What it is.** Before an AI agent touches anything, its request is sealed into a **bond**: a signed work order with intent (one sentence, max 500 characters), expected outcomes, and the **exact files** it may touch (max 16). A **mandates** layer checks that order against house rules: some areas are forbidden (payment/security code, automation pipelines), and some require explicit human `/approve` first.
+**What it is.** Before an AI agent touches anything, its request is sealed into a **bond**: a signed work order with intent (one sentence, max 500 characters), expected outcomes, and the **exact files** it may touch (max 16). **House mandates** (`mandates.json`) are standing forbids/approvals. An optional signed **Mandate** is a session contract (budget)—paths, actions, expiry, actor—not “AI ethics.” When present, **Ward** enforces ALLOW/DENY on the CI/promote engine path; **AgentId** names who may act. Receipts never authorize; IDE Edit/Shell can still bypass Ward. Option B `/approve` may mint a short-lived CI-bot override Mandate (human is audit-only).
 
 **Problem solved.** AI agents drift. Ask for a button fix, get a rewritten database. Bonds make scope creep structurally impossible.
 
@@ -130,7 +130,7 @@
 
 | Capability | Problem solved | Quantified benefit |
 | --- | --- | --- |
-| Mandates & bonds | AI scope creep | ~3–5× faster review *(est.)* |
+| House mandates, Signed Mandate/Ward & bonds | AI scope creep | ~3–5× faster review *(est.)* |
 | Capsule hashes | Unverifiable AI work | ~100% tamper detection *(cryptographic)* |
 | Release gates & depth dial | All-or-nothing autonomy | $0 AI cost on templated changes |
 | Forever loop | Founder hours are the bottleneck | ~2–3× routine throughput *(est.)* |
