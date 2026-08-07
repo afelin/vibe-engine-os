@@ -134,7 +134,10 @@
 <p>Coreward does <strong>not</strong> train or host foundation weights. It <strong>reduces what you must send</strong> to any model and <strong>keeps governance + memory local</strong> so a future private/on-prem model plugs into the same <code>authorize_write</code> → Ward → promote path.</p>
 <p><strong>Day one:</strong> match gates before LLM; use Mandate/AgentId path and context caps; set <code>VIBE_DEPTH</code>; read cockpit <strong>Savings</strong> (<code>gate_hit</code>, <code>contextChars</code>, <code>tokensEstimate</code>).</p>
 <p><strong>Local “weights” (IP that stays yours):</strong> lessons in <code>.evomem/lessons.ndjson</code>, capsules/events under <code>.runs/</code>, Mandates/AgentId/house law under <code>.vibe/</code> and <code>src/policy/</code>, and the gate catalog. Policy is portable when inference moves in-house.</p>
-<p><strong>Claim-safe:</strong> when gates miss, bounded prompts may still leave the building—Coreward <strong>reduces and bounds</strong> exposure; it does not claim absolute zero IP egress. Operator checklist: <a href="https://github.com/afelin/coreward/blob/main/docs/local-first-savings.md">docs/local-first-savings.md</a>.</p>
+<p><strong>Claim-safe:</strong> when gates miss, bounded prompts may still leave the building—Coreward <strong>reduces and bounds</strong> exposure; it does not claim absolute zero IP egress. Operator checklist: <a href="https://github.com/afelin/coreward/blob/main/docs/local-first-savings.md">docs/local-first-savings.md</a>. Export local ROI with <code>npm run savings:attest</code> (hash-chained <code>gate_hit</code> / <code>contextChars</code> / <code>tokensEstimate</code>); hosted attestation verify remains <strong>unclaimed</strong>.</p>
+<h3>License and local-runtime complementarity</h3>
+<p>Coreward ships under <strong>FSL-1.1-Apache-2.0</strong> (<a href="https://github.com/afelin/coreward/blob/main/LICENSE"><code>LICENSE</code></a>, FAQ <a href="https://github.com/afelin/coreward/blob/main/LICENSE.md"><code>LICENSE.md</code></a>): free for internal use on your runners and agents; Competing Use (including offering a hosted substitute for Coreward) is excluded until the Change Date, after which Apache-2.0 applies automatically.</p>
+<p><strong>Complementarity (claim-safe):</strong> OpenClaw, Hermes, and local/open models (e.g. Ollama) are <strong>customers</strong> of Coreward MCP—not runtimes Coreward absorbs. Policy teams can allow local agents <strong>because</strong> writes are Mandated (<code>authorize_write</code>) and CI Ward re-verifies promote. Coreward does not claim zero IP egress, IDE sandboxing, or legal certification.</p>
 <hr />
 <h2>6. Depth dial (<code>VIBE_DEPTH</code>)</h2>
 <p>Autonomy is a <strong>volume knob</strong>, not an all-or-nothing switch:</p>
@@ -304,8 +307,9 @@ bash runs/adopt.sh .</code></pre>
 <hr />
 <h2>Appendix B — Related in-repo docs</h2>
 <ul>
-<li><a href="https://github.com/afelin/coreward/blob/main/docs/host-packs.md"><code>docs/host-packs.md</code></a> — Cursor / Claude / OpenCode / Kimi  </li>
+<li><a href="https://github.com/afelin/coreward/blob/main/docs/host-packs.md"><code>docs/host-packs.md</code></a> — Cursor / Claude / OpenCode / OpenClaw / Hermes / Kimi  </li>
 <li><a href="https://github.com/afelin/coreward/blob/main/docs/local-first-savings.md"><code>docs/local-first-savings.md</code></a> — day-one savings + local lessons as IP  </li>
+<li><a href="https://github.com/afelin/coreward/blob/main/LICENSE.md"><code>LICENSE.md</code></a> — FSL FAQ (Change Date → Apache-2.0)  </li>
 <li><a href="https://github.com/afelin/coreward/blob/main/docs/start-here.md"><code>docs/start-here.md</code></a> — five-minute paths  </li>
 <li><a href="https://github.com/afelin/coreward/blob/main/docs/ward-security.md"><code>docs/ward-security.md</code></a> — Mandate–Ward invariant, STRICT checklist, Actions secrets  </li>
 <li><a href="https://github.com/afelin/coreward/blob/main/docs/agent-identity.md"><code>docs/agent-identity.md</code></a> — AgentId gel rules and claims  </li>

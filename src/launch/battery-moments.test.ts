@@ -190,6 +190,13 @@ describe("claim ledger rules", () => {
     }
   });
 
+  it("savings_attestation_local maps to savings_attest assert", () => {
+    const def = CLAIM_CATALOG.find((c) => c.id === "savings_attestation_local");
+    expect(def?.assert).toBe("savings_attest");
+    expect(evaluateClaim(def!, { savings_attest: true }).status).toBe("pass");
+    expect(evaluateClaim(def!, {}).status).toBe("unclaimed");
+  });
+
   it("unclaimable claims stay unclaimed even if assertResults try to pass them", () => {
     const poisoned = evaluateAssertResults({
       hosted_hpurl: true,

@@ -6,6 +6,8 @@ This is the canonical entry for Coreward. Everything else (solo guide, nocode wa
 
 **Nomenclature (one breath):** a signed **Mandate** is a session contract (budget); **Ward** enforces ALLOW/DENY on the CI/promote engine path when a Mandate is on; **AgentId** (`src/agent-id`) names the authorized actor. House `mandates.json` is standing forbids (separate). Receipts never authorize—promote re-verifies. IDE Edit/Shell can still bypass Ward. Security: [ward-security.md](./ward-security.md) · [agent-identity.md](./agent-identity.md).
 
+> **License: FSL-1.1-Apache-2.0** — free to run internally on your runners and agents; **not** free to resell as hosted Coreward / competing promotion-gate SaaS until the Change Date (then Apache-2.0). See [`LICENSE`](../LICENSE) and [`LICENSE.md`](../LICENSE.md).
+
 **Public white paper (GitHub Pages):** [afelin.github.io/coreward/whitepaper/](https://afelin.github.io/coreward/whitepaper/) — also [adopt](https://afelin.github.io/coreward/adopt/), [status](https://afelin.github.io/coreward/status/), [legal](https://afelin.github.io/coreward/legal/). Source under [`site/`](../site/); build with `npm run site:build` (reads `papers/coreward-whitepaper.md` when that file is present).
 
 ---

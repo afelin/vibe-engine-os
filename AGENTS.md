@@ -10,4 +10,8 @@ Before proposing any file edits:
 
 MCP server: `coreward-release-gates` (alias `vibe-release-gates`). CLI: `npm run coreward:authorize -- --files a.ts,b.ts`.
 
+**License:** [`LICENSE`](LICENSE) / [`LICENSE.md`](LICENSE.md) — FSL-1.1-Apache-2.0 (free internal use; not free to resell as hosted Coreward until Change Date). Machine index: [`llms.txt`](llms.txt).
+
+**Local/open runtimes:** OpenClaw / Hermes / Ollama are customers of Coreward MCP—not substitutes. Packs: [docs/host-packs.md](docs/host-packs.md). Savings export: `npm run savings:attest`.
+
 See [docs/host-packs.md](docs/host-packs.md) and [.cursor/skills/coreward/SKILL.md](.cursor/skills/coreward/SKILL.md).

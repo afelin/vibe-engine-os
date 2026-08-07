@@ -143,6 +143,13 @@ else
   set_assert authorize_write_sacred false
 fi
 
+# Local savings attestation (hash-chained metrics) — claim savings_attestation_local
+if run_step "savings:attest" npx vitest run src/savings/attest.test.ts; then
+  set_assert savings_attest true
+else
+  set_assert savings_attest false
+fi
+
 # Soft CyberReady — not_installed is success for free path; soft-fail does not hard-fail battery
 if soft_step "CyberReady soft" npx tsx -e '
 import { cyberreadyValidateDelta } from "./src/release-gate/cyberready-bridge.ts";

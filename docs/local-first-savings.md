@@ -8,6 +8,7 @@ Coreward does **not** train or host foundation weights. It **reduces what you mu
 2. **Match gates** — call `resolve_gate` / `authorize_write` before LLM; ≥12 zero-token chores in `src/release-gate/gates.json`.
 3. **Mandate + AgentId** — `mandate:issue` / default profile to shrink path and context caps.
 4. **Read the cockpit** — after a governed run, look for **Savings:** `gate_hit=yes|no · contextChars=N · tokensEstimate=N`.
+5. **Export attestation** — `npm run savings:attest` writes a hash-chained JSON (`.vibe/savings-attestation.json`) from those metrics. Local export is claimable; **hosted verify** of attestations stays unclaimed until built.
 
 | Lever | Operator move | Felt benefit |
 |-------|---------------|--------------|
@@ -15,6 +16,17 @@ Coreward does **not** train or host foundation weights. It **reduces what you mu
 | Mandate + AgentId path/context caps | `mandate:issue` / default profile | Fewer files in prompt |
 | `VIBE_DEPTH` 0–2 | Labels `vibe:safe` / plan-only | Less codegen surface |
 | `authorize_write` → `prefer_gate` | Single preflight | Agents stop “thinking” when a gate exists |
+| `savings:attest` | Export after a gated week | Provable ROI artifact (local) |
+
+## Local/open models + Coreward (why policy can say yes)
+
+OpenClaw, Hermes, and Ollama are **runtimes**; Coreward is the **governance spine**. Approved path:
+
+1. Agent runtime uses local/open weights (IP can stay on metal for inference).
+2. Every code-affecting tool hits MCP `authorize_write` (Mandate + house rules).
+3. CI Ward re-verifies before promote — receipts are evidence, not authorization.
+
+Do not treat Hermes memory or OpenClaw sessions as a substitute for Ward. Packs: [host-packs.md](./host-packs.md).
 
 ## Local “weights” (IP that stays yours)
 

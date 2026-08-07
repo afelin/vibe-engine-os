@@ -50,3 +50,35 @@ Adapter recipe:
 4. Read cockpit Savings (`gate_hit`, `contextChars`, `tokensEstimate`) after a run.
 
 See [local-first-savings.md](./local-first-savings.md) for day-one token savings and local lessons as IP.
+
+## OpenClaw
+
+OpenClaw owns channels, tools, and model routing. Coreward owns **authorize → evidence → promote**.
+
+1. Register MCP `coreward-release-gates` (same fragment as Cursor).
+2. Before code-affecting tools, call `authorize_write` with proposed paths.
+3. Optional skill stub: [`.cursor/skills/openclaw-coreward/SKILL.md`](../.cursor/skills/openclaw-coreward/SKILL.md) (tool order only — **no** OpenClaw embed).
+4. CI Ward still gates merge when a Mandate is on; IDE/raw Edit bypass remains an honest out-of-band limit.
+
+## Hermes Agent
+
+Hermes is MCP-native and may keep its own memory/lessons. Map preflight to Coreward:
+
+```json
+{
+  "mcp_servers": {
+    "coreward-release-gates": {
+      "command": "npx",
+      "args": ["tsx", "src/release-gate/mcp.ts"]
+    }
+  }
+}
+```
+
+1. Skills that write code must call `authorize_write` first (then `evaluate_mandate` / `resolve_gate` as needed).
+2. Hermes memory (`.evomem` elsewhere, or Hermes-local) does **not** replace Ward receipts or capsules.
+3. Promote only through CI when Mandate + Ward STRICT apply.
+
+## Local / open models (policy path)
+
+Policy teams can approve Ollama / OpenClaw / Hermes **with** Coreward because: IP stays on your metal for inference when you choose local weights; writes are Mandated via `authorize_write`; promote re-verifies. Details: [local-first-savings.md](./local-first-savings.md).
