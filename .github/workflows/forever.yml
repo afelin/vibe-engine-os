@@ -359,7 +359,7 @@ jobs:
         run: |
           set -euo pipefail
           git config --global user.name "Vibe Engine OS"
-          git config --global user.email "ai@vibe-engine.local"
+          git config --global user.email "ai@Coreward.local"
           ISSUE_NUM="${{ needs.gate-check.outputs.issue_number }}"
           BRANCH_NAME="vibe/issue-${ISSUE_NUM}"
           BASE_BRANCH="${GITHUB_REF_NAME:-main}"
@@ -377,9 +377,9 @@ jobs:
           node -e "const fs=require('fs');const issue='${ISSUE_NUM}';const run=process.env.RUN_ID||'';fs.writeFileSync('$STAMP',JSON.stringify({issueNumber:Number(issue),runId:run,recordedAt:new Date().toISOString(),workflowRunId:process.env.GITHUB_RUN_ID||null},null,2)+'\n')"
           git add -f "$STAMP"
           if git diff --cached --quiet; then
-            git commit --allow-empty -m "chore(ai): promotion receipt for #${ISSUE_NUM}" -m "Assisted-by: vibe-engine-os"
+            git commit --allow-empty -m "chore(ai): promotion receipt for #${ISSUE_NUM}" -m "Assisted-by: coreward"
           else
-            git commit -m "feat(ai): promotion for #${ISSUE_NUM}" -m "Assisted-by: vibe-engine-os"
+            git commit -m "feat(ai): promotion for #${ISSUE_NUM}" -m "Assisted-by: coreward"
           fi
           git push origin "HEAD:${BRANCH_NAME}"
           git fetch origin "${BASE_BRANCH}" "${BRANCH_NAME}"
@@ -405,7 +405,7 @@ jobs:
             --title "feat(ai): promotion for #${ISSUE_NUM}" \
             --head "$BRANCH_NAME" \
             --base "$BASE_BRANCH" \
-            --body "Automated promotion for issue #${ISSUE_NUM}. Assisted-by: vibe-engine-os" \
+            --body "Automated promotion for issue #${ISSUE_NUM}. Assisted-by: coreward" \
             2>&1 | tail -1)"
           if [ -z "$PR_URL" ] || ! echo "$PR_URL" | grep -q '^https://github.com/.*/pull/[0-9]\+$'; then
             echo "::error::PR creation did not return a URL (got: ${PR_URL:-empty})"

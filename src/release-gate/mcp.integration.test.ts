@@ -75,7 +75,7 @@ describe("release gate MCP stdio transport", () => {
       jsonrpc: "2.0",
       id: 1,
       result: {
-        serverInfo: { name: "vibe-release-gates" },
+        serverInfo: { name: "coreward-release-gates" },
       },
     });
 

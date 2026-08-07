@@ -2,11 +2,11 @@
 
 *5 minutes, any tool.* Pick one path. Ship a governed change with a receipt.
 
-This is the canonical entry for vibe-engine-os. Everything else (solo guide, nocode walkthrough, adapter protocol) deepens a path you choose here.
+This is the canonical entry for Coreward. Everything else (solo guide, nocode walkthrough, adapter protocol) deepens a path you choose here.
 
 **Nomenclature (one breath):** a signed **Mandate** is a session contract (budget); **Ward** enforces ALLOW/DENY on the CI/promote engine path when a Mandate is on; **AgentId** (`src/agent-id`) names the authorized actor. House `mandates.json` is standing forbids (separate). Receipts never authorize—promote re-verifies. IDE Edit/Shell can still bypass Ward. Security: [ward-security.md](./ward-security.md) · [agent-identity.md](./agent-identity.md).
 
-**Public white paper (GitHub Pages):** [afelin.github.io/coreward/whitepaper/](https://afelin.github.io/coreward/whitepaper/) — also [adopt](https://afelin.github.io/coreward/adopt/), [status](https://afelin.github.io/coreward/status/), [legal](https://afelin.github.io/coreward/legal/). Source under [`site/`](../site/); build with `npm run site:build` (reads `papers/vibe-engine-whitepaper.md` when that file is present).
+**Public white paper (GitHub Pages):** [afelin.github.io/coreward/whitepaper/](https://afelin.github.io/coreward/whitepaper/) — also [adopt](https://afelin.github.io/coreward/adopt/), [status](https://afelin.github.io/coreward/status/), [legal](https://afelin.github.io/coreward/legal/). Source under [`site/`](../site/); build with `npm run site:build` (reads `papers/coreward-whitepaper.md` when that file is present).
 
 ---
 
@@ -28,7 +28,7 @@ Local agent that respects mandates and gates before edits.
 
 1. `npm run activate` — exports schemas + adapter manifest.
 2. Enable MCP from [`mcp.json`](../mcp.json) (`npm run gate:mcp` to smoke).
-3. Follow [`.cursor/skills/vibe-engine`](../.cursor/skills/vibe-engine/SKILL.md) — preflight `evaluate_mandate` → `resolve_gate` before proposing paths.
+3. Follow [`.cursor/skills/coreward`](../.cursor/skills/vibe-engine/SKILL.md) — preflight `authorize_write` → `evaluate_mandate` → `resolve_gate` before proposing paths.
 
 Daily workflow: [Solo Vibe Coder Guide](./solo-vibe-coder-guide.md).
 
@@ -64,7 +64,7 @@ Contract: [agent-contract.md](./agent-contract.md). Packs: `src/policy/stackable
 
 ## 5. Prelaunch battery (evidence before you ship the story)
 
-Before public “try vibe-engine” copy, run the honesty compiler:
+Before public “try Coreward” copy, run the honesty compiler:
 
 ```bash
 npm run battery:prelaunch

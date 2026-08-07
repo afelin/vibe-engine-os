@@ -26,6 +26,7 @@
     "pr:create": "node scripts/create-pr.mjs",
     "pr:auto-merge": "tsx src/promote/auto-merge-cli.ts",
     "gate:mcp": "tsx src/release-gate/mcp.ts",
+    "coreward:authorize": "tsx src/coreward/authorize-cli.ts",
     "constitution:export": "tsx src/constitution/cli.ts",
     "constitution:serve": "tsx src/cloud/verify-server.ts",
     "launch:readiness": "tsx src/launch/readiness-cli.ts",

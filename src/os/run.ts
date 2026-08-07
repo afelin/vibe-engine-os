@@ -92,6 +92,7 @@ import {
   writeWardRunState,
   type VerifiedMandate,
 } from "../ward/index.js";
+import { assertCorewardMode } from "../coreward/mode.js";
 
 export type RunInput = {
   issueNumber: string;
@@ -743,6 +744,38 @@ ${vibe}`;
     });
   }
 
+  const plannedForAuth = [
+    ...new Set([
+      ...collectPlannedFiles(dag),
+      ...boundFiles,
+      ...(releaseGate?.files.map((f) => f.path) ?? []),
+    ]),
+  ];
+  const corewardCodegen = assertCorewardMode(rootDir, "codegen", {
+    paths: plannedForAuth,
+    verifiedMandate,
+  });
+  if (!corewardCodegen.ok) {
+    return finishRun({
+      input,
+      deps,
+      rootDir,
+      runId,
+      startedAt,
+      actor,
+      success: false,
+      state: "failed",
+      generatedFiles: [],
+      feedbackMarkdown: `## Coreward Mode DENY\n\n${corewardCodegen.reason}\n\nCall MCP \`authorize_write\` (or \`npm run coreward:authorize\`) or load a verified Mandate.`,
+      gateFailures: [],
+      recordedErrors: [corewardCodegen.reason],
+      attempts: 0,
+      gateIdsFailed: ["coreward_mode"],
+      firstPassGreen: false,
+      approvalRequired: false,
+    });
+  }
+
   let feedbackMarkdown = "";
   let gateFailures: GateFailure[] = [];
   const recordedErrors: string[] = [];
@@ -751,6 +784,7 @@ ${vibe}`;
   let attempts = 0;
   let tokensEstimate = 0;
   let hallucinationBlocked = false;
+  const gateHit = Boolean(deterministicPatch);
 
   const codegenContextFiles = resolveContextFiles(rootDir, dag, boundFiles, {
     verifiedMandate,
@@ -1084,6 +1118,7 @@ ${vibe}`;
       contextChars: codegenBundle.totalChars,
       truncated: codegenBundle.truncated,
       hallucinationBlocked,
+      gateHit,
     });
   }
 
@@ -1116,8 +1151,39 @@ ${vibe}`;
         contextChars: codegenBundle.totalChars,
         truncated: codegenBundle.truncated,
         hallucinationBlocked,
+        gateHit,
       });
     }
+  }
+
+  const corewardPromote = assertCorewardMode(rootDir, "promote", {
+    paths: finalVerifiedFiles.map((f) => f.path),
+    verifiedMandate,
+  });
+  if (!corewardPromote.ok) {
+    return finishRun({
+      input,
+      deps,
+      rootDir,
+      runId,
+      startedAt,
+      actor,
+      success: false,
+      state: "failed",
+      generatedFiles: finalVerifiedFiles,
+      feedbackMarkdown: `## Coreward Mode DENY (promote)\n\n${corewardPromote.reason}`,
+      gateFailures: [],
+      recordedErrors: [corewardPromote.reason],
+      attempts,
+      gateIdsFailed: [...gateIdsFailed, "coreward_mode"],
+      firstPassGreen: false,
+      tokensEstimate,
+      approvalRequired: false,
+      contextChars: codegenBundle.totalChars,
+      truncated: codegenBundle.truncated,
+      hallucinationBlocked,
+      gateHit,
+    });
   }
 
   return finishRun({
@@ -1141,6 +1207,7 @@ ${vibe}`;
     contextChars: codegenBundle.totalChars,
     truncated: codegenBundle.truncated,
     hallucinationBlocked,
+    gateHit,
   });
 }
 
@@ -1166,6 +1233,7 @@ type FinishRunInput = {
   contextChars?: number;
   truncated?: boolean;
   hallucinationBlocked?: boolean;
+  gateHit?: boolean;
 };
 
 function finishRun(args: FinishRunInput): RunOutput {
@@ -1178,6 +1246,7 @@ function finishRun(args: FinishRunInput): RunOutput {
     contextChars: args.contextChars,
     truncated: args.truncated,
     hallucinationBlocked: args.hallucinationBlocked,
+    gateHit: args.gateHit,
   };
 
   const bondHash =

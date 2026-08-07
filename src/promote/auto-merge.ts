@@ -1,6 +1,7 @@
 import {
   ATTRIBUTION_CHECK_NAME,
   PROMOTION_CHECK_NAME,
+  PROMOTION_CHECK_NAME_ALIAS,
   parseRepository,
 } from "../publishing/github-checks.js";
 
@@ -117,7 +118,11 @@ export function evaluateMergeReadiness(
 export function pickPromotionCheck(
   checks: CheckRunSnapshot[],
 ): CheckRunSnapshot | null {
-  return checks.find((check) => check.name === PROMOTION_CHECK_NAME) ?? null;
+  return (
+    checks.find((check) => check.name === PROMOTION_CHECK_NAME) ??
+    checks.find((check) => check.name === PROMOTION_CHECK_NAME_ALIAS) ??
+    null
+  );
 }
 
 export function pickAttributionCheck(

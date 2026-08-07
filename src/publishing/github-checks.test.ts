@@ -21,7 +21,7 @@ describe("github checks", () => {
       gateIdsFailed: [],
       runDir: ".runs/run-1",
     });
-    expect(summary).toContain("Vibe Promotion Gate");
+    expect(summary).toContain("Coreward Promotion Gate");
     expect(summary).toContain("vows123");
     expect(summary).toContain("capsule456");
     expect(summary).toContain("First-pass green");

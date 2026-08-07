@@ -1,6 +1,6 @@
 # Prelaunch test battery
 
-One command that answers three questions with **evidence, not vibes** before you tell the world “try vibe-engine”:
+One command that answers three questions with **evidence, not vibes** before you tell the world “try Coreward”:
 
 1. Can a non-engineer succeed fast? (activation)
 2. Does the constitution still refuse bad paths under attack? (trust)
@@ -40,7 +40,7 @@ Battery writes claims into `.vibe/battery-prelaunch.json`. Each public claim map
 
 ## Killer features (K1–K14)
 
-A feature is **killer** if removing it makes vibe-engine “just another agent.”
+A feature is **killer** if removing it makes Coreward “just another agent.”
 
 | ID | Name | So what | Micromoment |
 | --- | --- | --- | --- |

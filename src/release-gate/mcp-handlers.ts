@@ -43,11 +43,17 @@ import {
   profileHash,
   resolveProfile,
 } from "../agent-id/index.js";
+import { authorizeWrite } from "../coreward/authorize-write.js";
+import { assertCorewardMode, isCorewardMode } from "../coreward/mode.js";
 
+/** Canonical MCP server name (Coreward). */
 export const RELEASE_GATE_MCP = {
-  name: "vibe-release-gates",
-  version: "1.0.0",
+  name: "coreward-release-gates",
+  version: "2.0.0",
 } as const;
+
+/** Dual-read alias for existing Cursor mcp.json configs. */
+export const RELEASE_GATE_MCP_ALIAS = "vibe-release-gates" as const;
 
 export type JsonRpcRequest = {
   jsonrpc?: string;
@@ -260,6 +266,42 @@ export const RELEASE_GATE_TOOLS = [
           type: "boolean",
           description: "When true, return getDefaultProfile instead of actor lookup",
         },
+      },
+    },
+  },
+  {
+    name: "authorize_write",
+    description:
+      "Coreward Mode preflight: house evaluate_mandate AND Signed Mandate pathFilter (when present) AND AgentId budget. Prefers resolve_gate when paths ⊆ a gate. Returns { ok, ticket_id, paths, reason, prefer_gate? }.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        proposed_files: {
+          type: "array",
+          items: { type: "string" },
+        },
+        root_dir: { type: "string" },
+        title: { type: "string" },
+        body: { type: "string" },
+        actor: { type: "string" },
+      },
+      required: ["proposed_files"],
+    },
+  },
+  {
+    name: "coreward_mode_status",
+    description:
+      "Report whether Coreward Mode is enabled (.vibe/coreward-mode.json or COREWARD_MODE=1) and optionally assert engine-path authorization for paths/ticket.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        root_dir: { type: "string" },
+        phase: {
+          type: "string",
+          description: "codegen | patch | promote | forever",
+        },
+        paths: { type: "array", items: { type: "string" } },
+        ticket_id: { type: "string" },
       },
     },
   },
@@ -594,6 +636,53 @@ export function callReleaseGateTool(
         ok: true,
         profile,
         profile_hash: profile ? profileHash(profile) : null,
+      },
+      null,
+      2,
+    );
+  }
+
+  if (name === "authorize_write") {
+    const rootDir = typeof args.root_dir === "string" ? args.root_dir : ".";
+    const proposedFiles = Array.isArray(args.proposed_files)
+      ? args.proposed_files.filter((item): item is string => typeof item === "string")
+      : [];
+    const result = authorizeWrite({
+      proposed_files: proposedFiles,
+      root_dir: rootDir,
+      title: typeof args.title === "string" ? args.title : undefined,
+      body: typeof args.body === "string" ? args.body : undefined,
+      actor: typeof args.actor === "string" ? args.actor : undefined,
+    });
+    return JSON.stringify(result, null, 2);
+  }
+
+  if (name === "coreward_mode_status") {
+    const rootDir = typeof args.root_dir === "string" ? args.root_dir : ".";
+    const enabled = isCorewardMode(rootDir);
+    const paths = Array.isArray(args.paths)
+      ? args.paths.filter((item): item is string => typeof item === "string")
+      : [];
+    const phaseRaw = typeof args.phase === "string" ? args.phase : "codegen";
+    const phase =
+      phaseRaw === "patch" ||
+      phaseRaw === "promote" ||
+      phaseRaw === "forever" ||
+      phaseRaw === "codegen"
+        ? phaseRaw
+        : "codegen";
+    const gate = assertCorewardMode(rootDir, phase, {
+      paths,
+      ticket_id:
+        typeof args.ticket_id === "string" ? args.ticket_id : undefined,
+    });
+    return JSON.stringify(
+      {
+        ok: true,
+        enabled,
+        alias: RELEASE_GATE_MCP_ALIAS,
+        server: RELEASE_GATE_MCP.name,
+        gate,
       },
       null,
       2,

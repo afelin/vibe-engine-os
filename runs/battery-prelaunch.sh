@@ -136,6 +136,13 @@ else
   set_assert ward_sacred false
 fi
 
+# authorize_write + Coreward Mode sacred
+if run_step "authorize_write sacred" npx vitest run src/coreward/authorize-write.test.ts; then
+  set_assert authorize_write_sacred true
+else
+  set_assert authorize_write_sacred false
+fi
+
 # Soft CyberReady — not_installed is success for free path; soft-fail does not hard-fail battery
 if soft_step "CyberReady soft" npx tsx -e '
 import { cyberreadyValidateDelta } from "./src/release-gate/cyberready-bridge.ts";

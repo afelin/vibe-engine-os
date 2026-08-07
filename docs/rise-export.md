@@ -8,7 +8,7 @@ See also: [`docs/PUBLIC.md`](./PUBLIC.md) (short public vs internal contract).
 
 | Repo | Role |
 |------|------|
-| **Engineering** (`afelin/coreward`, formerly `afelin/vibe-engine-os`) | Full source, CI, **`internal/`**, experiments |
+| **Engineering** (`afelin/coreward`, formerly `afelin/Coreward`) | Full source, CI, **`internal/`**, experiments |
 | **RISE public** (RISE GitHub org mirror or docs repo) | Allowlisted export only — white paper, site, proof, operator how-tos, optional engine source |
 
 Strategy **A (default):** keep application/runtime source of truth in the engineering repo; export **documentation and static public site** to RISE GitHub for institutional face and stable Pages URLs. Sync is one-way (engineering → RISE public) on tagged or approved publish SHAs via `npm run public:prepare` → `dist/public/`.
@@ -21,7 +21,7 @@ Strategy B (optional later): full OSS mirror of the engine under RISE GitHub (st
 
 | Path / artifact | Notes |
 |-----------------|-------|
-| `papers/vibe-engine-whitepaper.md` (+ rendered HTML) | Claim-safe technical paper |
+| `papers/coreward-whitepaper.md` (+ rendered HTML) | Claim-safe technical paper |
 | `papers/rise-project-blurb.md` | RI.SE paste + three deep links |
 | `CITATION.cff` | Institute citation hygiene |
 | `site/` public pages (home, whitepaper, adopt, status, legal) | Built by site agent; calm research/engineering tone |
@@ -108,7 +108,7 @@ When mirroring to RISE Pages or a `docs/` site repo:
 ## Related
 
 - Public contract: [`docs/PUBLIC.md`](./PUBLIC.md)  
-- White paper: [`papers/vibe-engine-whitepaper.md`](../papers/vibe-engine-whitepaper.md)  
+- White paper: [`papers/coreward-whitepaper.md`](../papers/coreward-whitepaper.md)  
 - Blurb: [`papers/rise-project-blurb.md`](../papers/rise-project-blurb.md)  
 - Citation: [`CITATION.cff`](../CITATION.cff)  
 - Claim ledger (engineering): `src/launch/claim-ledger.ts`  

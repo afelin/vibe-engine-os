@@ -56,6 +56,12 @@
       "enforceable_by": "mcp"
     },
     {
+      "id": "agent-authorize-write",
+      "category": "agent",
+      "text": "Agents must call authorize_write before proposing file paths when Coreward Mode is on.",
+      "enforceable_by": "mcp"
+    },
+    {
       "id": "agent-resolve-gate",
       "category": "agent",
       "text": "Agents must call resolve_gate for deterministic zero-token paths.",

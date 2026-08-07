@@ -155,6 +155,8 @@ describe("orchestrator troubleshoot routing", () => {
     expect(outcome.heal.reason).toBe("guidance_delivered");
     expect(outcome.heal.outcome).toBe("guidance_delivered");
     expect(outcome.cockpit).toContain("### Next step");
+    expect(outcome.cockpit).not.toContain("## Coreward");
+    // legacy heading also absent
     expect(outcome.cockpit).not.toContain("## Vibe Engine OS");
     const scoreboard = fs.readFileSync(
       path.join(root, ".runs", "scoreboard.ndjson"),

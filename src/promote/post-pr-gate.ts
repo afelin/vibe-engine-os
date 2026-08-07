@@ -50,11 +50,11 @@ async function main() {
   });
 
   if (!check) {
-    console.error("Failed to create Vibe Promotion Gate check run");
+    console.error("Failed to create Coreward Promotion Gate check run");
     process.exit(1);
   }
 
-  console.log(`Vibe Promotion Gate check: ${check.html_url}`);
+  console.log(`Coreward Promotion Gate check: ${check.html_url}`);
   if (!success) process.exit(1);
 }
 

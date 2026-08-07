@@ -24,6 +24,12 @@ function samplePr(overrides: Partial<PullRequestSnapshot> = {}): PullRequestSnap
 }
 
 const greenPromotion: CheckRunSnapshot = {
+  name: "Coreward Promotion Gate",
+  status: "completed",
+  conclusion: "success",
+};
+
+const greenPromotionLegacy: CheckRunSnapshot = {
   name: "Vibe Promotion Gate",
   status: "completed",
   conclusion: "success",
@@ -62,7 +68,7 @@ describe("auto-merge policy", () => {
     expect(verdict.reason).toBe("mergeable_state_blocked");
   });
 
-  it("blocks when Vibe Promotion Gate is missing or not green", () => {
+  it("blocks when Coreward Promotion Gate is missing or not green", () => {
     const verdict = evaluateMergeReadiness(samplePr(), null, greenAttribution);
     expect(verdict.reason).toBe("promotion_gate_not_green");
   });
@@ -81,12 +87,14 @@ describe("auto-merge policy", () => {
     expect(verdict).toMatchObject({ ok: true, reason: "ready_to_merge" });
   });
 
-  it("selects the promotion gate check by name", () => {
+  it("selects the promotion gate check by name (Coreward or legacy alias)", () => {
     const picked = pickPromotionCheck([
       { name: "check", status: "completed", conclusion: "success" },
       greenPromotion,
     ]);
-    expect(picked?.name).toBe("Vibe Promotion Gate");
+    expect(picked?.name).toBe("Coreward Promotion Gate");
+    const legacy = pickPromotionCheck([greenPromotionLegacy]);
+    expect(legacy?.name).toBe("Vibe Promotion Gate");
   });
 
   it("selects the attribution audit check by name", () => {

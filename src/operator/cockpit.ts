@@ -41,6 +41,8 @@ export type CockpitManifest = {
     durationMs?: number;
     attempts?: number;
     tokensEstimate?: number;
+    contextChars?: number;
+    gateHit?: boolean;
     hallucinationBlocked?: boolean;
   };
 };
@@ -203,7 +205,7 @@ export function renderCockpitComment(
   const wardLine = renderWardLine(rootDir, manifest?.runId);
 
   const plainBlock = [
-    "## Vibe Engine OS",
+    "## Coreward",
     "",
     prUrl ? `**Pull request:** [Open PR](${prUrl})` : undefined,
     prUrl ? "" : undefined,
@@ -213,6 +215,8 @@ export function renderCockpitComment(
     gauntletLine ? "" : undefined,
     tokensSavedLine,
     tokensSavedLine ? "" : undefined,
+    renderSavingsLine(manifest),
+    renderSavingsLine(manifest) ? "" : undefined,
     wardLine,
     wardLine ? "" : undefined,
     "### What's happening",
@@ -405,8 +409,30 @@ export function renderTokensSavedLine(manifest?: CockpitManifest): string | unde
       manifest?.metrics?.firstPassGreen &&
       (manifest.metrics.gateIdsFailed?.length ?? 0) === 0);
 
-  if (!zeroToken) return undefined;
-  return "**This run saved ~4000 tokens** (zero-token gate path)";
+  if (manifest?.metrics?.gateHit === true || zeroToken) {
+    return "**This run saved ~4000 tokens** (zero-token gate path)";
+  }
+  return undefined;
+}
+
+/** Day-one savings: gate_hit / contextChars / tokensEstimate — visible in cockpit. */
+export function renderSavingsLine(manifest?: CockpitManifest): string | undefined {
+  const m = manifest?.metrics;
+  if (!m) return undefined;
+  const parts: string[] = [];
+  if (m.gateHit !== undefined) {
+    parts.push(`gate_hit=${m.gateHit ? "yes" : "no"}`);
+  } else if (m.tokensEstimate === 0 && m.firstPassGreen) {
+    parts.push("gate_hit=yes");
+  }
+  if (typeof m.contextChars === "number") {
+    parts.push(`contextChars=${m.contextChars}`);
+  }
+  if (typeof m.tokensEstimate === "number") {
+    parts.push(`tokensEstimate=${m.tokensEstimate}`);
+  }
+  if (parts.length === 0) return undefined;
+  return `**Savings:** ${parts.join(" · ")}`;
 }
 
 /** Cockpit one line: mandate_id + last DENY reason + gate-used when Mandate present. */

@@ -1,4 +1,4 @@
-# vibe-engine-os: Portable Promotion Primitives for Agent-Written Code
+# Coreward: Portable Promotion Primitives for Agent-Written Code
 
 **Technical white paper (claim-safe)**  
 **Version:** `UNPUBLISHED` — replace with release tag at publish  
@@ -8,13 +8,13 @@
 
 > **Honesty note.** This document describes free open-source software mechanisms that run on the operator’s own GitHub repository and CI. It does not claim certification, legal compliance, absolute percentages, or commercial product tiers. Capsules are **tamper-evident**, not tamper-proof. Hosted receipt verify and live CyberReady signed buyer proof remain **unclaimed** until those products exist. An optional signed **Mandate** (session budget) enables engine-path **Ward** checks on CI/promote when present; IDE Edit/Shell and out-of-band MCP soft paths can still bypass Ward—product claim is limited to *CI/promote cannot move without Ward when a Mandate is on*, not universal IDE interception.
 
-**In plain terms:** vibe-engine-os is a **promotion gate**—models may propose changes; house rules and automated checks decide what may land in Git. A signed **Mandate** is a session work-order (budget); **Ward** is the CI/promote check that enforces it when present. Capsule and `ward_decision` **receipts are evidence, never authorization**—promote always re-verifies.
+**In plain terms:** Coreward is a **promotion gate**—models may propose changes; house rules and automated checks decide what may land in Git. A signed **Mandate** is a session work-order (budget); **Ward** is the CI/promote check that enforces it when present. Capsule and `ward_decision` **receipts are evidence, never authorization**—promote always re-verifies.
 
 ---
 
 ## Abstract
 
-vibe-engine-os is a **promotion gate** for AI-assisted software change: generative models may propose artifacts; house rules (vows, house mandates, bonds, gates) and automated checks decide what may land in Git. The portable core is a set of OSS primitives—TaskBond, house mandate evaluation, optional signed **Mandate** (session contract) with engine-path **Ward**, zero-token release gates, a depth dial, forever-loop automation, capsules with HPURL proof links, deterministic replay, an adversarial gauntlet, MCP tool surfaces, light heal/Pearl operators, and Assisted-by attribution—that make agent work **bounded, replayable, and evidence-bearing**.
+Coreward is a **promotion gate** for AI-assisted software change: generative models may propose artifacts; house rules (vows, house mandates, bonds, gates) and automated checks decide what may land in Git. The portable core is a set of OSS primitives—TaskBond, house mandate evaluation, optional signed **Mandate** (session contract) with engine-path **Ward**, zero-token release gates, a depth dial, forever-loop automation, capsules with HPURL proof links, deterministic replay, an adversarial gauntlet, MCP tool surfaces, light heal/Pearl operators, and Assisted-by attribution—that make agent work **bounded, replayable, and evidence-bearing**.
 
 The engine is **regulation-agnostic**. Optional posture packs are **house-rule overlays** (path forbids and approval prefixes). They are not NIS2, CRA, or any statute. An optional CyberReady bridge is documented as **Planned** only: when absent it fail-opens and does not block promotion.
 
@@ -30,7 +30,7 @@ Coding agents expand the volume of proposed diffs faster than review and policy 
 4. **Silent guardrail rot** — promotion checks pass while refusal behavior quietly weakens.
 5. **Opaque authorship** — AI assistance is unmarked in commit history.
 
-vibe-engine-os addresses these with **structural** controls (bonds, mandates, gates) and **evidence** (capsule hash, event log replay, gauntlet baseline), not with marketing guarantees.
+Coreward addresses these with **structural** controls (bonds, mandates, gates) and **evidence** (capsule hash, event log replay, gauntlet baseline), not with marketing guarantees.
 
 ---
 
@@ -51,8 +51,11 @@ Invariant (from vows): **No promotion without green** typecheck and tests; forbi
 ## 3. Architecture overview
 
 ```text
-Issue / MCP / agent
+Any agent (Cursor / Claude / OpenCode / Kimi / …)
         │
+        ▼
+  authorize_write ──► house AND Mandate pathFilter AND AgentId budget
+        │              ticket_id (Coreward Mode) · prefer_gate?
         ▼
   TaskBond seal ──► house mandate eval (base + optional posture pack)
         │              ▲ AND SignedMandate (session) when present
@@ -60,16 +63,16 @@ Issue / MCP / agent
   Ward assert (engine path only, if Mandate loaded)
         │
         ▼
-  Zero-token gate match? ──yes──► deterministic patch
+  Zero-token gate match? ──yes──► deterministic patch ($0)
         │ no
         ▼
   Depth-capped plan / codegen / verify  (context shrink if Mandate)
-        │
+        │              optional private/on-prem model slot
         ▼
   Capsule + events.ndjson (incl. ward_decision) + HPURL comment
-        │
+        │              lessons → .evomem (local IP)
         ▼
-  Replay + gauntlet + attribution + Vibe Promotion Gate
+  Replay + gauntlet + attribution + Coreward Promotion Gate
         │
         ▼
   Git promotion (optional auto-merge when checks green)
@@ -81,16 +84,19 @@ Constitution artifacts live under a Zod catalog (`@xmachines/play-*` + local sch
 
 | Module | Contribution |
 |--------|----------------|
+| **`authorize_write`** | One-call preflight for any agent; mints ticket; prefers zero-token gate |
+| **Coreward Mode** | Fail-closed forever codegen/patch/promote without ticket or Mandate (not an IDE kernel sandbox) |
 | TaskBond | Declares the file set a run may touch |
 | House `mandates.json` | Standing forbids / approval prefixes |
 | SignedMandate | Session work-order/budget; cannot widen house forbids |
 | Ward | Enforce-before-execute on engine path when Mandate present |
+| **AgentId** | Portable actor profile; gels via Mandate `authorized_actor` |
 | Context shrink | Filters planner/lesson paths to Mandate constraints |
-| Zero-token gates | Deterministic patches; preferred when Mandate paths match |
+| Zero-token gates | Deterministic patches (≥12); preferred when paths ⊆ a gate |
 | Capsule / HPURL | Tamper-evident fingerprint + proof link fragment |
+| Local lessons | `.evomem/lessons.ndjson` — org scar tissue / retrieval “weights” on disk |
 | Pearl | Ops narrative over heal/DENY deltas |
-| Claim ledger | Claims ↔ asserts; unclaimed IDs never pass |
-| **AgentId** | Portable actor profile (`src/agent-id`); gels via Mandate `authorized_actor` → `resolveProfile`—not eIDAS |
+| Claim ledger | Claims ↔ asserts; `ide_ward_interceptor` stays unclaimed |
 
 ---
 
@@ -115,7 +121,21 @@ A **Signed Mandate** (catalog `SignedMandate`, file `.vibe/active_mandate.json`)
 
 **Option B `/approve`:** when the Mandate path is active and a runner key is available, `/approve` may mint a short-lived CI-signed override Mandate (`authorized_actor=github-ci-bot-override`). The human who typed the comment is recorded as `approving_comment_actor` for audit only—this is **not** human cryptographic signature.
 
-**Zero-token gates** (`src/release-gate/gates.json`, MCP `resolve_gate` / `list_gates`) match issue title/body to deterministic patch templates. Matched chores need no LLM call—by construction, token cost for those templates is zero. Agents are expected to call `resolve_gate` before invoking generative codegen; when Mandate paths ⊆ a gate, prefer the gate.
+**Zero-token gates** (`src/release-gate/gates.json`, MCP `resolve_gate` / `list_gates`) match issue title/body to deterministic patch templates (≥12 chores). Matched chores need no LLM call—by construction, token cost for those templates is zero. Agents call `authorize_write` (which may return `prefer_gate`) and/or `resolve_gate` before generative codegen.
+
+**`authorize_write` / Coreward Mode.** One MCP+CLI contract wraps house `evaluate_mandate` AND Signed Mandate `pathFilter` (when present) AND AgentId effective budget, returning `{ ok, ticket_id, paths, reason, prefer_gate? }`. With Coreward Mode on (`.vibe/coreward-mode.json` or `COREWARD_MODE=1`), the forever engine path fail-closes without a valid ticket or verified Mandate. Honesty: this is **not** a kernel IDE sandbox; Edit/Shell outside the engine path remain out of band. Host packs: [docs/host-packs.md](../docs/host-packs.md).
+
+---
+
+## 5b. Local-first savings & private-model ready
+
+Coreward does **not** train or host foundation weights. It **reduces what you must send** to any model and **keeps governance + memory local** so a future private/on-prem model plugs into the same `authorize_write` → Ward → promote path.
+
+**Day one:** match gates before LLM; use Mandate/AgentId path and context caps; set `VIBE_DEPTH`; read cockpit **Savings** (`gate_hit`, `contextChars`, `tokensEstimate`).
+
+**Local “weights” (IP that stays yours):** lessons in `.evomem/lessons.ndjson`, capsules/events under `.runs/`, Mandates/AgentId/house law under `.vibe/` and `src/policy/`, and the gate catalog. Policy is portable when inference moves in-house.
+
+**Claim-safe:** when gates miss, bounded prompts may still leave the building—Coreward **reduces and bounds** exposure; it does not claim absolute zero IP egress. Operator checklist: [docs/local-first-savings.md](../docs/local-first-savings.md).
 
 ---
 
@@ -164,7 +184,7 @@ Replay is a **determinism and integrity check for the recorded machine path**, n
 
 ## 10. Gauntlet
 
-The TaskBond gauntlet (`npm run eval:bond`) executes a fixed adversarial suite (bond + mandate scenarios, including legal-space overlays). Results are compared to a locked baseline; drift that weakens refusal behavior fails the suite. The suite is wired into **Vibe Promotion Gate** preflight so weakening guards blocks merge when the check is required on the branch.
+The TaskBond gauntlet (`npm run eval:bond`) executes a fixed adversarial suite (bond + mandate scenarios, including legal-space overlays). Results are compared to a locked baseline; drift that weakens refusal behavior fails the suite. The suite is wired into **Coreward Promotion Gate** preflight so weakening guards blocks merge when the check is required on the branch.
 
 Coverage is **exactly the scenarios in the suite**. Expanding the suite expands covered refusal classes; uncovered attack classes are not implied safe.
 
@@ -174,9 +194,9 @@ A separate red-team pack exercises additional adversarial cases for launch readi
 
 ## 11. MCP surface
 
-The `vibe-release-gates` MCP server exposes live rulebook tools to Cursor and other MCP clients, including (non-exhaustive): `evaluate_mandate`, `resolve_gate`, `list_gates`, `seal_bond`, `validate_bond`, `constitution_schemas`, `validate_capsule`, `build_scoped_context`, `recall_lessons`, `list_stackables`, `set_legal_space`, `get_active_stack`, and optional `cyberready_validate_delta`.
+The `coreward-release-gates` MCP server (alias `vibe-release-gates`) exposes live rulebook tools to Cursor and other MCP clients, including (non-exhaustive): `authorize_write`, `coreward_mode_status`, `evaluate_mandate`, `resolve_gate`, `list_gates`, `seal_bond`, `validate_bond`, `constitution_schemas`, `validate_capsule`, `build_scoped_context`, `recall_lessons`, `list_stackables`, `set_legal_space`, `get_active_stack`, `resolve_agent_profile`, and optional `cyberready_validate_delta`.
 
-Smoke: `npm run gate:mcp`. The same constitution applies whether the agent is in-IDE or in Actions—reducing “rules only in one tool” bypass, provided operators actually enable the MCP and follow the skill vows.
+Smoke: `npm run gate:mcp` / `npm run coreward:authorize`. The same constitution applies whether the agent is in-IDE or in Actions—reducing “rules only in one tool” bypass, provided operators enable the MCP and follow the skill vows. Adapter manifest v2 lists `required_tools: ["authorize_write"]`.
 
 ---
 
@@ -200,7 +220,7 @@ Default GitHub `/troubleshoot` caps at L1. Heal outcomes can be recorded in run 
 
 ## 13. Assisted-by attribution and AgentId
 
-On pull requests, an attribution audit blocks merge when commit messages mention AI tooling without an `Assisted-by:` trailer. The engine tags its own commits `Assisted-by: vibe-engine-os`.
+On pull requests, an attribution audit blocks merge when commit messages mention AI tooling without an `Assisted-by:` trailer. The engine tags its own commits `Assisted-by: coreward`.
 
 **AgentId** (`src/agent-id`) is the portable actor-profile primitive shared by Ward, MCP, and CI. Session identity on a Signed Mandate is the string field `authorized_actor`, resolved via `resolveProfile(actor)` against the principals trust file (optional path/budget caps tighten only). That is **authorized actor + optional efficiency defaults**, not organizational PKI and not eIDAS QWAC/QES conformity. A lean interoperable “Agent Binding” (key + optional attestation ref) may extend principals later without claiming legal identity assurance. Ward imports AgentId; AgentId must not import Ward. Operator note: [docs/agent-identity.md](../docs/agent-identity.md).
 
@@ -222,14 +242,14 @@ On pull requests, an attribution audit blocks merge when commit messages mention
 | Boundary | Assumption | Residual risk |
 |----------|------------|---------------|
 | Operator workstation / agent IDE | Operator chooses models and MCP enablement | Malicious or misconfigured agents that skip MCP vows |
-| vibe-engine-os code + vows | Reviewed and activated (`npm run activate`) | Bugs or incomplete gauntlet coverage |
+| Coreward code + vows | Reviewed and activated (`npm run activate`) | Bugs or incomplete gauntlet coverage |
 | **GitHub** (Issues, Actions, Checks, API) | **Subprocessor for hosting, CI, and collaboration** | GitHub outages; compromised Actions; privileged token misuse; log retention policies outside this project |
 | Optional external LLM APIs | Used only when depth/heal dials call them | Prompt injection, data exfiltration to providers |
 | Optional CyberReady socket | Fail-open when not installed | Not a substitute for compliance tooling |
 
 ### Honesty: GitHub as subprocessor
 
-vibe-engine-os **does not replace GitHub**. Issue text, Actions logs, PR metadata, and artifacts transit GitHub’s infrastructure under the repository owner’s GitHub agreement. Capsules and HPURLs improve **evidence legibility for governed runs**; they do not magically extend trust into GitHub’s control plane. Operators who need stronger independence must export proofs and retain copies outside GitHub.
+Coreward **does not replace GitHub**. Issue text, Actions logs, PR metadata, and artifacts transit GitHub’s infrastructure under the repository owner’s GitHub agreement. Capsules and HPURLs improve **evidence legibility for governed runs**; they do not magically extend trust into GitHub’s control plane. Operators who need stronger independence must export proofs and retain copies outside GitHub.
 
 ### Out of scope (non-claims)
 
@@ -264,7 +284,7 @@ Public status pages and this paper show **one Planned box** for CyberReady. Do n
 Portable primitive path (no greenfield requirement):
 
 ```bash
-# From a clone of vibe-engine-os:
+# From a clone of Coreward:
 bash runs/adopt.sh /path/to/target-repo
 # or, already installed in-tree:
 bash runs/adopt.sh .
@@ -274,10 +294,11 @@ bash runs/adopt.sh .
 
 After adopt:
 
-1. Enable branch protection / required **Vibe Promotion Gate** as appropriate for the target repo.  
-2. Enable MCP from `mcp.json` for Cursor agents.  
-3. Open a Vibe Request or Starter issue; label `vibe/run` for the forever loop.  
+1. Enable branch protection / required **Coreward Promotion Gate** as appropriate for the target repo.  
+2. Enable MCP from `mcp.json` (`coreward-release-gates`) for Cursor agents.  
+3. Open a Vibe Request or Starter issue; label `vibe/run` for the forever loop (dual-read `vibe/*` labels).  
 4. Optionally set legal space via MCP (`set_legal_space`) — house rules only.
+5. Optionally enable Coreward Mode and require `authorize_write` before agent edits.
 
 The Aha path (issue → PR + receipt, gauntlet, MCP, zero-token gates) is intended to remain free to run on the operator’s own infrastructure. Internal monetization notes, if any, are **not** part of this paper or the public site allowlist (see [`docs/rise-export.md`](../docs/rise-export.md)).
 
@@ -299,7 +320,7 @@ Preferred machine-readable citation: repository root [`CITATION.cff`](../CITATIO
 
 Plain-text form (fill version, date, and SHA at publish):
 
-> vibe-engine-os contributors. *vibe-engine-os: Portable Promotion Primitives for Agent-Written Code*. Technical white paper, version VERSION (YYYY-MM-DD). Source SHA: COMMIT_SHA. Available at: https://github.com/afelin/coreward
+> Coreward contributors. *Coreward: Portable Promotion Primitives for Agent-Written Code*. Technical white paper, version VERSION (YYYY-MM-DD). Source SHA: COMMIT_SHA. Available at: https://github.com/afelin/coreward
 
 When citing a specific mechanism (bond, capsule, gauntlet), include the commit SHA so readers can resolve exact schemas and baselines.
 
@@ -322,14 +343,16 @@ Until publish, leave placeholders (`UNPUBLISHED`, `YYYY-MM-DD`, `TO_BE_FILLED_AT
 | Path | Entry |
 |------|-------|
 | Nocode | GitHub Vibe Request / Starter issue → `vibe/run` |
-| Cursor | `npm run activate` + MCP + `.cursor/skills/vibe-engine` |
-| External agent | Adapter + Agent Protocol + same MCP tools |
+| Cursor | `npm run activate` + MCP + `.cursor/skills/coreward` |
+| External agent | Adapter v2 + Agent Protocol + `authorize_write` |
 | Evidence before storytelling | `npm run battery:prelaunch` (claim ledger honesty compiler) |
 
 ---
 
 ## Appendix B — Related in-repo docs
 
+- [`docs/host-packs.md`](../docs/host-packs.md) — Cursor / Claude / OpenCode / Kimi  
+- [`docs/local-first-savings.md`](../docs/local-first-savings.md) — day-one savings + local lessons as IP  
 - [`docs/start-here.md`](../docs/start-here.md) — five-minute paths  
 - [`docs/ward-security.md`](../docs/ward-security.md) — Mandate–Ward invariant, STRICT checklist, Actions secrets  
 - [`docs/agent-identity.md`](../docs/agent-identity.md) — AgentId gel rules and claims  

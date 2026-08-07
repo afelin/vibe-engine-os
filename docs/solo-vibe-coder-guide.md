@@ -2,9 +2,9 @@
 
 See also: [docs/start-here.md](./start-here.md)
 
-*You write intent. AI builds. vibe-engine-os guards, records, and ships — with receipts.*
+*You write intent. AI builds. Coreward guards, records, and ships — with receipts.*
 
-This guide is for a **solo founder or operator** using vibe-engine-os with Cursor (or similar) to build products like a CyberReady MVP. No deep engineering background required.
+This guide is for a **solo founder or operator** using Coreward with Cursor (or similar) to build products like a CyberReady MVP. No deep engineering background required.
 
 For the business case and stakeholder framing, see [Plain-Language Briefing](./plain-language-briefing.md). For agent/MCP integration details, see [Agent Protocol](./agent-protocol.md).
 
@@ -28,7 +28,7 @@ After a successful run, the cockpit comment includes a **Receipt link** — clic
 - **Gauntlet** — 23+ scenarios including adversarial “break-in” attempts must stay blocked
 - **Replay gate** — re-runs every completed flight from its event ledger; mismatch blocks promotion
 - **Attribution audit** — PRs mentioning AI tools without `Assisted-by:` do not merge
-- **Auto-merge (opt-in)** — label `vibe/auto-merge` only; requires green **Vibe Promotion Gate**
+- **Auto-merge (opt-in)** — label `vibe/auto-merge` only; requires green **Coreward Promotion Gate**
 
 ---
 
@@ -47,7 +47,7 @@ From the repo root:
 
 ```bash
 git clone https://github.com/afelin/coreward.git
-cd vibe-engine-os
+cd Coreward
 nvm use          # or: nvm install 22 && nvm use
 npm run activate
 ```
@@ -77,7 +77,7 @@ npm run gate:mcp   # smoke-test the MCP server
 
 **Why it matters:** while you chat with Cursor, the agent can ask live: “May I edit this file?” instead of discovering violations hours later in CI.
 
-The bundled skill at `.cursor/skills/vibe-engine` reminds agents to call `evaluate_mandate` and `resolve_gate` before edits.
+The bundled skill at `.cursor/skills/coreward` reminds agents to call `evaluate_mandate` and `resolve_gate` before edits.
 
 ---
 
@@ -96,7 +96,7 @@ Fill in:
 
 Submit. The template adds `vibe/run` by default.
 
-**Watch:** GitHub Actions workflow **Sovereign OS Event Bus** (`forever.yml`). When it finishes, you get a PR with checks including **Vibe Promotion Gate**.
+**Watch:** GitHub Actions workflow **Sovereign OS Event Bus** (`forever.yml`). When it finishes, you get a PR with checks including **Coreward Promotion Gate**.
 
 ---
 
@@ -183,17 +183,17 @@ Exit code 0 = replayed state matches stored snapshot.
 
 | Check | What it means |
 | --- | --- |
-| **Vibe Promotion Gate** | Preflight passed: gauntlet green, bond valid, capsule/replay OK |
+| **Coreward Promotion Gate** | Preflight passed: gauntlet green, bond valid, capsule/replay OK |
 | **TDD attribution** | Commits mentioning AI tools have `Assisted-by:` (or `Co-authored-by:` with an AI tool) |
 | **Replay determinism gate** | Event ledger replays to the same ending hash |
 | **Auto-merge (optional)** | With label `vibe/auto-merge`, merges automatically when all checks are green |
 
-Require **Vibe Promotion Gate** on `main` in branch protection for production repos.
+Require **Coreward Promotion Gate** on `main` in branch protection for production repos.
 
 ### Optional autonomous merge
 
 1. Add label **`vibe/auto-merge`** to the PR when you are ready for hands-off merge.
-2. Ensure branch protection requires **Vibe Promotion Gate** (and attribution audit).
+2. Ensure branch protection requires **Coreward Promotion Gate** (and attribution audit).
 3. When CI finishes green, `vibe-auto-merge.yml` squash-merges — no manual button.
 
 Repo-wide opt-in: GitHub **Settings → Secrets and variables → Actions → Variables** → `VIBE_AUTO_MERGE=1` (skips label requirement; use carefully).
@@ -210,7 +210,7 @@ npm run pr:auto-merge -- 15 --dry-run
 
 ## Install into your own product repo
 
-To use vibe-engine-os as a layer on CyberReady or another app:
+To use Coreward as a layer on CyberReady or another app:
 
 ```bash
 bash runs/install-into-repo.sh /path/to/your-repo

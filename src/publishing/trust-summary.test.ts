@@ -80,7 +80,7 @@ describe("renderTrustSummary", () => {
     const summary = renderTrustSummary(baseCtx());
 
     expect(summary).toContain("## Trust summary");
-    expect(summary).toMatch(/Vibe Promotion Gate.*pass|✅/i);
+    expect(summary).toMatch(/Coreward Promotion Gate.*pass|Vibe Promotion Gate.*pass|✅/i);
     expect(summary).toMatch(/attribution.*fail|❌/i);
     expect(summary).toContain("attribution_gate_not_green");
     expect(summary).toMatch(/Next action/i);

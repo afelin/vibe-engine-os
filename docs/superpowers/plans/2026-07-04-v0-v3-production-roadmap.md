@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship `vibe-engine-os` as a low-maintenance, no-code-safe autonomous delivery runtime in staged layers instead of attempting the full recursive architecture at once.
+**Goal:** Ship `Coreward` as a low-maintenance, no-code-safe autonomous delivery runtime in staged layers instead of attempting the full recursive architecture at once.
 
 **Architecture:** V0 stabilizes the current GitHub Actions agent, V1 adds xmachines/DAG governance and reversible no-code controls, V2 adds structured learning with Pearl-style traces and LCM-lite memory, and V3 distributes the runtime across Cloudflare and Oracle Free Tier. The system follows the nanochat taste profile: one clear dial, complete loop, tight evals, repeatable scripts, and measurable scoreboards.
 

@@ -1,6 +1,6 @@
 # Vibe AI Orchestrator
 
-Thin routing layer over the existing vibe-engine-os stack — no duplicate gate logic, no parallel ledger.
+Thin routing layer over the existing Coreward stack — no duplicate gate logic, no parallel ledger.
 
 ## Commands
 
@@ -93,7 +93,7 @@ Other MCP tools (`list_gates`, `preview_gate`, `evaluate_mandate`, `seal_bond`, 
 
 ## Failed CI check → packet
 
-`packetFromFailedCheck` / `packetFieldsFromFailedCheck` in `diagnose.ts` map check names (**Vibe Promotion Gate**, Assisted-by attribution, `npm check`) into `TroubleshootPacket` fields for `npm run orchestrate -- troubleshoot`.
+`packetFromFailedCheck` / `packetFieldsFromFailedCheck` in `diagnose.ts` map check names (**Coreward Promotion Gate**, Assisted-by attribution, `npm check`) into `TroubleshootPacket` fields for `npm run orchestrate -- troubleshoot`.
 
 ## npm diagnostics (verify step)
 

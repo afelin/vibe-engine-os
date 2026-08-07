@@ -20,8 +20,9 @@ These vows codify [agent.md](agent.md) directives and promotion principles into 
 
 ## Agent Vows (MCP obligations)
 
-1. **`evaluate_mandate`** — call before proposing any file paths.
+1. **`evaluate_mandate`** — call before proposing any file paths (or use `authorize_write`).
 2. **`resolve_gate`** — check deterministic gates before invoking LLM codegen.
+3. **`authorize_write`** — Coreward Mode preflight; never propose paths without a ticket when mode is on.
 3. **`constitution_schemas`** — cite catalog JSON Schema for all structured output.
 
 ## Attestation

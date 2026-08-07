@@ -131,9 +131,9 @@ export function printPersonaQuickstart(): void {
     "",
     "Persona quickstart:",
     "  Lone AI engineer:  npm run activate  →  issue + vibe/run label or /vibe in body",
-    "  Agentic engineer:  enable MCP (mcp.json) + .cursor/skills/vibe-engine",
-    "  Agents:            docs/agent-protocol.md + constitution_schemas",
-    "  Enterprise:        required Vibe Promotion Gate check on PR",
+    "  Agentic engineer:  enable MCP (mcp.json) + .cursor/skills/coreward",
+    "  Agents:            docs/agent-protocol.md + authorize_write + constitution_schemas",
+    "  Enterprise:        required Coreward Promotion Gate check on PR",
     "",
   ];
   process.stdout.write(lines.join("\n"));

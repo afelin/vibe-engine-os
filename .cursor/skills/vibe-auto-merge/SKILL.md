@@ -1,6 +1,6 @@
 ---
 name: vibe-auto-merge
-description: Opt-in autonomous PR merge when Vibe Promotion Gate and branch protection checks are green.
+description: Opt-in autonomous PR merge when Coreward Promotion Gate and branch protection checks are green.
 ---
 
 # Vibe Auto Merge
@@ -18,7 +18,7 @@ Repo-wide bypass (use sparingly): set GitHub repository variable **`VIBE_AUTO_ME
 ### Preconditions (all must pass)
 
 1. PR is open and `mergeable_state` is **clean** (branch protection + required checks satisfied).
-2. **Vibe Promotion Gate** check on the PR head SHA is **success**.
+2. **Coreward Promotion Gate** check on the PR head SHA is **success**.
 3. Label `vibe/auto-merge` is present (unless `VIBE_AUTO_MERGE=1`).
 
 The workflow `.github/workflows/vibe-auto-merge.yml` runs on PR updates and when check suites complete. It squash-merges via the GitHub API.
@@ -51,5 +51,5 @@ npm run pr:auto-merge -- 15 --dry-run
 
 - `missing_auto_merge_label` — add label or set repo variable `VIBE_AUTO_MERGE=1`.
 - `mergeable_state_blocked` — wait for CI or fix failing checks.
-- `promotion_gate_not_green` — Vibe Promotion Gate must succeed on the PR head commit.
+- `promotion_gate_not_green` — Coreward Promotion Gate must succeed on the PR head commit.
 - `missing_github_token` — set `GITHUB_TOKEN` / `GH_TOKEN` with `pull_requests: write`.
