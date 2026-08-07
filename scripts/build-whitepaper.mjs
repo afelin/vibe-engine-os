@@ -25,7 +25,7 @@ const FONT_LINKS = `  <link rel="preconnect" href="https://fonts.googleapis.com"
   <link rel="stylesheet" href="../css/site.css" />`;
 
 /** GitHub blob base for repo files linked from the paper (Pages has no docs/). */
-const REPO_BLOB = "https://github.com/afelin/vibe-engine-os/blob/main";
+const REPO_BLOB = "https://github.com/afelin/coreward/blob/main";
 
 /** Site-local path segments under site/ — keep relative for project Pages. */
 const SITE_LOCAL = /^(?:\.\.\/)?(?:css|adopt|status|legal|proof|whitepaper)(?:\/|$)/;
@@ -285,7 +285,7 @@ function buildWhitepaper() {
     const body = `<h1>${title}</h1>
 <p>Manuscript source <code>papers/vibe-engine-whitepaper.md</code> is not in this tree yet.</p>
 <p>When that file lands, re-run <code>node scripts/build-whitepaper.mjs</code> (or the Pages workflow) to regenerate this page.</p>
-<p>See <a href="https://github.com/afelin/vibe-engine-os">the repository</a> and <a href="../adopt/">Adopt</a> for how to run the engine.</p>`;
+<p>See <a href="https://github.com/afelin/coreward">the repository</a> and <a href="../adopt/">Adopt</a> for how to run the engine.</p>`;
     fs.writeFileSync(
       OUT_HTML,
       wrapPage({

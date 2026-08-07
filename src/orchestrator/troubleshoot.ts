@@ -91,7 +91,7 @@ export function hpurlFromValidatedCapsule(
       return undefined;
     }
     return buildProofHpurl(
-      process.env.VIBE_PROOF_BASE ?? "https://afelin.github.io/vibe-engine-os/proof",
+      process.env.VIBE_PROOF_BASE ?? "https://afelin.github.io/coreward/proof",
       {
         runId,
         capsuleHash: parsed.capsuleHash,
