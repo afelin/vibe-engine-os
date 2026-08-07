@@ -12,7 +12,7 @@
 
 ## Abstract
 
-vibe-engine-os is a **promotion gate** for AI-assisted software change: generative models may propose artifacts; house rules (vows, mandates, bonds, gates) and automated checks decide what may land in Git. The portable core is a set of OSS primitives—TaskBond, mandate evaluation, zero-token release gates, a depth dial, forever-loop automation, capsules with HPURL proof links, deterministic replay, an adversarial gauntlet, MCP tool surfaces, light heal/Pearl operators, and Assisted-by attribution—that make agent work **bounded, replayable, and evidence-bearing**.
+vibe-engine-os is a **promotion gate** for AI-assisted software change: generative models may propose artifacts; house rules (vows, house mandates, bonds, gates) and automated checks decide what may land in Git. The portable core is a set of OSS primitives—TaskBond, house mandate evaluation, optional signed **Mandate** (session contract) with engine-path **Ward**, zero-token release gates, a depth dial, forever-loop automation, capsules with HPURL proof links, deterministic replay, an adversarial gauntlet, MCP tool surfaces, light heal/Pearl operators, and Assisted-by attribution—that make agent work **bounded, replayable, and evidence-bearing**.
 
 The engine is **regulation-agnostic**. Optional posture packs are **house-rule overlays** (path forbids and approval prefixes). They are not NIS2, CRA, or any statute. An optional CyberReady bridge is documented as **Planned** only: when absent it fail-opens and does not block promotion.
 
@@ -52,16 +52,19 @@ Invariant (from vows): **No promotion without green** typecheck and tests; forbi
 Issue / MCP / agent
         │
         ▼
-  TaskBond seal ──► mandate eval (base + optional posture pack)
+  TaskBond seal ──► house mandate eval (base + optional posture pack)
+        │              ▲ AND SignedMandate (session) when present
+        ▼
+  Ward assert (engine path only, if Mandate loaded)
         │
         ▼
   Zero-token gate match? ──yes──► deterministic patch
         │ no
         ▼
-  Depth-capped plan / codegen / verify
+  Depth-capped plan / codegen / verify  (context shrink if Mandate)
         │
         ▼
-  Capsule + events.ndjson + HPURL comment
+  Capsule + events.ndjson (incl. ward_decision) + HPURL comment
         │
         ▼
   Replay + gauntlet + attribution + Vibe Promotion Gate
@@ -72,24 +75,45 @@ Issue / MCP / agent
 
 Constitution artifacts live under a Zod catalog (`@xmachines/play-*` + local schemas). Structured outputs that fail schema validation do not promote.
 
+### Module contribution map (brief)
+
+| Module | Contribution |
+|--------|----------------|
+| TaskBond | Declares the file set a run may touch |
+| House `mandates.json` | Standing forbids / approval prefixes |
+| SignedMandate | Session work-order/budget; cannot widen house forbids |
+| Ward | Enforce-before-execute on engine path when Mandate present |
+| Context shrink | Filters planner/lesson paths to Mandate constraints |
+| Zero-token gates | Deterministic patches; preferred when Mandate paths match |
+| Capsule / HPURL | Tamper-evident fingerprint + proof link fragment |
+| Pearl | Ops narrative over heal/DENY deltas |
+| Claim ledger | Claims ↔ asserts; unclaimed IDs never pass |
+| Agent identity (today) | `authorized_actor` + Assisted-by (+ principals pubkeys)—not eIDAS |
+
 ---
 
 ## 4. TaskBond
 
 A **TaskBond** is a sealed work order: intent (bounded length), expected outcomes, and an explicit list of **bound files** (hard cap, currently 16). Seal and validate flows are available via CLI (`npm run bond:seal`) and MCP (`seal_bond`, `validate_bond`).
 
-At seal and preflight time, the engine rejects bonds that violate mandates (forbidden prefixes, approval-required paths without operator consent, oversized scope). Scope outside the plan ∪ bound set is blocked by bond-compliance checks during the run.
+At seal and preflight time, the engine rejects bonds that violate house mandates (forbidden prefixes, approval-required paths without operator consent, oversized scope). When a verified SignedMandate is loaded, bound paths must also sit inside Mandate path constraints. Scope outside the plan ∪ bound set is blocked by bond-compliance checks during the run.
 
 **What a bond proves:** the run was authorized against a declared file set.  
 **What a bond does not prove:** correctness of business logic, security of dependencies, or regulatory compliance.
 
 ---
 
-## 5. Mandates and zero-token gates
+## 5. House mandates, Signed Mandate, Ward, and zero-token gates
 
-**Mandates** (`src/policy/mandates.json`, evaluated via MCP `evaluate_mandate`) encode house rules: forbidden path prefixes, approval prefixes, max attempts, approver allowlist. High-risk paths require operator `/approve` on the controlling issue.
+**House mandates** (`src/policy/mandates.json`, MCP `evaluate_mandate`) are standing law: forbidden path prefixes, approval prefixes, max attempts, approver allowlist. High-risk paths require operator `/approve` on the controlling issue.
 
-**Zero-token gates** (`src/release-gate/gates.json`, MCP `resolve_gate` / `list_gates`) match issue title/body to deterministic patch templates. Matched chores need no LLM call—by construction, token cost for those templates is zero. Agents are expected to call `resolve_gate` before invoking generative codegen.
+A **Signed Mandate** (catalog `SignedMandate`, file `.vibe/active_mandate.json`) is an opt-in **session contract (budget)**—paths, allowed Ward actions, optional `max_depth`, expiry, and `authorized_actor`—signed Ed25519 and verified against a principals trust file. It is a work-order for the run, not a statement of AI ethics. Absent the file ⇒ legacy house-rules-only behavior (compat). House rules **AND** Mandate: the Mandate cannot widen house forbids.
+
+**Ward** enforces ALLOW/DENY before bond seal, codegen, patch apply, and promote **on the engine path** when a Mandate is present. Decisions append as `ward_decision` receipts in `events.ndjson`. Product claim: *CI/promote cannot move without Ward when a Mandate is on.* IDE Edit/Shell and soft MCP paths can still bypass Ward—do not claim universal IDE interception.
+
+**Option B `/approve`:** when the Mandate path is active and a runner key is available, `/approve` may mint a short-lived CI-signed override Mandate (`authorized_actor=github-ci-bot-override`). The human who typed the comment is recorded as `approving_comment_actor` for audit only—this is **not** human cryptographic signature.
+
+**Zero-token gates** (`src/release-gate/gates.json`, MCP `resolve_gate` / `list_gates`) match issue title/body to deterministic patch templates. Matched chores need no LLM call—by construction, token cost for those templates is zero. Agents are expected to call `resolve_gate` before invoking generative codegen; when Mandate paths ⊆ a gate, prefer the gate.
 
 ---
 
@@ -120,7 +144,7 @@ The loop is **automation on the operator’s GitHub**, not a hosted multi-tenant
 
 ## 8. Capsule, vows hash, and HPURL
 
-Each verified run produces a **capsule**: a cryptographic fingerprint (`capsuleHash`) over run artifacts, plus `vowsHash` (SHA-256 of canonical vows JSON). Changing recorded material invalidates the fingerprint relative to the published capsule—hence **tamper-evident**.
+Each verified run produces a **capsule**: a cryptographic fingerprint (`capsuleHash`) over run artifacts, plus `vowsHash` (SHA-256 of canonical vows JSON). Changing recorded material invalidates the fingerprint relative to the published capsule—hence **tamper-evident**. Together with HPURL links and `ward_decision` events, these form a **receipt trail**—evidence, not certification.
 
 **Claim boundary:** hashes detect mismatch between claimed and recomputed digests. They do not make storage media physically “tamper-proof,” nor do they prove that upstream GitHub or CI logs were unaltered before encapsulation.
 
@@ -172,9 +196,11 @@ Default GitHub `/troubleshoot` caps at L1. Heal outcomes can be recorded in run 
 
 ---
 
-## 13. Assisted-by attribution
+## 13. Assisted-by attribution and agent identity (today)
 
 On pull requests, an attribution audit blocks merge when commit messages mention AI tooling without an `Assisted-by:` trailer. The engine tags its own commits `Assisted-by: vibe-engine-os`.
+
+Session identity on a Signed Mandate is the string field `authorized_actor`, verified against issuer pubkeys in the principals trust file. That is **authorized actor + attribution**, not organizational PKI and not eIDAS QWAC/QES conformity. A lean interoperable “Agent Binding” (key + optional attestation ref) may extend principals later without claiming legal identity assurance.
 
 **Claim boundary:** enforcement is mechanical on **mentioned** AI tools in commit text for PRs that run the check. It does not detect silent omissions where no AI tooling is named.
 

@@ -12,17 +12,20 @@ vibe-engine-os is a **promotion gate**, not a codegen toy. Models propose JSON-s
 
 Truth-driven gates (TDD): **deterministic replay** from `events.ndjson`, **Assisted-by** attribution on PRs, and an **adversarial gauntlet** that proves guardrails block forbidden changes.
 
+**Mandate–Ward (opt-in):** a signed **Mandate** is a session work-order/budget (paths, actions, depth, expiry)—not “AI ethics.” When present, **Ward** enforces ALLOW/DENY on the engine path before bond/codegen/patch/promote. **Receipts** are tamper-evident trails (`ward_decision`, capsule, HPURL)—not certification. Absent Mandate ⇒ legacy house rules only. IDE Edit/Shell can still bypass Ward; the product claim is *CI/promote cannot move without Ward when a Mandate is on*.
+
 ## Capabilities
 
 vibe-engine-os is a **promotion gate**, not a codegen toy. Models propose JSON-shaped artifacts; the constitution catalog and OS machine guards reject bad input before disk write. Only verified snapshots promote to Git. Walkthroughs: [Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md) · [Nocode Quickstart](docs/nocode-quickstart.md) · [Agent Protocol](docs/agent-protocol.md).
 
 | Capability | What you get | How to activate | Status |
 | --- | --- | --- | --- |
-| **TaskBond** | Signed work order — intent, outcomes, bound files (max 16); scope creep blocked at seal time | [Vibe Request](.github/ISSUE_TEMPLATE/vibe-request.yml) issue with 2–4 paths; MCP `seal_bond` / `validate_bond` | Built-in |
-| **Mandates** | House rules: forbidden prefixes, approval prefixes, max attempts, approver allowlist | Edit `src/policy/mandates.json`; MCP `evaluate_mandate` before proposing paths | Built-in |
+| **TaskBond** | Sealed work order — intent, outcomes, bound files (max 16); scope creep blocked at seal time | [Vibe Request](.github/ISSUE_TEMPLATE/vibe-request.yml) issue with 2–4 paths; MCP `seal_bond` / `validate_bond` | Built-in |
+| **House mandates** | Standing law: forbidden prefixes, approval prefixes, max attempts, approver allowlist | Edit `src/policy/mandates.json`; MCP `evaluate_mandate` before proposing paths | Built-in |
+| **Signed Mandate + Ward** | Opt-in session contract (budget); Ward ALLOW/DENY on engine path; context shrink when verified | `npm run mandate:issue` → `.vibe/active_mandate.json`; principals in `src/policy/principals.json` | Built-in |
 | **Zero-token gates** | Deterministic patch templates — no LLM, $0 cost for templated chores | Match issue title/body to `src/release-gate/gates.json`; MCP `resolve_gate` / `list_gates` | Built-in |
 | **VIBE_DEPTH dial** | Volume knob 0–5: explain → plan → safe files → tests → deploy → protected `/approve` | `VIBE_DEPTH` env or labels `vibe:plan-only` / `vibe:safe` / `vibe:ship` | Built-in |
-| **Capsule + receipt** | Tamper-proof run fingerprint (`capsuleHash`, `vowsHash`) + **View proof** HPURL in issue comment | Runs automatically; inspect `proof/index.html` or MCP `validate_capsule` | Built-in |
+| **Capsule + receipt** | Tamper-evident run fingerprint (`capsuleHash`, `vowsHash`) + **View proof** HPURL in issue comment (not a certificate) | Runs automatically; inspect `proof/index.html` or MCP `validate_capsule` | Built-in |
 | **TaskBond gauntlet** | 32/32 adversarial bond + mandate scenarios; baseline ratchet blocks guard drift | `npm run eval:bond`; wired into **Vibe Promotion Gate** preflight | Built-in |
 | **Replay gate** | Flight recorder — re-run `events.ndjson`; mismatch blocks promotion | `npm run replay -- . <runId>`; CI replay determinism check on PRs | Built-in |
 | **Anti-rot** | Scoped context (capped snippets, no repomix fallback), bond compliance (paths outside plan ∪ bound blocked), evidence-linked lessons | MCP `build_scoped_context`, `recall_lessons`; lessons in `.evomem/lessons.ndjson` | Built-in |
@@ -30,6 +33,7 @@ vibe-engine-os is a **promotion gate**, not a codegen toy. Models propose JSON-s
 | **Forever loop** | GitHub issue → plan → codegen → verify → PR + cockpit comment; runs while you sleep | Label `vibe/run` on issue; **Sovereign OS Event Bus** workflow | Built-in |
 | **Cockpit + explain dial** | Issue/PR comment dashboard: depth, hashes, next action, decision explain (off/short/long/expand) | Auto-posted on runs; labels `vibe:explain-short` / `vibe:explain-long` or `VIBE_EXPLAIN` | Built-in |
 | **Operator commands** | Human steering without terminal: `/status`, `/approve`, `/continue`, `/retry`, `/rollback`, `/details`, `/troubleshoot` | Reply on the issue; see [Agent Protocol](docs/agent-protocol.md) | Built-in |
+| **Option B `/approve`** | When Mandate path is on, CI may issue a short-lived signed override Mandate (`github-ci-bot-override`); human is audit-only (`approving_comment_actor`)—not human crypto | Issue comment `/approve` with runner key available | Built-in |
 | **Promotion gate** | **Vibe Promotion Gate** — gauntlet green, bond valid, capsule/replay OK before merge | Require check on `main`; runs on vibe PRs via `vibe-pr-gate.yml` | Built-in |
 | **Assisted-by attribution** | PR blocked if commits mention AI tools without `Assisted-by:` trailer | Automatic on PRs; engine tags its own commits | Built-in |
 | **Auto-merge** | Squash-merge when branch protection + promotion gate green | Label `vibe/auto-merge` or repo var `VIBE_AUTO_MERGE=1` | Built-in |
@@ -45,7 +49,7 @@ vibe-engine-os is a **promotion gate**, not a codegen toy. Models propose JSON-s
 | **Nocode loop** | [Nocode Quickstart](docs/nocode-quickstart.md) → Vibe Request issue → forever loop → receipt → merge (optional `vibe/auto-merge`) — no terminal |
 | **Cursor + MCP** | `npm run activate` + MCP + `.cursor/skills/vibe-engine` → live mandate/gate checks while you edit |
 | **Zero-token chores** | Match gate in `gates.json` + depth 0–2 → deterministic patch, no API keys |
-| **High-trust ship** | TaskBond + gauntlet + replay + promotion gate + attribution → audit-ready PR with capsule proof |
+| **High-trust ship** | TaskBond + Signed Mandate/Ward + gauntlet + replay + promotion gate + attribution → audit-ready PR with capsule receipt |
 
 ### Who it's for
 
@@ -58,10 +62,28 @@ vibe-engine-os is a **promotion gate**, not a codegen toy. Models propose JSON-s
 
 See also the [Persona matrix](#persona-matrix) below for one-step activation paths.
 
+### Module contribution map
+
+| Module | Contribution |
+| --- | --- |
+| **TaskBond** | Declares the file set a run may touch |
+| **House `mandates.json`** | Standing forbids / approval prefixes for every run |
+| **SignedMandate** | Session budget; cannot widen house forbids (AND) |
+| **Ward** | Enforce-before-execute on engine path when Mandate present |
+| **Context shrink** | Filters planner/lesson paths to Mandate constraints |
+| **Zero-token gates** | Deterministic patches preferred when paths match |
+| **Capsule** | Tamper-evident run fingerprint |
+| **HPURL** | Proof link fragment for local/comment verify |
+| **Pearl** | Ops narrative over heal / DENY deltas |
+| **Claim ledger** | Marketing claims ↔ asserts; unclaimed IDs never pass |
+| **Agent identity (today)** | `authorized_actor` + `Assisted-by:` (+ pubkey principals)—not eIDAS |
+
 ### Honest limits
 
 - **Branch protection on private free repos** — enabling required checks on `main` needs admin scope; use GitHub UI (Settings → Branches) when the API returns 403. See [Launch Proof runbook](docs/launch-proof.md#manual-ops-after-proof-passes).
 - **Hosted Pages receipts** — public proof URLs (`DEFAULT_PROOF_BASE`) stay deferred until the repo goes public and Pages is enabled; use local `proof/index.html` or comment hashes on private repos today.
+- **IDE Ward** — Edit/Shell and soft MCP paths can bypass Ward; do not claim universal IDE interception (`ide_ward_interceptor` stays unclaimed).
+- **Receipts ≠ certification** — capsules and `ward_decision` events are tamper-evident evidence, not legal or auditor certification.
 
 ## One-step activation
 
@@ -164,7 +186,8 @@ Set `VIBE_DEPTH` in the environment before `npm run local-issue` or GitHub Actio
 
 ## Customize law (JSON)
 
-- **Mandates:** `src/policy/mandates.json` — forbidden prefixes, approval prefixes, max attempts
+- **House mandates:** `src/policy/mandates.json` — standing forbidden/approval prefixes, max attempts
+- **Signed Mandate:** `.vibe/active_mandate.json` (via `npm run mandate:issue`) — session budget; principals in `src/policy/principals.json`
 - **Gates:** `src/release-gate/gates.json` — deterministic patch templates and matchers
 - **Schemas:** `src/constitution/catalog.ts` — single source of truth; export via `npm run constitution:export`
 
