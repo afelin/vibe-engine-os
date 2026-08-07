@@ -4,7 +4,11 @@ import type { ExecutionDag } from "../os/events.js";
 import { collectPlannedFiles } from "../planning/dag.js";
 import { sha256Content } from "../run/promotion.js";
 import type { VerifiedMandate } from "../ward/index.js";
-import { pathFilter } from "../ward/index.js";
+import {
+  pathFilter,
+  resolveEffectiveBudget,
+  resolveMandateProfile,
+} from "../ward/index.js";
 import { capContext, capFileContent } from "./cap.js";
 import { resolveScopedFiles } from "./scoped-repomix.js";
 
@@ -26,8 +30,9 @@ export type BuildContextBundleOpts = {
 };
 
 export type ResolveContextFilesOpts = {
-  /** When set, shrink resolved paths to Mandate path_constraints. */
+  /** When set, shrink resolved paths to Mandate∩profile path_constraints. */
   verifiedMandate?: VerifiedMandate | null;
+  rootDir?: string;
 };
 
 export function resolveContextFiles(
@@ -41,9 +46,14 @@ export function resolveContextFiles(
     planned.length > 0 ? resolveScopedFiles(rootDir, dag) : bondFiles;
   const merged = new Set([...bondFiles, ...dagScoped]);
   let files = [...merged].sort();
-  const constraints = opts?.verifiedMandate?.mandate.path_constraints;
-  if (constraints) {
-    files = pathFilter(files, constraints);
+  const verified = opts?.verifiedMandate;
+  if (verified) {
+    const profile = resolveMandateProfile(
+      opts?.rootDir ?? rootDir,
+      verified.mandate,
+    );
+    const budget = resolveEffectiveBudget(verified.mandate, profile);
+    files = pathFilter(files, budget.path_constraints);
   }
   return files;
 }

@@ -33,6 +33,7 @@ const PREFLIGHT_TOOLS = [
   "validate_bond",
   "resolve_gate",
   "constitution_schemas",
+  "resolve_agent_profile",
 ] as const;
 
 const POSTRUN_TOOLS = [

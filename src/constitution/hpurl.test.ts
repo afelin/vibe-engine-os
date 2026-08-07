@@ -35,6 +35,7 @@ describe("hpurl proof links", () => {
       repo: PARAMS.repo,
       api: undefined,
       space: undefined,
+      agent: undefined,
       signature: undefined,
       publicKey: undefined,
       scope: undefined,
@@ -49,6 +50,16 @@ describe("hpurl proof links", () => {
     expect(url).toContain("space=eu-nis2-cra");
     const parsed = parseProofHpurl(url);
     expect(parsed?.space).toBe("eu-nis2-cra");
+  });
+
+  it("round-trips agent= AgentId param", () => {
+    const url = buildProofHpurl(BASE, {
+      ...PARAMS,
+      agent: "cursor-bot",
+    });
+    expect(url).toContain("agent=cursor-bot");
+    const parsed = parseProofHpurl(url);
+    expect(parsed?.agent).toBe("cursor-bot");
   });
 
   it("omits optional repo when not provided", () => {

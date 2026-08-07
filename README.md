@@ -76,7 +76,7 @@ See also the [Persona matrix](#persona-matrix) below for one-step activation pat
 | **HPURL** | Proof link fragment for local/comment verify |
 | **Pearl** | Ops narrative over heal / DENY deltas |
 | **Claim ledger** | Marketing claims ↔ asserts; unclaimed IDs never pass |
-| **Agent identity (today)** | `authorized_actor` + `Assisted-by:` (+ pubkey principals)—not eIDAS |
+| **Agent identity (today)** | `src/agent-id` + `authorized_actor` + Assisted-by (+ principals)—not eIDAS; see [docs/agent-identity.md](docs/agent-identity.md) |
 
 ### Honest limits
 

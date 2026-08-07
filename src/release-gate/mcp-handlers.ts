@@ -38,6 +38,11 @@ import {
   setLegalSpace,
 } from "../policy/stackables.js";
 import { cyberreadyValidateDelta } from "./cyberready-bridge.js";
+import {
+  getDefaultProfile,
+  profileHash,
+  resolveProfile,
+} from "../agent-id/index.js";
 
 export const RELEASE_GATE_MCP = {
   name: "vibe-release-gates",
@@ -235,6 +240,25 @@ export const RELEASE_GATE_TOOLS = [
         payload: {
           type: "object",
           description: "Optional opaque validate_delta payload for IPC",
+        },
+      },
+    },
+  },
+  {
+    name: "resolve_agent_profile",
+    description:
+      "Resolve an AgentId profile for an actor (principals + builtin CI override). Returns null when actor has no profile fields (legacy string actor still valid).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        actor: {
+          type: "string",
+          description: "authorized_actor / AgentId string",
+        },
+        root_dir: { type: "string" },
+        default: {
+          type: "boolean",
+          description: "When true, return getDefaultProfile instead of actor lookup",
         },
       },
     },
@@ -551,6 +575,26 @@ export function callReleaseGateTool(
         : undefined;
     return JSON.stringify(
       cyberreadyValidateDelta({ sockPath, payload }),
+      null,
+      2,
+    );
+  }
+
+  if (name === "resolve_agent_profile") {
+    const rootDir = typeof args.root_dir === "string" ? args.root_dir : ".";
+    const wantDefault = args.default === true;
+    const actor = typeof args.actor === "string" ? args.actor.trim() : "";
+    const profile = wantDefault
+      ? getDefaultProfile(rootDir)
+      : actor
+        ? resolveProfile(rootDir, actor)
+        : getDefaultProfile(rootDir);
+    return JSON.stringify(
+      {
+        ok: true,
+        profile,
+        profile_hash: profile ? profileHash(profile) : null,
+      },
       null,
       2,
     );

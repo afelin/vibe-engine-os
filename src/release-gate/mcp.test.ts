@@ -10,7 +10,7 @@ import {
 import { computeVowsHash } from "../constitution/vows.js";
 
 describe("release gate MCP handlers", () => {
-  it("advertises fourteen deterministic tools", () => {
+  it("advertises fifteen deterministic tools", () => {
     expect(RELEASE_GATE_TOOLS.map((tool) => tool.name)).toEqual([
       "list_gates",
       "resolve_gate",
@@ -26,6 +26,7 @@ describe("release gate MCP handlers", () => {
       "set_legal_space",
       "get_active_stack",
       "cyberready_validate_delta",
+      "resolve_agent_profile",
     ]);
   });
 
@@ -280,6 +281,53 @@ src/x.ts
       };
       expect(getParsed.ok).toBe(true);
       expect(getParsed.stack?.legalSpace).toBe("none");
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("resolve_agent_profile returns null without profile fields and resolves default", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "vibe-mcp-aid-"));
+    try {
+      fs.mkdirSync(path.join(root, ".vibe"), { recursive: true });
+      fs.writeFileSync(
+        path.join(root, ".vibe", "principals.json"),
+        JSON.stringify({
+          principals: [
+            {
+              id: "cursor-bot",
+              public_key: "pk",
+              default: true,
+              default_path_constraints: ["src/"],
+            },
+          ],
+        }),
+        "utf8",
+      );
+      const missing = JSON.parse(
+        callReleaseGateTool("resolve_agent_profile", {
+          root_dir: root,
+          actor: "nobody",
+        }),
+      ) as { profile: unknown };
+      expect(missing.profile).toBeNull();
+
+      const def = JSON.parse(
+        callReleaseGateTool("resolve_agent_profile", {
+          root_dir: root,
+          default: true,
+        }),
+      ) as { profile: { agent_id: string }; profile_hash: string };
+      expect(def.profile.agent_id).toBe("cursor-bot");
+      expect(def.profile_hash).toMatch(/^[a-f0-9]{64}$/);
+
+      const ci = JSON.parse(
+        callReleaseGateTool("resolve_agent_profile", {
+          root_dir: root,
+          actor: "github-ci-bot-override",
+        }),
+      ) as { profile: { agent_id: string } };
+      expect(ci.profile.agent_id).toBe("github-ci-bot-override");
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

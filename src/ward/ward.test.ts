@@ -374,3 +374,168 @@ describe("Option B /approve override", () => {
     expect(result.reason).toMatch(/legacy_approve/);
   });
 });
+
+describe("AgentId gel — effective budget + STRICT", () => {
+  const tmpDirs: string[] = [];
+
+  afterEach(() => {
+    clearVerifyCache();
+    delete process.env.VIBE_WARD_STRICT;
+    for (const dir of tmpDirs) {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  function makeRoot(): string {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "ward-aid-"));
+    tmpDirs.push(root);
+    fs.mkdirSync(path.join(root, ".vibe"), { recursive: true });
+    fs.mkdirSync(path.join(root, "src", "policy"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "src", "policy", "mandates.json"),
+      JSON.stringify({
+        forbidden_prefixes: ["src/auth/"],
+        require_approval_prefixes: [],
+        max_attempts: 3,
+      }),
+      "utf8",
+    );
+    return root;
+  }
+
+  it("resolveEffectiveBudget tightens paths; no profile is bit-identical", async () => {
+    const { resolveEffectiveBudget } = await import("./index.js");
+    const mandate = {
+      path_constraints: ["src/", "tests/"],
+      max_depth: 4,
+      authorized_actor: "bot",
+    };
+    expect(resolveEffectiveBudget(mandate, null).path_constraints).toEqual([
+      "src/",
+      "tests/",
+    ]);
+    const tightened = resolveEffectiveBudget(mandate, {
+      agent_id: "bot",
+      default_path_constraints: ["src/ward/"],
+      max_depth: 2,
+      max_context_chars: 4000,
+    });
+    expect(tightened.path_constraints).toEqual(["src/ward/"]);
+    expect(tightened.max_depth).toBe(2);
+    expect(tightened.max_context_chars).toBe(4000);
+    expect(tightened.agent_id).toBe("bot");
+    expect(tightened.profile_hash).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it("stamps agent_id on ward_decision when profile present", async () => {
+    const root = makeRoot();
+    const keys = await generateEd25519KeyPairRaw();
+    fs.writeFileSync(
+      path.join(root, ".vibe", "principals.json"),
+      JSON.stringify({
+        principals: [
+          {
+            id: "cursor-bot",
+            public_key: keys.publicKey,
+            default: true,
+            default_path_constraints: ["src/ward/"],
+          },
+        ],
+      }),
+      "utf8",
+    );
+    const now = Date.now();
+    const mandate = await signMandate(
+      {
+        mandate_id: "m-profile",
+        issued_at: new Date(now).toISOString(),
+        expires_at: new Date(now + 3600_000).toISOString(),
+        authorized_actor: "cursor-bot",
+        path_constraints: ["src/"],
+        actions: ["bond.seal", "codegen", "patch.apply", "promote"],
+        issuer_public_key: keys.publicKey,
+      },
+      keys.privateKey,
+    );
+    writeActiveMandate(root, mandate);
+    const verified = await verifyOnce(mandate, root);
+    const result = assertWard("codegen", "src/ward/index.ts", verified, {
+      rootDir: root,
+      actor: "cursor-bot",
+    });
+    expect(result.ok).toBe(true);
+    expect(result.decision.agent_id).toBe("cursor-bot");
+  });
+
+  it("VIBE_WARD_STRICT denies unknown actor without profile", async () => {
+    const root = makeRoot();
+    const keys = await generateEd25519KeyPairRaw();
+    fs.writeFileSync(
+      path.join(root, ".vibe", "principals.json"),
+      JSON.stringify({
+        principals: [{ id: "issuer", public_key: keys.publicKey }],
+      }),
+      "utf8",
+    );
+    const now = Date.now();
+    const mandate = await signMandate(
+      {
+        mandate_id: "m-strict",
+        issued_at: new Date(now).toISOString(),
+        expires_at: new Date(now + 3600_000).toISOString(),
+        authorized_actor: "*",
+        path_constraints: ["src/"],
+        actions: ["promote"],
+        issuer_public_key: keys.publicKey,
+      },
+      keys.privateKey,
+    );
+    const verified = await verifyOnce(mandate, root);
+    process.env.VIBE_WARD_STRICT = "1";
+    const denied = assertWard("promote", undefined, verified, {
+      rootDir: root,
+      actor: "stranger",
+    });
+    expect(denied.ok).toBe(false);
+    expect(denied.decision.reason).toMatch(/unknown_actor_strict/);
+
+    delete process.env.VIBE_WARD_STRICT;
+    const allowed = assertWard("promote", undefined, verified, {
+      rootDir: root,
+      actor: "stranger",
+    });
+    expect(allowed.ok).toBe(true);
+  });
+
+  it("string actor without profile still works when not STRICT", async () => {
+    const root = makeRoot();
+    const keys = await generateEd25519KeyPairRaw();
+    fs.writeFileSync(
+      path.join(root, ".vibe", "principals.json"),
+      JSON.stringify({
+        principals: [{ id: "issuer", public_key: keys.publicKey }],
+      }),
+      "utf8",
+    );
+    const now = Date.now();
+    const mandate = await signMandate(
+      {
+        mandate_id: "m-compat",
+        issued_at: new Date(now).toISOString(),
+        expires_at: new Date(now + 3600_000).toISOString(),
+        authorized_actor: "any-github-login",
+        path_constraints: ["src/"],
+        actions: ["promote"],
+        issuer_public_key: keys.publicKey,
+      },
+      keys.privateKey,
+    );
+    const verified = await verifyOnce(mandate, root);
+    const result = assertWard("promote", undefined, verified, {
+      rootDir: root,
+      actor: "any-github-login",
+    });
+    expect(result.ok).toBe(true);
+    expect(result.decision.agent_id).toBeUndefined();
+  });
+});

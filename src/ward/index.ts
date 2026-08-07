@@ -2,9 +2,22 @@
  * Mandate–Ward: opt-in signed session budget.
  * Absent Mandate file ⇒ legacy house rules only (today's behavior).
  * House mandates.json AND SignedMandate (Mandate cannot widen forbids).
+ * AgentId: Ward consumes `src/agent-id` (never the reverse).
  */
 import * as fs from "node:fs";
 import * as path from "node:path";
+import {
+  BUILTIN_CI_OVERRIDE_AGENT_ID,
+  intersectPathConstraints,
+  isTrustedPublicKey,
+  isWardStrict,
+  loadPrincipals,
+  profileHash,
+  resolveProfile,
+  type AgentProfile,
+  type PrincipalEntry,
+  type PrincipalsFile,
+} from "../agent-id/index.js";
 import { canonicalize } from "../constitution/capsule.js";
 import {
   evaluateMandates,
@@ -34,9 +47,21 @@ export const WARD_ACTIONS = [
 ] as const satisfies readonly WardAction[];
 
 /** CI-signed /approve override — never attribute runner key to the human. */
-export const GITHUB_CI_BOT_OVERRIDE = "github-ci-bot-override";
+export const GITHUB_CI_BOT_OVERRIDE = BUILTIN_CI_OVERRIDE_AGENT_ID;
 export const OVERRIDE_KIND_GITHUB_COMMENT = "github_comment_approve" as const;
 export type MandateOverrideKind = typeof OVERRIDE_KIND_GITHUB_COMMENT;
+
+export type {
+  AgentProfile,
+  PrincipalEntry,
+  PrincipalsFile,
+};
+export {
+  loadPrincipals,
+  isTrustedPublicKey,
+  resolveProfile,
+  isWardStrict,
+};
 
 /** Unsigned body + crypto fields (catalog SignedMandate). */
 export type SignedMandate = {
@@ -68,6 +93,7 @@ export type WardDecision = {
   reason: string;
   at: string;
   override_kind?: MandateOverrideKind;
+  agent_id?: string;
 };
 
 export type WardAssertResult = {
@@ -82,20 +108,23 @@ export type WardRunState = {
   actions: WardAction[];
   max_depth?: number;
   authorized_actor: string;
+  /** Present when an AgentProfile resolved for authorized_actor. */
+  agent_id?: string;
+  profile_hash?: string;
+  max_bound_files?: number;
+  max_context_chars?: number;
 };
 
-export type PrincipalEntry = {
-  id: string;
-  public_key: string;
-};
-
-export type PrincipalsFile = {
-  principals: PrincipalEntry[];
+export type EffectiveBudget = {
+  path_constraints: string[];
+  max_depth?: number;
+  max_bound_files?: number;
+  max_context_chars?: number;
+  agent_id?: string;
+  profile_hash?: string;
 };
 
 const ACTIVE_MANDATE_REL = path.join(".vibe", "active_mandate.json");
-const PRINCIPALS_VIBE_REL = path.join(".vibe", "principals.json");
-const PRINCIPALS_POLICY_REL = path.join("src", "policy", "principals.json");
 
 /** Per-run verifyOnce cache (process-local). */
 const verifyCache = new Map<string, VerifiedMandate>();
@@ -132,31 +161,63 @@ export function clearActiveMandate(rootDir: string): void {
   if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 }
 
-export function loadPrincipals(rootDir = "."): PrincipalsFile {
-  const vibe = path.join(rootDir, PRINCIPALS_VIBE_REL);
-  const policy = path.join(rootDir, PRINCIPALS_POLICY_REL);
-  const source = fs.existsSync(vibe)
-    ? vibe
-    : fs.existsSync(policy)
-      ? policy
-      : null;
-  if (!source) return { principals: [] };
-  try {
-    const raw = JSON.parse(fs.readFileSync(source, "utf8")) as PrincipalsFile;
+/**
+ * Tighten-only budget: profile ∩ mandate (never widens).
+ * No profile ⇒ mandate paths/depth unchanged (legacy bit-identical).
+ */
+export function resolveEffectiveBudget(
+  mandate: Pick<SignedMandate, "path_constraints" | "max_depth" | "authorized_actor">,
+  profile: AgentProfile | null,
+): EffectiveBudget {
+  if (!profile) {
     return {
-      principals: Array.isArray(raw.principals) ? raw.principals : [],
+      path_constraints: [...mandate.path_constraints],
+      ...(mandate.max_depth !== undefined ? { max_depth: mandate.max_depth } : {}),
     };
-  } catch {
-    return { principals: [] };
   }
+
+  let path_constraints = [...mandate.path_constraints];
+  if (
+    profile.default_path_constraints &&
+    profile.default_path_constraints.length > 0
+  ) {
+    const intersected = intersectPathConstraints(
+      mandate.path_constraints,
+      profile.default_path_constraints,
+    );
+    // Empty intersection would brick the session — keep mandate (no widen).
+    if (intersected.length > 0) path_constraints = intersected;
+  }
+
+  let max_depth = mandate.max_depth;
+  if (profile.max_depth !== undefined) {
+    max_depth =
+      max_depth === undefined
+        ? profile.max_depth
+        : Math.min(max_depth, profile.max_depth);
+  }
+
+  const budget: EffectiveBudget = {
+    path_constraints,
+    agent_id: profile.agent_id,
+    profile_hash: profileHash(profile),
+  };
+  if (max_depth !== undefined) budget.max_depth = max_depth;
+  if (profile.max_bound_files !== undefined) {
+    budget.max_bound_files = profile.max_bound_files;
+  }
+  if (profile.max_context_chars !== undefined) {
+    budget.max_context_chars = profile.max_context_chars;
+  }
+  return budget;
 }
 
-export function isTrustedPublicKey(
-  publicKey: string,
-  rootDir = ".",
-): boolean {
-  const { principals } = loadPrincipals(rootDir);
-  return principals.some((entry) => entry.public_key === publicKey);
+/** Resolve profile for mandate authorized_actor (builtin CI included). */
+export function resolveMandateProfile(
+  rootDir: string,
+  mandate: Pick<SignedMandate, "authorized_actor">,
+): AgentProfile | null {
+  return resolveProfile(rootDir, mandate.authorized_actor);
 }
 
 /** Canonical bytes for signing: mandate without `signature`. */
@@ -367,6 +428,8 @@ export function hasWardAllow(
 
 /**
  * Gate B/C (Mandate budget) + house D (mandates.json). Mandate cannot widen forbids.
+ * Profile only tightens effective path_constraints / depth. VIBE_WARD_STRICT denies
+ * unknown actors (no AgentProfile) unless override_kind is set.
  */
 export function assertWard(
   action: WardAction,
@@ -384,16 +447,20 @@ export function assertWard(
   const now = opts?.now ?? new Date();
   const mandate = verified.mandate;
   const at = now.toISOString();
+  const profile = resolveMandateProfile(rootDir, mandate);
+  const budget = resolveEffectiveBudget(mandate, profile);
 
-  const withOverride = (
-    decision: Omit<WardDecision, "override_kind">,
-  ): WardDecision =>
-    mandate.override_kind
-      ? { ...decision, override_kind: mandate.override_kind }
-      : decision;
+  const withMeta = (
+    decision: Omit<WardDecision, "override_kind" | "agent_id">,
+  ): WardDecision => {
+    const next: WardDecision = { ...decision };
+    if (mandate.override_kind) next.override_kind = mandate.override_kind;
+    if (budget.agent_id) next.agent_id = budget.agent_id;
+    return next;
+  };
 
   const deny = (reason: string): WardAssertResult => {
-    const decision = withOverride({
+    const decision = withMeta({
       type: "ward_decision",
       mandate_id: mandate.mandate_id,
       action,
@@ -407,7 +474,7 @@ export function assertWard(
   };
 
   const allow = (reason: string): WardAssertResult => {
-    const decision = withOverride({
+    const decision = withMeta({
       type: "ward_decision",
       mandate_id: mandate.mandate_id,
       action,
@@ -439,11 +506,21 @@ export function assertWard(
     return deny(`actor_not_authorized:${opts.actor}`);
   }
 
+  // Regulated CI: unknown actor (no profile) ⇒ DENY. Local without STRICT allows string actor.
+  if (
+    !mandate.override_kind &&
+    isWardStrict() &&
+    opts?.actor &&
+    !resolveProfile(rootDir, opts.actor)
+  ) {
+    return deny(`unknown_actor_strict:${opts.actor}`);
+  }
+
   if (filePath) {
     if (isUnsafeProposedPath(filePath)) {
       return deny("unsafe_path");
     }
-    const filtered = pathFilter([filePath], mandate.path_constraints);
+    const filtered = pathFilter([filePath], budget.path_constraints);
     if (filtered.length === 0) {
       return deny(`path_outside_constraints:${filePath}`);
     }
@@ -490,15 +567,17 @@ export function assertPromoteWard(
   return { ok: true };
 }
 
-/** Cap vibe depth when Mandate sets max_depth. */
+/** Cap vibe depth when Mandate (∩ profile) sets max_depth. */
 export function effectiveDepth(
   current: number,
   verified: VerifiedMandate | null,
+  rootDir = ".",
 ): number {
-  if (!verified?.mandate.max_depth && verified?.mandate.max_depth !== 0) {
-    return current;
-  }
-  return Math.min(current, verified.mandate.max_depth);
+  if (!verified) return current;
+  const profile = resolveMandateProfile(rootDir, verified.mandate);
+  const budget = resolveEffectiveBudget(verified.mandate, profile);
+  if (budget.max_depth === undefined) return current;
+  return Math.min(current, budget.max_depth);
 }
 
 export {

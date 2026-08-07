@@ -88,7 +88,7 @@ Constitution artifacts live under a Zod catalog (`@xmachines/play-*` + local sch
 | Capsule / HPURL | Tamper-evident fingerprint + proof link fragment |
 | Pearl | Ops narrative over heal/DENY deltas |
 | Claim ledger | Claims ↔ asserts; unclaimed IDs never pass |
-| Agent identity (today) | `authorized_actor` + Assisted-by (+ principals pubkeys)—not eIDAS |
+| Agent identity (today) | `src/agent-id` + `authorized_actor` + Assisted-by (+ principals)—not eIDAS |
 
 ---
 
