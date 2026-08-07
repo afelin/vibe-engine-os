@@ -1,5 +1,5 @@
 name: vibe-validate
-description: Validate a Vibe Engine run capsule (manifest + vows hash) without LLM
+description: Validate a Coreward run capsule (manifest + vows hash) without LLM
 inputs:
   run_dir:
     description: Path to .runs/<runId> directory

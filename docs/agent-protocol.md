@@ -1,8 +1,10 @@
-# Vibe Engine Agent Protocol
+# Coreward Agent Protocol
 
 Open specification for agents (any framework) integrating with Coreward.
 
 **Solo operators:** start with the [Solo Vibe Coder Guide](./solo-vibe-coder-guide.md). **Stakeholders:** see [Plain-Language Briefing](./plain-language-briefing.md).
+
+**Preflight (before proposing paths):** `get_active_stack` → `list_stackables` → `authorize_write` → `evaluate_mandate` → `validate_bond` → `resolve_gate` → `constitution_schemas` — adapter `required_tools: ["authorize_write"]`; see [agent-adapter](./agent-adapter.md).
 
 ## Ingress: PlayEvent
 
@@ -42,8 +44,9 @@ HTTP: `npm run constitution:serve` → `GET /schemas`, `POST /verify-capsule`
 
 | Tool | When |
 |------|------|
-| `evaluate_mandate` | Before proposing paths |
-| `resolve_gate` | Before LLM codegen |
+| `authorize_write` | **First** before proposing paths (Coreward Mode ticket; may return `prefer_gate`) |
+| `evaluate_mandate` | Before proposing paths (house standing law) |
+| `resolve_gate` | Before LLM codegen (prefer after `authorize_write`) |
 | `constitution_schemas` | Before structured output |
 | `validate_capsule` | After run completes |
 | `seal_bond` | Seal TaskBond from issue body to disk |

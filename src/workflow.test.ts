@@ -443,7 +443,7 @@ describe("GitHub Actions workflow", () => {
 
     // Path 2 — Cursor + MCP + skill
     expect(startHere).toContain("mcp.json");
-    expect(startHere).toContain(".cursor/skills/vibe-engine");
+    expect(startHere).toContain(".cursor/skills/coreward");
 
     // Path 3 — External agent/IDE via adapter
     expect(startHere).toContain("agent-adapter.md");

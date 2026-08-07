@@ -11,7 +11,7 @@ Machine-readable copy lives in `.vibe/agent-adapter.json` → `contract` (from `
 | Phase | Tools (order) |
 | --- | --- |
 | First-run / stack | `get_active_stack` → `list_stackables` → optional `set_legal_space` |
-| Preflight | `get_active_stack` → `list_stackables` → `evaluate_mandate` → `validate_bond` → `resolve_gate` → `constitution_schemas` |
+| Preflight | `get_active_stack` → `list_stackables` → `authorize_write` → `evaluate_mandate` → `validate_bond` → `resolve_gate` → `constitution_schemas` → `resolve_agent_profile` (adapter `required_tools: ["authorize_write"]`) |
 | Postrun | `validate_capsule` → `build_scoped_context` → `recall_lessons` |
 
 Operator shortcut: comment **`/go`** on the issue for the three-action next-step guide.

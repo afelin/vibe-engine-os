@@ -211,7 +211,7 @@ function mdToHtml(md) {
 
 function extractTitle(md) {
   const m = /^#\s+(.+)$/m.exec(md);
-  return m ? m[1].trim() : "vibe-engine White Paper";
+  return m ? m[1].trim() : "Coreward White Paper";
 }
 
 function wrapPage({ title, bodyHtml, notice }) {
@@ -223,14 +223,14 @@ function wrapPage({ title, bodyHtml, notice }) {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${escapeHtml(title)} — vibe-engine</title>
-  <meta name="description" content="vibe-engine white paper: portable open-source promotion primitives." />
+  <title>${escapeHtml(title)} — Coreward</title>
+  <meta name="description" content="Coreward white paper: portable open-source promotion primitives." />
 ${FONT_LINKS}
 </head>
 <body>
   <header class="site-header">
     <div class="site-header__inner">
-      <a class="brand" href="../">vibe-engine</a>
+      <a class="brand" href="../">Coreward</a>
       <nav aria-label="Primary">
         <ul class="nav">
           <li><a href="./" aria-current="page">White paper</a></li>

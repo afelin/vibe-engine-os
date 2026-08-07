@@ -4,6 +4,8 @@ Sovereign AI dev cluster (**Coreward** promotion gate) with a **headless xmachin
 
 **Repo:** [github.com/afelin/coreward](https://github.com/afelin/coreward) · **Start here:** [docs/start-here.md](docs/start-here.md) — 5 minutes, any tool (GitHub-only, Cursor + MCP, external agent, or legal-space dial). Deeper walks: [Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md) · [Nocode Quickstart](docs/nocode-quickstart.md) · [Plain-Language Briefing](docs/plain-language-briefing.md).
 
+**License:** [FSL-1.1-Apache-2.0](LICENSE) — free internal use on your runners; Competing Use restricted until Change Date. FAQ: [LICENSE.md](LICENSE.md).
+
 **Public surface (GitHub Pages):** [white paper](https://afelin.github.io/coreward/whitepaper/) · [adopt](https://afelin.github.io/coreward/adopt/) · [status](https://afelin.github.io/coreward/status/) · [site source](site/). Manuscript: `papers/coreward-whitepaper.md` (when present; `npm run site:build` regenerates HTML).
 
 ## What it is
@@ -29,7 +31,7 @@ Truth-driven gates (TDD): **deterministic replay** from `events.ndjson`, **Assis
 | **TaskBond gauntlet** | 32/32 adversarial bond + mandate scenarios; baseline ratchet blocks guard drift | `npm run eval:bond`; wired into **Coreward Promotion Gate** preflight | Built-in |
 | **Replay gate** | Flight recorder — re-run `events.ndjson`; mismatch blocks promotion | `npm run replay -- . <runId>`; CI replay determinism check on PRs | Built-in |
 | **Anti-rot** | Scoped context (capped snippets, no repomix fallback), bond compliance (paths outside plan ∪ bound blocked), evidence-linked lessons | MCP `build_scoped_context`, `recall_lessons`; lessons in `.evomem/lessons.ndjson` | Built-in |
-| **MCP tools** | Live rulebook in Cursor: gates, bonds, mandates, schemas, capsule verify | Enable `coreward-release-gates` (alias `vibe-release-gates`) in `mcp.json`; `npm run gate:mcp` smoke | Built-in |
+| **MCP tools** | Live rulebook in Cursor: `authorize_write` first, then gates, bonds, mandates, schemas, capsule verify | Enable `coreward-release-gates` (alias `vibe-release-gates`) in `mcp.json`; `npm run gate:mcp` smoke | Built-in |
 | **Forever loop** | GitHub issue → plan → codegen → verify → PR + cockpit comment; runs while you sleep | Label `vibe/run` on issue; **Sovereign OS Event Bus** workflow | Built-in |
 | **Cockpit + explain dial** | Issue/PR comment dashboard: depth, hashes, next action, decision explain (off/short/long/expand) | Auto-posted on runs; labels `vibe:explain-short` / `vibe:explain-long` or `VIBE_EXPLAIN` | Built-in |
 | **Operator commands** | Human steering without terminal: `/status`, `/approve`, `/continue`, `/retry`, `/rollback`, `/details`, `/troubleshoot` | Reply on the issue; see [Agent Protocol](docs/agent-protocol.md) | Built-in |
@@ -85,6 +87,21 @@ See also the [Persona matrix](#persona-matrix) below for one-step activation pat
 - **IDE Ward** — Edit/Shell and soft MCP paths can bypass Ward; do not claim universal IDE interception (`ide_ward_interceptor` stays unclaimed).
 - **Receipts ≠ certification** — capsules and `ward_decision` events are tamper-evident evidence, not legal or auditor certification.
 
+## Use only what you need
+
+Coreward is compositional — start at Tier 1; add forever/Ward only if you want overnight issue→PR or session budgets. Same monorepo; enable slices, not separate packages.
+
+| Tier | What | Forever required? |
+| --- | --- | --- |
+| 1 | MCP `authorize_write` + `resolve_gate` / house `evaluate_mandate` | No |
+| 2 | TaskBond + house `mandates.json` | No |
+| 3 | `activate` + attribution / PR gate workflows | Actions yes; forever no |
+| 4 | Forever loop (`vibe/run`) | Yes |
+| 5 | Signed Mandate + Ward STRICT + principals | Promote path / CI |
+| 6 | `savings:attest` after gated weeks | No (CLI) |
+
+Ladder + install: [adopt](https://afelin.github.io/coreward/adopt/) · host packs: [docs/host-packs.md](docs/host-packs.md) · local-first: [docs/local-first-savings.md](docs/local-first-savings.md).
+
 ## One-step activation
 
 Requires **Node.js ≥ 22** ([`.nvmrc`](.nvmrc) pins `22`; matches `package.json` `engines`).
@@ -109,6 +126,8 @@ npm run activate
 | [Launch Proof](docs/launch-proof.md) | Operators — zero-token E2E runbook + artifact slots |
 | [Platform Enforcement](docs/platform-enforcement.md) | Operators — deploy-from-capsule, GitHub Pro-free enforcement |
 | [Public surface](docs/PUBLIC.md) | What is public vs `internal/` (RISE export) |
+| [Host packs](docs/host-packs.md) | Cursor / Claude Code / OpenClaw / Hermes — `authorize_write` first |
+| [Local-first savings](docs/local-first-savings.md) | Bound context, gate hits, `savings:attest` |
 | [OS Phases](docs/os-phases.md) | Promotion phase diagram (auto-derived from machine) |
 | [GitHub App](docs/github-app.md) | Enterprise — required checks, branch protection |
 
@@ -118,7 +137,7 @@ npm run activate
 | --- | --- | --- |
 | **Solo vibe coder** | [Solo guide](docs/solo-vibe-coder-guide.md) → `npm run activate` | Vibe Request issue + `vibe/run` label |
 | **Agentic engineer** | activate + enable MCP in Cursor | `.cursor/skills/Coreward` enforces vows |
-| **Agents** | `docs/agent-protocol.md` + schemas URL | `evaluate_mandate`, `resolve_gate`, catalog JSON |
+| **Agents** | `docs/agent-protocol.md` + schemas URL | `authorize_write`, `evaluate_mandate`, `resolve_gate`, catalog JSON |
 | **Enterprise** | Install App doc + required check branch rule | Green **Coreward Promotion Gate** + capsule hash on PR |
 
 ## 5-minute adoption

@@ -10,9 +10,9 @@ Machine-readable integration surface exported to `.vibe/agent-adapter.json` on `
 
 1. `npm run activate` — exports schemas + adapter manifest
 2. Enable MCP from `mcp.json` (`npm run gate:mcp`)
-3. Use `.cursor/skills/vibe-engine/SKILL.md` for preflight/postrun tool order
+3. Use `.cursor/skills/coreward/SKILL.md` for preflight/postrun tool order (`vibe-engine` is a thin dual-read alias)
 
-**Preflight:** `evaluate_mandate` → `validate_bond` → `resolve_gate` → `constitution_schemas`  
+**Preflight:** `get_active_stack` → `list_stackables` → `authorize_write` → `evaluate_mandate` → `validate_bond` → `resolve_gate` → `constitution_schemas` → `resolve_agent_profile` (adapter `required_tools: ["authorize_write"]`; call `authorize_write` before proposing paths)  
 **Postrun:** `validate_capsule` → `build_scoped_context` → `recall_lessons`
 
 ### 2. GitHub-only nocode (0 min terminal)

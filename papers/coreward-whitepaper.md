@@ -1,9 +1,9 @@
 # Coreward: Portable Promotion Primitives for Agent-Written Code
 
 **Technical white paper (claim-safe)**  
-**Version:** `UNPUBLISHED` — replace with release tag at publish  
-**Date:** `YYYY-MM-DD` — fill at publish  
-**Source SHA:** `TO_BE_FILLED_AT_PUBLISH` — set to the git commit SHA of the published tree  
+**Version:** `2.0.0`  
+**Date:** `2026-08-07`  
+**Source SHA:** `db4e75d20321a640622f7f9cfad71bd4fa70e2e1` — HEAD at fill time; update to the publish commit SHA when merged  
 **How to cite:** see [How to cite](#how-to-cite) and repository root [`CITATION.cff`](../CITATION.cff)
 
 > **Honesty note.** This document describes free open-source software mechanisms that run on the operator’s own GitHub repository and CI. It does not claim certification, legal compliance, absolute percentages, or commercial product tiers. Capsules are **tamper-evident**, not tamper-proof. Hosted receipt verify and live CyberReady signed buyer proof remain **unclaimed** until those products exist. An optional signed **Mandate** (session budget) enables engine-path **Ward** checks on CI/promote when present; IDE Edit/Shell and out-of-band MCP soft paths can still bypass Ward—product claim is limited to *CI/promote cannot move without Ward when a Mandate is on*, not universal IDE interception.
@@ -142,6 +142,21 @@ Coreward does **not** train or host foundation weights. It **reduces what you mu
 Coreward ships under **FSL-1.1-Apache-2.0** ([`LICENSE`](../LICENSE), FAQ [`LICENSE.md`](../LICENSE.md)): free for internal use on your runners and agents; Competing Use (including offering a hosted substitute for Coreward) is excluded until the Change Date, after which Apache-2.0 applies automatically.
 
 **Complementarity (claim-safe):** OpenClaw, Hermes, and local/open models (e.g. Ollama) are **customers** of Coreward MCP—not runtimes Coreward absorbs. Policy teams can allow local agents **because** writes are Mandated (`authorize_write`) and CI Ward re-verifies promote. Coreward does not claim zero IP egress, IDE sandboxing, or legal certification.
+
+### Compositional adoption
+
+Coreward is one monorepo with progressive enablement—not separate publishable packages. Start at Tier 1; add forever or Ward only if you need overnight automation or session budgets.
+
+| Tier | Slice | Forever required? |
+| ---: | --- | --- |
+| 1 | MCP `authorize_write` + `resolve_gate` / house `evaluate_mandate` | No |
+| 2 | TaskBond + house `mandates.json` | No |
+| 3 | `activate` + attribution / PR gate workflows | Actions yes; forever no |
+| 4 | Forever loop (`vibe/run`) | Yes |
+| 5 | Signed Mandate + Ward STRICT + principals | Promote path / CI |
+| 6 | `savings:attest` after gated weeks | No (CLI) |
+
+Operator entry: [docs/start-here.md](../docs/start-here.md) · adopt ladder: [site/adopt](../site/adopt/).
 
 ---
 
@@ -326,7 +341,7 @@ Preferred machine-readable citation: repository root [`CITATION.cff`](../CITATIO
 
 Plain-text form (fill version, date, and SHA at publish):
 
-> Coreward contributors. *Coreward: Portable Promotion Primitives for Agent-Written Code*. Technical white paper, version VERSION (YYYY-MM-DD). Source SHA: COMMIT_SHA. Available at: https://github.com/afelin/coreward
+> Coreward contributors. *Coreward: Portable Promotion Primitives for Agent-Written Code*. Technical white paper, version 2.0.0 (2026-08-07). Source SHA: db4e75d20321a640622f7f9cfad71bd4fa70e2e1. Available at: https://github.com/afelin/coreward
 
 When citing a specific mechanism (bond, capsule, gauntlet), include the commit SHA so readers can resolve exact schemas and baselines.
 
@@ -340,7 +355,7 @@ When citing a specific mechanism (bond, capsule, gauntlet), include the commit S
 | Date | Calendar date of the published PDF/HTML |
 | Source SHA | Full git commit SHA of the tree that was rendered |
 
-Until publish, leave placeholders (`UNPUBLISHED`, `YYYY-MM-DD`, `TO_BE_FILLED_AT_PUBLISH`) so drafts cannot be mistaken for pinned evidence.
+Until a tagged release, cite the filled version/date/SHA in this paper and [`CITATION.cff`](../CITATION.cff). Update the Source SHA to the publish commit when the tree is tagged.
 
 ---
 

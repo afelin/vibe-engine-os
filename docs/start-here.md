@@ -30,7 +30,7 @@ Local agent that respects mandates and gates before edits.
 
 1. `npm run activate` — exports schemas + adapter manifest.
 2. Enable MCP from [`mcp.json`](../mcp.json) (`npm run gate:mcp` to smoke).
-3. Follow [`.cursor/skills/coreward`](../.cursor/skills/vibe-engine/SKILL.md) — preflight `authorize_write` → `evaluate_mandate` → `resolve_gate` before proposing paths.
+3. Follow [`.cursor/skills/coreward/SKILL.md`](../.cursor/skills/coreward/SKILL.md) — preflight `authorize_write` → `evaluate_mandate` → `resolve_gate` before proposing paths.
 
 Daily workflow: [Solo Vibe Coder Guide](./solo-vibe-coder-guide.md).
 
@@ -42,7 +42,7 @@ Bring Claude, Codex, or another IDE via the adapter contract.
 
 1. Read [Agent Adapter](./agent-adapter.md) — preflight/postrun tool order and manifest.
 2. Follow [Agent Protocol](./agent-protocol.md) — slash commands, bonds, and what blocks promotion.
-3. Point your agent at the same MCP surface (`evaluate_mandate`, `resolve_gate`, `validate_capsule`).
+3. Point your agent at the same MCP surface (`authorize_write` first, then `evaluate_mandate`, `resolve_gate`, `validate_capsule`).
 
 ---
 

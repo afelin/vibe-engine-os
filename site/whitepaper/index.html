@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Coreward: Portable Promotion Primitives for Agent-Written Code — vibe-engine</title>
-  <meta name="description" content="vibe-engine white paper: portable open-source promotion primitives." />
+  <title>Coreward: Portable Promotion Primitives for Agent-Written Code — Coreward</title>
+  <meta name="description" content="Coreward white paper: portable open-source promotion primitives." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet" />
@@ -13,7 +13,7 @@
 <body>
   <header class="site-header">
     <div class="site-header__inner">
-      <a class="brand" href="../">vibe-engine</a>
+      <a class="brand" href="../">Coreward</a>
       <nav aria-label="Primary">
         <ul class="nav">
           <li><a href="./" aria-current="page">White paper</a></li>
@@ -30,9 +30,9 @@
     <article class="prose">
 <h1>Coreward: Portable Promotion Primitives for Agent-Written Code</h1>
 <p><strong>Technical white paper (claim-safe)</strong><br />
-<strong>Version:</strong> <code>UNPUBLISHED</code> — replace with release tag at publish<br />
-<strong>Date:</strong> <code>YYYY-MM-DD</code> — fill at publish<br />
-<strong>Source SHA:</strong> <code>TO_BE_FILLED_AT_PUBLISH</code> — set to the git commit SHA of the published tree<br />
+<strong>Version:</strong> <code>2.0.0</code><br />
+<strong>Date:</strong> <code>2026-08-07</code><br />
+<strong>Source SHA:</strong> <code>db4e75d20321a640622f7f9cfad71bd4fa70e2e1</code> — HEAD at fill time; update to the publish commit SHA when merged<br />
 <strong>How to cite:</strong> see <a href="#how-to-cite">How to cite</a> and repository root <a href="https://github.com/afelin/coreward/blob/main/CITATION.cff"><code>CITATION.cff</code></a></p>
 <blockquote><p><strong>Honesty note.</strong> This document describes free open-source software mechanisms that run on the operator’s own GitHub repository and CI. It does not claim certification, legal compliance, absolute percentages, or commercial product tiers. Capsules are <strong>tamper-evident</strong>, not tamper-proof. Hosted receipt verify and live CyberReady signed buyer proof remain <strong>unclaimed</strong> until those products exist. An optional signed <strong>Mandate</strong> (session budget) enables engine-path <strong>Ward</strong> checks on CI/promote when present; IDE Edit/Shell and out-of-band MCP soft paths can still bypass Ward—product claim is limited to <em>CI/promote cannot move without Ward when a Mandate is on</em>, not universal IDE interception.</p></blockquote>
 <p><strong>In plain terms:</strong> Coreward is a <strong>promotion gate</strong>—models may propose changes; house rules and automated checks decide what may land in Git. A signed <strong>Mandate</strong> is a session work-order (budget); <strong>Ward</strong> is the CI/promote check that enforces it when present. Capsule and <code>ward_decision</code> <strong>receipts are evidence, never authorization</strong>—promote always re-verifies.</p>
@@ -138,6 +138,22 @@
 <h3>License and local-runtime complementarity</h3>
 <p>Coreward ships under <strong>FSL-1.1-Apache-2.0</strong> (<a href="https://github.com/afelin/coreward/blob/main/LICENSE"><code>LICENSE</code></a>, FAQ <a href="https://github.com/afelin/coreward/blob/main/LICENSE.md"><code>LICENSE.md</code></a>): free for internal use on your runners and agents; Competing Use (including offering a hosted substitute for Coreward) is excluded until the Change Date, after which Apache-2.0 applies automatically.</p>
 <p><strong>Complementarity (claim-safe):</strong> OpenClaw, Hermes, and local/open models (e.g. Ollama) are <strong>customers</strong> of Coreward MCP—not runtimes Coreward absorbs. Policy teams can allow local agents <strong>because</strong> writes are Mandated (<code>authorize_write</code>) and CI Ward re-verifies promote. Coreward does not claim zero IP egress, IDE sandboxing, or legal certification.</p>
+<h3>Compositional adoption</h3>
+<p>Coreward is one monorepo with progressive enablement—not separate publishable packages. Start at Tier 1; add forever or Ward only if you need overnight automation or session budgets.</p>
+<table>
+<thead>
+<tr><th>Tier</th><th>Slice</th><th>Forever required?</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>MCP <code>authorize_write</code> + <code>resolve_gate</code> / house <code>evaluate_mandate</code></td><td>No</td></tr>
+<tr><td>2</td><td>TaskBond + house <code>mandates.json</code></td><td>No</td></tr>
+<tr><td>3</td><td><code>activate</code> + attribution / PR gate workflows</td><td>Actions yes; forever no</td></tr>
+<tr><td>4</td><td>Forever loop (<code>vibe/run</code>)</td><td>Yes</td></tr>
+<tr><td>5</td><td>Signed Mandate + Ward STRICT + principals</td><td>Promote path / CI</td></tr>
+<tr><td>6</td><td><code>savings:attest</code> after gated weeks</td><td>No (CLI)</td></tr>
+</tbody>
+</table>
+<p>Operator entry: <a href="https://github.com/afelin/coreward/blob/main/docs/start-here.md">docs/start-here.md</a> · adopt ladder: <a href="https://github.com/afelin/coreward/blob/main/site/adopt/">site/adopt</a>.</p>
 <hr />
 <h2>6. Depth dial (<code>VIBE_DEPTH</code>)</h2>
 <p>Autonomy is a <strong>volume knob</strong>, not an all-or-nothing switch:</p>
@@ -276,7 +292,7 @@ bash runs/adopt.sh .</code></pre>
 <h2>19. How to cite</h2>
 <p>Preferred machine-readable citation: repository root <a href="https://github.com/afelin/coreward/blob/main/CITATION.cff"><code>CITATION.cff</code></a>.</p>
 <p>Plain-text form (fill version, date, and SHA at publish):</p>
-<blockquote><p>Coreward contributors. <em>Coreward: Portable Promotion Primitives for Agent-Written Code</em>. Technical white paper, version VERSION (YYYY-MM-DD). Source SHA: COMMIT_SHA. Available at: https://github.com/afelin/coreward</p></blockquote>
+<blockquote><p>Coreward contributors. <em>Coreward: Portable Promotion Primitives for Agent-Written Code</em>. Technical white paper, version 2.0.0 (2026-08-07). Source SHA: db4e75d20321a640622f7f9cfad71bd4fa70e2e1. Available at: https://github.com/afelin/coreward</p></blockquote>
 <p>When citing a specific mechanism (bond, capsule, gauntlet), include the commit SHA so readers can resolve exact schemas and baselines.</p>
 <hr />
 <h2>20. Versioning and publish checklist</h2>
@@ -290,7 +306,7 @@ bash runs/adopt.sh .</code></pre>
 <tr><td>Source SHA</td><td>Full git commit SHA of the tree that was rendered</td></tr>
 </tbody>
 </table>
-<p>Until publish, leave placeholders (<code>UNPUBLISHED</code>, <code>YYYY-MM-DD</code>, <code>TO_BE_FILLED_AT_PUBLISH</code>) so drafts cannot be mistaken for pinned evidence.</p>
+<p>Until a tagged release, cite the filled version/date/SHA in this paper and <a href="https://github.com/afelin/coreward/blob/main/CITATION.cff"><code>CITATION.cff</code></a>. Update the Source SHA to the publish commit when the tree is tagged.</p>
 <hr />
 <h2>Appendix A — Operator entry points</h2>
 <table>

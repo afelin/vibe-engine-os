@@ -77,7 +77,7 @@ npm run gate:mcp   # smoke-test the MCP server
 
 **Why it matters:** while you chat with Cursor, the agent can ask live: “May I edit this file?” instead of discovering violations hours later in CI.
 
-The bundled skill at `.cursor/skills/coreward` reminds agents to call `evaluate_mandate` and `resolve_gate` before edits.
+The bundled skill at [`.cursor/skills/coreward/SKILL.md`](../.cursor/skills/coreward/SKILL.md) reminds agents to call `authorize_write` → `evaluate_mandate` → `resolve_gate` before edits.
 
 ---
 

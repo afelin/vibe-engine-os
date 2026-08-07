@@ -1,4 +1,4 @@
-# Vibe Engine Vows
+# Coreward Vows
 
 **One invariant:** Generative proposes; **Vows + Constitution + Tests** decide; Git makes it real.
 

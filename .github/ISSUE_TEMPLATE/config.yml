@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
-  - name: Vibe Engine docs
+  - name: Coreward docs
     url: https://github.com/afelin/coreward/blob/main/docs/agent-protocol.md
     about: Depth labels, operator commands, and MCP protocol

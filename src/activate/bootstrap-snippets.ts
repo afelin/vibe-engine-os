@@ -16,9 +16,9 @@ export const bootstrapSnippetsSchema = z.object({
 export type BootstrapSnippets = z.infer<typeof bootstrapSnippetsSchema>;
 
 const PREFLIGHT_ORDER =
-  "evaluate_mandate → validate_bond → resolve_gate → constitution_schemas";
+  "authorize_write → evaluate_mandate → validate_bond → resolve_gate → constitution_schemas";
 
-const SKILL_PATH = ".cursor/skills/vibe-engine";
+const SKILL_PATH = ".cursor/skills/coreward";
 
 type McpServerConfig = {
   command: string;
