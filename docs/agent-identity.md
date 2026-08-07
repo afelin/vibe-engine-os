@@ -38,3 +38,5 @@ This is **authorized actor + optional efficiency defaults**, not organizational 
 - Interop building block for hosts that ask “who is this actor?” once.
 - Session budget efficiency when profiles set tighten-only caps.
 - Not a legal identity assurance product; FROST/DID/cosign are optional future layers, not required for AgentId.
+
+Security invariant (receipts never authorize; STRICT / no `*`): [ward-security.md](ward-security.md).

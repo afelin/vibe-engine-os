@@ -85,7 +85,8 @@ import {
   assertWard,
   effectiveDepth,
   loadActiveMandate,
-  resolveEffectiveBudget,
+  persistRunMandate,
+  resolveEffectiveBudgetStrict,
   resolveMandateProfile,
   verifyOnce,
   writeWardRunState,
@@ -219,11 +220,33 @@ export async function runOSActor(
         rootDir,
         verifiedMandate.mandate,
       );
-      const budget = resolveEffectiveBudget(
+      const budgetResult = resolveEffectiveBudgetStrict(
         verifiedMandate.mandate,
         agentProfile,
       );
+      if (!budgetResult.ok) {
+        return finishRun({
+          input,
+          deps,
+          rootDir,
+          runId,
+          startedAt,
+          actor: createOSPlayer(createInitialOSContext()),
+          success: false,
+          state: "failed",
+          generatedFiles: [],
+          feedbackMarkdown: `## Ward budget failed\n\n${budgetResult.reason}`,
+          gateFailures: [],
+          recordedErrors: [budgetResult.reason],
+          attempts: 0,
+          gateIdsFailed: [],
+          firstPassGreen: false,
+          approvalRequired: false,
+        });
+      }
+      const budget = budgetResult.budget;
       wardMaxContextChars = budget.max_context_chars;
+      persistRunMandate(rootDir, runId, verifiedMandate.mandate);
       writeWardRunState(rootDir, runId, {
         mandate_id: verifiedMandate.mandate.mandate_id,
         verified_at: verifiedMandate.verifiedAt,

@@ -12,7 +12,7 @@ vibe-engine-os is a **promotion gate**, not a codegen toy. Models propose JSON-s
 
 Truth-driven gates (TDD): **deterministic replay** from `events.ndjson`, **Assisted-by** attribution on PRs, and an **adversarial gauntlet** that proves guardrails block forbidden changes.
 
-**Mandate–Ward (opt-in):** a signed **Mandate** is a session work-order/budget (paths, actions, depth, expiry)—not “AI ethics.” When present, **Ward** enforces ALLOW/DENY on the engine path before bond/codegen/patch/promote. **Receipts** are tamper-evident trails (`ward_decision`, capsule, HPURL)—not certification. Absent Mandate ⇒ legacy house rules only. IDE Edit/Shell can still bypass Ward; the product claim is *CI/promote cannot move without Ward when a Mandate is on*.
+**Mandate–Ward (opt-in):** a signed **Mandate** is a session work-order/budget (paths, actions, depth, expiry)—not “AI ethics.” When present, **Ward** enforces ALLOW/DENY on the engine path before bond/codegen/patch/promote. **Receipts** are tamper-evident trails (`ward_decision`, capsule, HPURL)—not certification. Absent Mandate ⇒ legacy house rules only. IDE Edit/Shell can still bypass Ward; the product claim is *CI/promote cannot move without Ward when a Mandate is on*. Security invariant + regulated checklist: [docs/ward-security.md](docs/ward-security.md).
 
 ## Capabilities
 
@@ -22,7 +22,7 @@ vibe-engine-os is a **promotion gate**, not a codegen toy. Models propose JSON-s
 | --- | --- | --- | --- |
 | **TaskBond** | Sealed work order — intent, outcomes, bound files (max 16); scope creep blocked at seal time | [Vibe Request](.github/ISSUE_TEMPLATE/vibe-request.yml) issue with 2–4 paths; MCP `seal_bond` / `validate_bond` | Built-in |
 | **House mandates** | Standing law: forbidden prefixes, approval prefixes, max attempts, approver allowlist | Edit `src/policy/mandates.json`; MCP `evaluate_mandate` before proposing paths | Built-in |
-| **Signed Mandate + Ward** | Opt-in session contract (budget); Ward ALLOW/DENY on engine path; context shrink when verified | `npm run mandate:issue` → `.vibe/active_mandate.json`; principals in `src/policy/principals.json` | Built-in |
+| **Signed Mandate + Ward** | Opt-in session contract (budget); Ward ALLOW/DENY on engine path; context shrink when verified | `npm run mandate:issue` → `.vibe/active_mandate.json`; `npm run ward:doctor`; principals in `.vibe/principals.json` — [ward-security.md](docs/ward-security.md) | Built-in |
 | **Zero-token gates** | Deterministic patch templates — no LLM, $0 cost for templated chores | Match issue title/body to `src/release-gate/gates.json`; MCP `resolve_gate` / `list_gates` | Built-in |
 | **VIBE_DEPTH dial** | Volume knob 0–5: explain → plan → safe files → tests → deploy → protected `/approve` | `VIBE_DEPTH` env or labels `vibe:plan-only` / `vibe:safe` / `vibe:ship` | Built-in |
 | **Capsule + receipt** | Tamper-evident run fingerprint (`capsuleHash`, `vowsHash`) + **View proof** HPURL in issue comment (not a certificate) | Runs automatically; inspect `proof/index.html` or MCP `validate_capsule` | Built-in |
@@ -187,7 +187,7 @@ Set `VIBE_DEPTH` in the environment before `npm run local-issue` or GitHub Actio
 ## Customize law (JSON)
 
 - **House mandates:** `src/policy/mandates.json` — standing forbidden/approval prefixes, max attempts
-- **Signed Mandate:** `.vibe/active_mandate.json` (via `npm run mandate:issue`) — session budget; principals in `src/policy/principals.json`
+- **Signed Mandate:** `.vibe/active_mandate.json` (via `npm run mandate:issue`) — session budget; principals in `.vibe/principals.json`; [ward-security.md](docs/ward-security.md)
 - **Gates:** `src/release-gate/gates.json` — deterministic patch templates and matchers
 - **Schemas:** `src/constitution/catalog.ts` — single source of truth; export via `npm run constitution:export`
 

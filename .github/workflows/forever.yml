@@ -248,6 +248,7 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           VIBE_APPROVERS: ${{ secrets.VIBE_APPROVERS }}
+          VIBE_WARD_STRICT: "1"
         run: bun run agent.ts
 
       - name: Upload run artifact
@@ -336,7 +337,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_ACTOR: ${{ github.actor }}
           VIBE_SKIP_CHECK: "1"
+          VIBE_WARD_STRICT: "1"
         run: npm run promote:apply -- . "$RUN_ID"
 
       - name: Format
@@ -424,8 +427,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_ACTOR: ${{ github.actor }}
           VIBE_HEAD_SHA: ${{ env.VIBE_HEAD_SHA }}
           VIBE_CHECK_ONLY: "1"
+          VIBE_WARD_STRICT: "1"
           RUN_ID: ${{ env.RUN_ID }}
         run: npm run promote:apply -- . "$RUN_ID"
 

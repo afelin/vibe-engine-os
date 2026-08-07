@@ -22,12 +22,14 @@ async function main() {
   const checkOnly = process.env.VIBE_CHECK_ONLY === "1";
   let appliedCount = 0;
 
-  const wardGate = assertPromoteWard(rootDir, runId, {
+  const wardGate = await assertPromoteWard(rootDir, runId, {
     codegenRan: readWardDecisions(rootDir, runId).some(
       (d) => d.action === "codegen",
     ),
+    actor: process.env.GITHUB_ACTOR?.trim() || process.env.VIBE_WARD_ACTOR?.trim(),
   });
-  // Fail-closed only when this run had a VerifiedMandate (ward.json present).
+  // Fail-closed when this run had a VerifiedMandate (ward.json present).
+  // Receipts never authorize — assertPromoteWard re-verifyOnce live.
   if (!wardGate.ok) {
     console.error(wardGate.reason);
     process.exit(1);
