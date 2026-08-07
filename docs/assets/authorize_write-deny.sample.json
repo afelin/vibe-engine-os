@@ -1,0 +1,7 @@
+{
+  "ok": false,
+  "paths": ["src/auth/session.ts"],
+  "reason": "house_forbidden:src/auth/session.ts:src/auth/",
+  "requiresApproval": false,
+  "_sample": "Redacted authorize_write deny scar — house forbidden_prefixes blocked the path. Shape matches AuthorizeWriteResult on fail."
+}

@@ -1,20 +1,25 @@
 # Coreward
 
-**Coreward** is a promotion gate for AI-assisted code: agents may propose changes; house rules, optional Mandate–Ward session budgets, and CI checks decide what lands in Git—with tamper-**evident** receipts, not certification. Free for internal use under [FSL-1.1-Apache-2.0](LICENSE) (Competing Use restricted until Change Date; FAQ: [LICENSE.md](LICENSE.md)). **Start here:** [docs/start-here.md](docs/start-here.md).
+**Yes, fork for your company** — internal agents, runners, and CI are a Permitted Purpose ([LICENSE.md](LICENSE.md)). Competing Use (hosted multi-tenant substitute for others) stays restricted until Change Date.
+
+**Coreward** is a promotion gate for AI-assisted code: agents may propose changes; house rules, optional Mandate–Ward session budgets, and CI checks decide what lands in Git—with tamper-**evident** receipts, not certification. Free for internal use under [FSL-1.1-Apache-2.0](LICENSE). **Start here:** [docs/start-here.md](docs/start-here.md). Why not just Cursor rules? [docs/compare-cursor-rules.md](docs/compare-cursor-rules.md).
 
 Sovereign AI dev cluster with a **headless xmachines Play constitution**: one Zod catalog for all law artifacts, `definePlayer` for promotion authority, and crawl-based CI proof that the OS machine matches `gates.json`.
 
 [![CI](https://github.com/afelin/coreward/actions/workflows/ci.yml/badge.svg)](https://github.com/afelin/coreward/actions/workflows/ci.yml)
 [![Pages](https://img.shields.io/badge/GitHub%20Pages-live-2ea44f)](https://afelin.github.io/coreward/)
 [![License: FSL-1.1-Apache-2.0](https://img.shields.io/badge/License-FSL--1.1--Apache--2.0-blue)](LICENSE.md)
+· [Support tip](https://donate.stripe.com/8x24gzfZy2gG0g3bRCbsc00) (voluntary — not a license purchase)
 
-**Repo:** [github.com/afelin/coreward](https://github.com/afelin/coreward) · **Start here:** [docs/start-here.md](docs/start-here.md) — 5 minutes, any tool (GitHub-only, Cursor + MCP, external agent, or legal-space dial). Deeper walks: [Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md) · [Nocode Quickstart](docs/nocode-quickstart.md) · [Plain-Language Briefing](docs/plain-language-briefing.md) · [Trust](https://afelin.github.io/coreward/trust/).
+**Repo:** [github.com/afelin/coreward](https://github.com/afelin/coreward) · **Start here:** [docs/start-here.md](docs/start-here.md) — 5 minutes, any tool (GitHub-only, Cursor + MCP, external agent, or legal-space dial). Deeper walks: [Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md) · [Nocode Quickstart](docs/nocode-quickstart.md) · [Plain-Language Briefing](docs/plain-language-briefing.md) · [Trust / Signals](https://afelin.github.io/coreward/trust/).
 
-**Public surface (GitHub Pages):** [white paper](https://afelin.github.io/coreward/whitepaper/) · [adopt](https://afelin.github.io/coreward/adopt/) · [status](https://afelin.github.io/coreward/status/) · [trust](https://afelin.github.io/coreward/trust/) · [community](https://afelin.github.io/coreward/community/) (Telegram + support) · [site source](site/). Manuscript: `papers/coreward-whitepaper.md` (`npm run site:build` regenerates HTML). Owner: set URLs in [`site/community/config.json`](site/community/config.json) — see [`docs/community.md`](docs/community.md).
+**Public surface (GitHub Pages):** [white paper](https://afelin.github.io/coreward/whitepaper/) · [adopt](https://afelin.github.io/coreward/adopt/) · [status](https://afelin.github.io/coreward/status/) · [trust](https://afelin.github.io/coreward/trust/) · [community](https://afelin.github.io/coreward/community/) · [Support tip](https://donate.stripe.com/8x24gzfZy2gG0g3bRCbsc00) · [site source](site/). Manuscript: `papers/coreward-whitepaper.md` (`npm run site:build` regenerates HTML). Telegram invite: set in [`site/community/config.json`](site/community/config.json) when ready — see [`docs/community.md`](docs/community.md).
 
 > **Nomenclature.** Product name is **Coreward**. Wire aliases `vibe/*` labels, `.vibe/` runtime, `VIBE_*` env vars, and `vibe-release-gates` MCP remain dual-read for compatibility—see [docs/start-here.md](docs/start-here.md).
 
 ## Agent day-1
+
+**`npm run activate && npm run coreward:authorize -- --files …`**
 
 ```bash
 npm run activate
@@ -146,6 +151,7 @@ npm run activate
 | [Public surface](docs/PUBLIC.md) | What is public vs `internal/` (RISE export) |
 | [Host packs](docs/host-packs.md) | Cursor / Claude Code / OpenClaw / Hermes — `authorize_write` first |
 | [Local-first savings](docs/local-first-savings.md) | Bound context, gate hits, `savings:attest` |
+| [Compare: Cursor rules](docs/compare-cursor-rules.md) | AGENTS.md / rules alone vs Coreward (table) |
 | [OS Phases](docs/os-phases.md) | Promotion phase diagram (auto-derived from machine) |
 | [GitHub App](docs/github-app.md) | Enterprise — required checks, branch protection |
 

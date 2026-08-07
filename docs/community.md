@@ -26,7 +26,7 @@ To recreate later: Stripe Dashboard → Product catalog → one-time/custom tip 
 
 ### 3. Verify placeholders are gone
 
-Until Telegram is set, the community page shows an owner TODO when `telegram_url` still contains `YOUR_HANDLE`. Stripe is live when `stripe_payment_link` has no `TEST_PLACEHOLDER`.
+Until Telegram is set, the community page **hides** the Join CTA and shows an owner TODO when `telegram_url` still contains `YOUR_HANDLE`. Stripe is live when `stripe_payment_link` has no `TEST_PLACEHOLDER`.
 
 ## Related
 

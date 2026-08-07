@@ -50,16 +50,17 @@
     <section class="section">
       <h2>Telegram</h2>
       <p>
-        Join the public chat for questions, ideas, and operator notes.
+        Public chat for questions, ideas, and operator notes (when an invite is published).
         Prefer GitHub issues for security reports
         (<a href="https://github.com/afelin/coreward/blob/main/SECURITY.md">SECURITY.md</a>).
       </p>
-      <div class="cta-row">
-        <a class="btn" id="telegram-cta" href="https://t.me/YOUR_HANDLE" rel="noopener noreferrer">Join Telegram</a>
+      <div class="cta-row" id="telegram-cta-row" hidden>
+        <a class="btn" id="telegram-cta" href="#" rel="noopener noreferrer">Join Telegram</a>
       </div>
-      <p id="telegram-todo" class="lede" hidden style="margin-top: 0.75rem; font-size: 0.95rem;">
-        Owner TODO: set <code>telegram_url</code> in <code>config.json</code> (see
-        <a href="https://github.com/afelin/coreward/blob/main/docs/community.md">docs/community.md</a>).
+      <p id="telegram-todo" class="lede" style="margin-top: 0.75rem; font-size: 0.95rem;">
+        Owner TODO: set a real <code>telegram_url</code> in <code>config.json</code> before advertising Join
+        (see <a href="https://github.com/afelin/coreward/blob/main/docs/community.md">docs/community.md</a>).
+        Until then, use GitHub Discussions / issues — no dead invite link.
       </p>
     </section>
 
@@ -116,9 +117,14 @@
           var stripeTodo = document.getElementById("stripe-todo");
 
           if (cfg.telegram_url && tg) {
-            tg.setAttribute("href", cfg.telegram_url);
-            if (isPlaceholder(cfg.telegram_url, PLACEHOLDER_TG) && tgTodo) {
-              tgTodo.hidden = false;
+            var tgRow = document.getElementById("telegram-cta-row");
+            if (isPlaceholder(cfg.telegram_url, PLACEHOLDER_TG)) {
+              if (tgTodo) tgTodo.hidden = false;
+              if (tgRow) tgRow.hidden = true;
+            } else {
+              tg.setAttribute("href", cfg.telegram_url);
+              if (tgRow) tgRow.hidden = false;
+              if (tgTodo) tgTodo.hidden = true;
             }
           }
           if (cfg.stripe_payment_link && tip) {

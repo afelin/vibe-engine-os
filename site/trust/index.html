@@ -59,6 +59,38 @@
       <p>See also the claim ledger unclaimables and <a href="../status/">status</a>.</p>
     </section>
 
+    <section class="section" id="signals">
+      <h2>Signals</h2>
+      <p>
+        Honest scars only — claim-ledger <code>pass</code> items and raw artifacts.
+        No absolute-% savings claims; hosted verify of attestations stays unclaimed.
+      </p>
+      <ul>
+        <li>
+          <strong>Launch proof (green run)</strong> —
+          <a href="https://github.com/afelin/coreward/actions/runs/29321223413">Actions run</a>
+          on
+          <a href="https://github.com/afelin/coreward/issues/36">issue #36</a>
+          (zero-token E2E → PR → receipt → promotion gate).
+        </li>
+        <li>
+          <strong>Sample savings attestation</strong> —
+          <a href="https://github.com/afelin/coreward/blob/main/docs/assets/savings-attest.sample.json">docs/assets/savings-attest.sample.json</a>
+          (<code>npm run savings:attest</code>; local export only).
+        </li>
+        <li>
+          <strong>authorize_write deny scar</strong> —
+          <a href="https://github.com/afelin/coreward/blob/main/docs/assets/authorize_write-deny.sample.json">docs/assets/authorize_write-deny.sample.json</a>
+          (house forbidden path rejected).
+        </li>
+        <li>
+          <strong>TaskBond gauntlet</strong> — 32/32 via
+          <a href="https://github.com/afelin/coreward/actions/workflows/ci.yml">CI</a>
+          / <code>npm run eval:bond</code>.
+        </li>
+      </ul>
+    </section>
+
     <section class="section">
       <h2>How to read evidence</h2>
       <dl>
