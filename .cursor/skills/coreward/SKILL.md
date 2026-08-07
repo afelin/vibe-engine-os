@@ -9,7 +9,7 @@ Solo operator setup: [docs/solo-vibe-coder-guide.md](../../docs/solo-vibe-coder-
 
 Operator entry: comment `/go` on a Vibe Request for the three-action next-step guide. Contract: [docs/agent-contract.md](../../docs/agent-contract.md).
 
-Host packs: [docs/host-packs.md](../../docs/host-packs.md). Local-first savings: [docs/local-first-savings.md](../../docs/local-first-savings.md).
+Host packs: [docs/host-packs.md](../../docs/host-packs.md). Local-first savings: [docs/local-first-savings.md](../../docs/local-first-savings.md). License FAQ: [LICENSE.md](../../LICENSE.md). OpenClaw stub: [.cursor/skills/openclaw-coreward/SKILL.md](../openclaw-coreward/SKILL.md).
 
 ## Instructions
 

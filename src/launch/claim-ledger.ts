@@ -162,6 +162,11 @@ export const CLAIM_CATALOG: readonly ClaimDefinition[] = Object.freeze([
     text: "Issue never invents *; STRICT denies authorized_actor=*",
     assert: "ward_sacred",
   },
+  {
+    id: "savings_attestation_local",
+    text: "Local savings attestation hash-chains gate_hit / contextChars / tokensEstimate from run metrics",
+    assert: "savings_attest",
+  },
 ]);
 
 const UNCLAIMABLE_SET = new Set<string>(UNCLAIMABLE_IDS);

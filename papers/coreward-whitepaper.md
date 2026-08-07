@@ -135,7 +135,13 @@ Coreward does **not** train or host foundation weights. It **reduces what you mu
 
 **Local “weights” (IP that stays yours):** lessons in `.evomem/lessons.ndjson`, capsules/events under `.runs/`, Mandates/AgentId/house law under `.vibe/` and `src/policy/`, and the gate catalog. Policy is portable when inference moves in-house.
 
-**Claim-safe:** when gates miss, bounded prompts may still leave the building—Coreward **reduces and bounds** exposure; it does not claim absolute zero IP egress. Operator checklist: [docs/local-first-savings.md](../docs/local-first-savings.md).
+**Claim-safe:** when gates miss, bounded prompts may still leave the building—Coreward **reduces and bounds** exposure; it does not claim absolute zero IP egress. Operator checklist: [docs/local-first-savings.md](../docs/local-first-savings.md). Export local ROI with `npm run savings:attest` (hash-chained `gate_hit` / `contextChars` / `tokensEstimate`); hosted attestation verify remains **unclaimed**.
+
+### License and local-runtime complementarity
+
+Coreward ships under **FSL-1.1-Apache-2.0** ([`LICENSE`](../LICENSE), FAQ [`LICENSE.md`](../LICENSE.md)): free for internal use on your runners and agents; Competing Use (including offering a hosted substitute for Coreward) is excluded until the Change Date, after which Apache-2.0 applies automatically.
+
+**Complementarity (claim-safe):** OpenClaw, Hermes, and local/open models (e.g. Ollama) are **customers** of Coreward MCP—not runtimes Coreward absorbs. Policy teams can allow local agents **because** writes are Mandated (`authorize_write`) and CI Ward re-verifies promote. Coreward does not claim zero IP egress, IDE sandboxing, or legal certification.
 
 ---
 
@@ -351,8 +357,9 @@ Until publish, leave placeholders (`UNPUBLISHED`, `YYYY-MM-DD`, `TO_BE_FILLED_AT
 
 ## Appendix B — Related in-repo docs
 
-- [`docs/host-packs.md`](../docs/host-packs.md) — Cursor / Claude / OpenCode / Kimi  
+- [`docs/host-packs.md`](../docs/host-packs.md) — Cursor / Claude / OpenCode / OpenClaw / Hermes / Kimi  
 - [`docs/local-first-savings.md`](../docs/local-first-savings.md) — day-one savings + local lessons as IP  
+- [`LICENSE.md`](../LICENSE.md) — FSL FAQ (Change Date → Apache-2.0)  
 - [`docs/start-here.md`](../docs/start-here.md) — five-minute paths  
 - [`docs/ward-security.md`](../docs/ward-security.md) — Mandate–Ward invariant, STRICT checklist, Actions secrets  
 - [`docs/agent-identity.md`](../docs/agent-identity.md) — AgentId gel rules and claims  
