@@ -2,6 +2,7 @@ import * as crypto from "node:crypto";
 import type { VibeDepth } from "../os/depth.js";
 import type { Mandates } from "../policy/evaluate.js";
 import { parseTaskBond } from "../constitution/parse.js";
+import type { VerifiedMandate } from "../ward/index.js";
 import { evaluateTaskBond, type TaskBondDraft } from "./evaluate.js";
 import { parseIssueBody } from "./parse.js";
 
@@ -26,6 +27,8 @@ export type SealTaskBondInput = {
   extraBoundFiles?: string[];
   /** Optional mandate overlay (e.g. gauntlet legal_space); skips disk active-stack. */
   mandates?: Mandates;
+  /** When set, bond seal shrinks/filters to Mandate path_constraints. */
+  verifiedMandate?: VerifiedMandate | null;
 };
 
 export type SealTaskBondResult =
@@ -52,8 +55,20 @@ export function sealTaskBond(input: SealTaskBondInput): SealTaskBondResult {
   };
 
   const evaluation = input.mandates
-    ? evaluateTaskBond(draft, input.depth, rootDir, input.mandates)
-    : evaluateTaskBond(draft, input.depth, rootDir);
+    ? evaluateTaskBond(
+        draft,
+        input.depth,
+        rootDir,
+        input.mandates,
+        input.verifiedMandate ?? null,
+      )
+    : evaluateTaskBond(
+        draft,
+        input.depth,
+        rootDir,
+        undefined,
+        input.verifiedMandate ?? null,
+      );
 
   if (!evaluation.passed) {
     return {

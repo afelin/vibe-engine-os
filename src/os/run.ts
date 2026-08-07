@@ -81,6 +81,14 @@ import { readIssueRunIndex, writeIssueRunIndex } from "../run/issue-index.js";
 import { sha256Content } from "../run/promotion.js";
 import { sealTaskBond, type TaskBond } from "../bond/seal.js";
 import { readTaskBond, writeTaskBond } from "../bond/store.js";
+import {
+  assertWard,
+  effectiveDepth,
+  loadActiveMandate,
+  verifyOnce,
+  writeWardRunState,
+  type VerifiedMandate,
+} from "../ward/index.js";
 
 export type RunInput = {
   issueNumber: string;
@@ -188,8 +196,7 @@ export async function runOSActor(
   const rootDir = input.rootDir ?? ".";
   const deps = depsInput ?? defaultDeps(rootDir);
   const startedAt = Date.now();
-  const depth = getVibeDepth();
-  const caps = depthCapabilities(depth);
+  let depth = getVibeDepth();
   const mandates = loadMandates(rootDir);
   const runId = resolveRunId(input.issueNumber, rootDir);
   const persistedApproval = readPersistedApproval(rootDir, input.issueNumber);
@@ -197,6 +204,46 @@ export async function runOSActor(
     input.approvedBy ?? persistedApproval?.approvedBy ?? undefined;
   const resumeSnapshot = loadResumeSnapshot(rootDir, runId, input.issueNumber);
   const pastPlanning = isPastPlanning(resumeSnapshot);
+
+  // Opt-in Ward: absent Mandate file ⇒ legacy house rules only.
+  let verifiedMandate: VerifiedMandate | null = null;
+  const activeMandate = loadActiveMandate(rootDir);
+  if (activeMandate) {
+    try {
+      verifiedMandate = await verifyOnce(activeMandate, rootDir);
+      depth = effectiveDepth(depth, verifiedMandate) as typeof depth;
+      writeWardRunState(rootDir, runId, {
+        mandate_id: verifiedMandate.mandate.mandate_id,
+        verified_at: verifiedMandate.verifiedAt,
+        path_constraints: verifiedMandate.mandate.path_constraints,
+        actions: verifiedMandate.mandate.actions,
+        max_depth: verifiedMandate.mandate.max_depth,
+        authorized_actor: verifiedMandate.mandate.authorized_actor,
+      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      return finishRun({
+        input,
+        deps,
+        rootDir,
+        runId,
+        startedAt,
+        actor: createOSPlayer(createInitialOSContext()),
+        success: false,
+        state: "failed",
+        generatedFiles: [],
+        feedbackMarkdown: `## Ward verify failed\n\n${message}`,
+        gateFailures: [],
+        recordedErrors: [message],
+        attempts: 0,
+        gateIdsFailed: [],
+        firstPassGreen: false,
+        approvalRequired: false,
+      });
+    }
+  }
+
+  const caps = depthCapabilities(depth);
 
   writeIssueRunIndex(rootDir, input.issueNumber, {
     runId,
@@ -255,6 +302,7 @@ export async function runOSActor(
       depth,
       rootDir,
       extraBoundFiles: gateBoundFiles,
+      verifiedMandate,
     });
 
     appendTraceSpan(rootDir, runId, {
@@ -262,6 +310,35 @@ export async function runOSActor(
       passed: sealed.ok,
       detail: sealed.ok ? sealed.bond.bondHash : sealed.errors.join("; "),
     });
+
+    if (sealed.ok && verifiedMandate) {
+      const wardSeal = assertWard("bond.seal", undefined, verifiedMandate, {
+        rootDir,
+        runId,
+        house: mandates,
+        actor: input.githubActor ?? approvedBy,
+      });
+      if (!wardSeal.ok) {
+        return finishRun({
+          input,
+          deps,
+          rootDir,
+          runId,
+          startedAt,
+          actor,
+          success: false,
+          state: "failed",
+          generatedFiles: [],
+          feedbackMarkdown: `## Ward DENY (bond.seal)\n\n${wardSeal.decision.reason}`,
+          gateFailures: [],
+          recordedErrors: [wardSeal.decision.reason],
+          attempts: 0,
+          gateIdsFailed: [],
+          firstPassGreen: false,
+          approvalRequired: false,
+        });
+      }
+    }
 
     if (!sealed.ok && depth >= 2) {
       const remediation = [
@@ -302,7 +379,12 @@ export async function runOSActor(
 
   const boundFiles = taskBond?.boundFiles ?? gateBoundFiles;
 
-  const lessonRecall = recallLessons(rootDir, boundFiles.length > 0 ? boundFiles : ["src/"]);
+  const lessonRecall = recallLessons(
+    rootDir,
+    boundFiles.length > 0 ? boundFiles : ["src/"],
+    5,
+    { verifiedMandate },
+  );
   const failureRecall = boundFiles
     .flatMap((filePath) => readRecentFailuresByPathPrefix(rootDir, filePath, 3))
     .slice(0, 3);
@@ -352,7 +434,9 @@ export async function runOSActor(
       ],
     };
 
-    const contextFiles = resolveContextFiles(rootDir, fallbackDag, boundFiles);
+    const contextFiles = resolveContextFiles(rootDir, fallbackDag, boundFiles, {
+      verifiedMandate,
+    });
     const plannerBundle = buildContextBundle(rootDir, contextFiles);
     const contextBlob =
       boundFiles.length > 0
@@ -621,7 +705,9 @@ ${vibe}`;
   let tokensEstimate = 0;
   let hallucinationBlocked = false;
 
-  const codegenContextFiles = resolveContextFiles(rootDir, dag, boundFiles);
+  const codegenContextFiles = resolveContextFiles(rootDir, dag, boundFiles, {
+    verifiedMandate,
+  });
   const codegenBundle = buildContextBundle(rootDir, codegenContextFiles);
   const allowedCodegenPaths = [...new Set([...plannedFiles, ...boundFiles])];
 
@@ -668,6 +754,45 @@ ${vibe}`;
       phase: "codegen",
       path: generatedFiles.map((file) => file.path).join(","),
     });
+
+    if (verifiedMandate) {
+      let wardDenied: string | null = null;
+      for (const file of generatedFiles) {
+        const wardCodegen = assertWard("codegen", file.path, verifiedMandate, {
+          rootDir,
+          runId,
+          house: mandates,
+          actor: input.githubActor ?? approvedBy,
+        });
+        if (!wardCodegen.ok) {
+          wardDenied = wardCodegen.decision.reason;
+          break;
+        }
+      }
+      if (wardDenied) {
+        gateFailures = [
+          createGateFailure(
+            "ward",
+            generatedFiles[0]?.path ?? "",
+            wardDenied,
+            `Ward DENY: ${wardDenied}. Re-issue Mandate or shrink bound files.`,
+          ),
+        ];
+        feedbackMarkdown = formatGateFailuresMarkdown(gateFailures, rootDir);
+        recordedErrors.push(feedbackMarkdown);
+        gateIdsFailed.push("ward");
+        send({
+          type: "verification.failed",
+          failure: toClassifiedFailure(
+            "permission",
+            "Ward DENY on codegen",
+            feedbackMarkdown,
+          ),
+        });
+        if (!prepareCodegenRetry(actor, send)) break;
+        continue;
+      }
+    }
 
     const validation = runGeneratedPatchValidators(generatedFiles, {
       allowedPaths: allowedCodegenPaths,
@@ -909,6 +1034,39 @@ ${vibe}`;
       truncated: codegenBundle.truncated,
       hallucinationBlocked,
     });
+  }
+
+  if (verifiedMandate) {
+    const wardPromote = assertWard("promote", undefined, verifiedMandate, {
+      rootDir,
+      runId,
+      house: mandates,
+      actor: input.githubActor ?? approvedBy,
+    });
+    if (!wardPromote.ok) {
+      return finishRun({
+        input,
+        deps,
+        rootDir,
+        runId,
+        startedAt,
+        actor,
+        success: false,
+        state: "failed",
+        generatedFiles: finalVerifiedFiles,
+        feedbackMarkdown: `## Ward DENY (promote)\n\n${wardPromote.decision.reason}`,
+        gateFailures: [],
+        recordedErrors: [wardPromote.decision.reason],
+        attempts,
+        gateIdsFailed: [...gateIdsFailed, "ward"],
+        firstPassGreen: false,
+        tokensEstimate,
+        approvalRequired: false,
+        contextChars: codegenBundle.totalChars,
+        truncated: codegenBundle.truncated,
+        hallucinationBlocked,
+      });
+    }
   }
 
   return finishRun({

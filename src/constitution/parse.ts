@@ -8,6 +8,9 @@ import {
   healResultSchema,
   mandateEvalSchema,
   mandatesSchema,
+  principalsFileSchema,
+  signedMandateSchema,
+  wardDecisionSchema,
   orchestratorIntentSchema,
   recallResultSchema,
   runManifestSchema,
@@ -68,6 +71,18 @@ export function parseMandateEval(data: unknown) {
 
 export function parseMandates(data: unknown) {
   return parseWith("Mandates", mandatesSchema, data);
+}
+
+export function parseSignedMandate(data: unknown) {
+  return parseWith("SignedMandate", signedMandateSchema, data);
+}
+
+export function parseWardDecision(data: unknown) {
+  return parseWith("WardDecision", wardDecisionSchema, data);
+}
+
+export function parsePrincipalsFile(data: unknown) {
+  return parseWith("PrincipalsFile", principalsFileSchema, data);
 }
 
 export function parseTaskBond(data: unknown) {

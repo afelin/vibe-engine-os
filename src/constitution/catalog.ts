@@ -167,6 +167,8 @@ export const taskBondViolationSchema = z.object({
     "require_approval",
     "disallowed_prefix",
     "missing_intent",
+    "outcome_command_injection",
+    "ward_path_denied",
   ]),
   path: z.string().optional(),
   detail: z.string(),
@@ -211,6 +213,49 @@ export const mandatesSchema = z.object({
   max_attempts: z.number().int().positive(),
   approved_operators: z.array(z.string()).optional(),
   bond: bondPolicySchema.optional(),
+});
+
+/** Closed Ward action classes (Mandate session budget). */
+export const wardActionSchema = z.enum([
+  "bond.seal",
+  "codegen",
+  "patch.apply",
+  "promote",
+]);
+
+/**
+ * Signed session Mandate (opt-in). Absent file ⇒ legacy house rules only.
+ * House mandates.json AND this budget — Mandate cannot widen forbids.
+ */
+export const signedMandateSchema = z.object({
+  mandate_id: z.string().min(1),
+  issued_at: z.string().datetime(),
+  expires_at: z.string().datetime(),
+  authorized_actor: z.string().min(1),
+  path_constraints: z.array(z.string()).min(1),
+  actions: z.array(wardActionSchema).min(1),
+  max_depth: z.number().int().min(0).max(5).optional(),
+  issuer_public_key: z.string().min(1),
+  signature: z.string().min(1),
+});
+
+export const wardDecisionSchema = z.object({
+  type: z.literal("ward_decision"),
+  mandate_id: z.string().min(1),
+  action: wardActionSchema,
+  path: z.string().optional(),
+  verdict: z.enum(["ALLOW", "DENY"]),
+  reason: z.string().min(1),
+  at: z.string().datetime(),
+});
+
+export const principalsFileSchema = z.object({
+  principals: z.array(
+    z.object({
+      id: z.string().min(1),
+      public_key: z.string().min(1),
+    }),
+  ),
 });
 
 export const mandateDeltasSchema = z.object({
@@ -343,6 +388,10 @@ export const constitutionCatalog = defineCatalog({
   ScoreboardEntry: scoreboardEntrySchema,
   MandateEval: mandateEvalSchema,
   Mandates: mandatesSchema,
+  SignedMandate: signedMandateSchema,
+  WardDecision: wardDecisionSchema,
+  WardAction: wardActionSchema,
+  PrincipalsFile: principalsFileSchema,
   MandateDeltas: mandateDeltasSchema,
   LegalSpacePack: legalSpacePackSchema,
   ActiveStack: activeStackSchema,

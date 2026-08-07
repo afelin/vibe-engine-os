@@ -3,12 +3,14 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { createOSPlayer, getPersistedSnapshot } from "./player.js";
 import type { OSContext, OSEvent } from "./events.js";
+import type { WardDecision } from "../ward/index.js";
 import { resolveRunDir, sanitizeRunId } from "../run/paths.js";
 
 const EVENTS_FILE = "events.ndjson";
 
 export type ReplayLedgerLine =
   | { type: "replay.init"; context: OSContext }
+  | WardDecision
   | OSEvent;
 
 export type ReplayResult = {
@@ -115,6 +117,8 @@ export function replayRun(rootDir: string, runId: string): ReplayResult {
     (init as { type: "replay.init"; context: OSContext }).context,
   );
   for (const event of events) {
+    // ward_decision lines are receipts, not OS machine events
+    if (event.type === "ward_decision") continue;
     actor.send(event as OSEvent);
   }
   const replayedHash = sha256Json(getPersistedSnapshot(actor));

@@ -3,6 +3,8 @@ import * as path from "node:path";
 import type { ExecutionDag } from "../os/events.js";
 import { collectPlannedFiles } from "../planning/dag.js";
 import { sha256Content } from "../run/promotion.js";
+import type { VerifiedMandate } from "../ward/index.js";
+import { pathFilter } from "../ward/index.js";
 import { capContext, capFileContent } from "./cap.js";
 import { resolveScopedFiles } from "./scoped-repomix.js";
 
@@ -23,16 +25,27 @@ export type BuildContextBundleOpts = {
   maxPerFileChars?: number;
 };
 
+export type ResolveContextFilesOpts = {
+  /** When set, shrink resolved paths to Mandate path_constraints. */
+  verifiedMandate?: VerifiedMandate | null;
+};
+
 export function resolveContextFiles(
   rootDir: string,
   dag: ExecutionDag,
   bondFiles: string[] = [],
+  opts?: ResolveContextFilesOpts,
 ): string[] {
   const planned = collectPlannedFiles(dag);
   const dagScoped =
     planned.length > 0 ? resolveScopedFiles(rootDir, dag) : bondFiles;
   const merged = new Set([...bondFiles, ...dagScoped]);
-  return [...merged].sort();
+  let files = [...merged].sort();
+  const constraints = opts?.verifiedMandate?.mandate.path_constraints;
+  if (constraints) {
+    files = pathFilter(files, constraints);
+  }
+  return files;
 }
 
 export function buildContextBundle(
