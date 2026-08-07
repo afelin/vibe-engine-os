@@ -17,6 +17,7 @@
     "promote:apply": "tsx src/promote/apply-cli.ts",
     "promote:post-pr-gate": "tsx src/promote/post-pr-gate.ts",
     "bond:seal": "tsx src/bond/seal-cli.ts",
+    "mandate:issue": "tsx src/ward/issue-cli.ts",
     "eval:bond": "tsx src/bond/gauntlet-cli.ts",
     "bond:preflight": "tsx src/bond/preflight-cli.ts",
     "replay": "tsx src/os/replay-cli.ts",

@@ -7,6 +7,7 @@ import {
   createOrUpdateCheckRun,
   parseRepository,
 } from "../publishing/github-checks.js";
+import { assertPromoteWard, readWardDecisions } from "../ward/index.js";
 
 const rootDir = process.argv[2] ?? ".";
 const runIdArg = process.argv[3] ?? "";
@@ -20,6 +21,17 @@ async function main() {
   const runId = sanitizeRunId(runIdArg);
   const checkOnly = process.env.VIBE_CHECK_ONLY === "1";
   let appliedCount = 0;
+
+  const wardGate = assertPromoteWard(rootDir, runId, {
+    codegenRan: readWardDecisions(rootDir, runId).some(
+      (d) => d.action === "codegen",
+    ),
+  });
+  // Fail-closed only when this run had a VerifiedMandate (ward.json present).
+  if (!wardGate.ok) {
+    console.error(wardGate.reason);
+    process.exit(1);
+  }
 
   if (!checkOnly) {
     const { applied } = applyPromotionBundle(rootDir, runId);

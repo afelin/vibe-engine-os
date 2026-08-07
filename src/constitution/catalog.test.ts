@@ -139,6 +139,7 @@ describe("constitution catalog", () => {
         "OrchestratorIntent",
         "PlanningPhase",
         "PreflightPhase",
+        "PrincipalsFile",
         "PublishingPhase",
         "RecallResult",
         "ReceivedPhase",
@@ -146,11 +147,14 @@ describe("constitution catalog", () => {
         "RunManifest",
         "ScopedContextBundle",
         "ScoreboardEntry",
+        "SignedMandate",
         "TaskBond",
         "TaskBondEval",
         "TroubleshootPacket",
         "VowAttestation",
         "VerifyingPhase",
+        "WardAction",
+        "WardDecision",
       ].sort(),
     );
     expect(schemas.ExecutionDag).toMatchObject({ type: "object" });

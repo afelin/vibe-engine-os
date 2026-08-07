@@ -6,7 +6,7 @@
 **Source SHA:** `TO_BE_FILLED_AT_PUBLISH` — set to the git commit SHA of the published tree  
 **How to cite:** see [How to cite](#how-to-cite) and repository root [`CITATION.cff`](../CITATION.cff)
 
-> **Honesty note.** This document describes free open-source software mechanisms that run on the operator’s own GitHub repository and CI. It does not claim certification, legal compliance, absolute percentages, or commercial product tiers. Capsules are **tamper-evident**, not tamper-proof. Hosted receipt verify and live CyberReady signed buyer proof remain **unclaimed** until those products exist.
+> **Honesty note.** This document describes free open-source software mechanisms that run on the operator’s own GitHub repository and CI. It does not claim certification, legal compliance, absolute percentages, or commercial product tiers. Capsules are **tamper-evident**, not tamper-proof. Hosted receipt verify and live CyberReady signed buyer proof remain **unclaimed** until those products exist. An optional signed **Mandate** (session budget) enables engine-path **Ward** checks on CI/promote when present; IDE Edit/Shell and out-of-band MCP soft paths can still bypass Ward—product claim is limited to *CI/promote cannot move without Ward when a Mandate is on*, not universal IDE interception.
 
 ---
 

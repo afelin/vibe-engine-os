@@ -15,6 +15,7 @@ import {
   resolveCockpitDecisionId,
   resolveExplainDepth,
 } from "./explain.js";
+import { loadActiveMandate, readWardDecisions, readWardRunState } from "../ward/index.js";
 
 export function resolvePrUrl(rootDir = "."): string | undefined {
   const fromEnv = process.env.VIBE_PR_URL?.trim();
@@ -199,6 +200,7 @@ export function renderCockpitComment(
   const plainReceipt = renderPlainReceiptLine(manifest);
   const gauntletLine = renderGauntletLine(rootDir);
   const tokensSavedLine = renderTokensSavedLine(manifest);
+  const wardLine = renderWardLine(rootDir, manifest?.runId);
 
   const plainBlock = [
     "## Vibe Engine OS",
@@ -211,6 +213,8 @@ export function renderCockpitComment(
     gauntletLine ? "" : undefined,
     tokensSavedLine,
     tokensSavedLine ? "" : undefined,
+    wardLine,
+    wardLine ? "" : undefined,
     "### What's happening",
     describeWhatsHappening(state, context),
     "",
@@ -403,6 +407,27 @@ export function renderTokensSavedLine(manifest?: CockpitManifest): string | unde
 
   if (!zeroToken) return undefined;
   return "**This run saved ~4000 tokens** (zero-token gate path)";
+}
+
+/** Cockpit one line: mandate_id + last DENY reason + gate-used when Mandate present. */
+export function renderWardLine(
+  rootDir = ".",
+  runId?: string,
+): string | undefined {
+  const state = runId ? readWardRunState(rootDir, runId) : null;
+  const active = !state ? loadActiveMandate(rootDir) : null;
+  const mandateId = state?.mandate_id ?? active?.mandate_id;
+  if (!mandateId) return undefined;
+
+  const decisions = runId ? readWardDecisions(rootDir, runId) : [];
+  const lastDeny = [...decisions].reverse().find((d) => d.verdict === "DENY");
+  const allowCount = decisions.filter((d) => d.verdict === "ALLOW").length;
+  const denyPart = lastDeny
+    ? ` · DENY: ${lastDeny.reason.slice(0, 80)}`
+    : allowCount > 0
+      ? ` · ${allowCount} ALLOW`
+      : "";
+  return `**Ward:** \`${mandateId}\`${denyPart} (engine-path; IDE Edit/Shell not covered)`;
 }
 
 function renderReceiptLine(manifest?: CockpitManifest): string | undefined {

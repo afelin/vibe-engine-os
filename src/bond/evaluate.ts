@@ -5,6 +5,8 @@ import {
   type Mandates,
 } from "../policy/evaluate.js";
 import { loadEffectiveMandates } from "../policy/stackables.js";
+import type { VerifiedMandate } from "../ward/index.js";
+import { pathFilter } from "../ward/index.js";
 import { loadProjectProfile, mergeAllowedPrefixes } from "./profile.js";
 
 export type TaskBondViolation = {
@@ -16,7 +18,8 @@ export type TaskBondViolation = {
     | "require_approval"
     | "disallowed_prefix"
     | "missing_intent"
-    | "outcome_command_injection";
+    | "outcome_command_injection"
+    | "ward_path_denied";
   path?: string;
   detail: string;
 };
@@ -55,6 +58,7 @@ export function evaluateTaskBond(
   depth: VibeDepth,
   rootDir = ".",
   mandates: Mandates = loadEffectiveMandates(rootDir),
+  verifiedMandate: VerifiedMandate | null = null,
 ): TaskBondEval {
   const policy = bondPolicy(mandates);
   const profile = loadProjectProfile(undefined, rootDir);
@@ -64,6 +68,22 @@ export function evaluateTaskBond(
   );
 
   const violations: TaskBondViolation[] = [];
+
+  let boundFiles = draft.boundFiles;
+  if (verifiedMandate) {
+    const filtered = pathFilter(
+      boundFiles,
+      verifiedMandate.mandate.path_constraints,
+    );
+    for (const filePath of boundFiles.filter((p) => !filtered.includes(p))) {
+      violations.push({
+        rule: "ward_path_denied",
+        path: filePath,
+        detail: `Path outside Mandate path_constraints (mandate_id=${verifiedMandate.mandate.mandate_id})`,
+      });
+    }
+    boundFiles = filtered;
+  }
 
   if (!draft.intent.trim()) {
     violations.push({
@@ -92,7 +112,7 @@ export function evaluateTaskBond(
 
   if (
     depth >= policy.require_bound_files_min_depth &&
-    draft.boundFiles.length === 0
+    boundFiles.length === 0
   ) {
     violations.push({
       rule: "missing_bound_files",
@@ -101,14 +121,14 @@ export function evaluateTaskBond(
     });
   }
 
-  if (draft.boundFiles.length > policy.max_bound_files) {
+  if (boundFiles.length > policy.max_bound_files) {
     violations.push({
       rule: "too_many_bound_files",
       detail: `At most ${policy.max_bound_files} bound files allowed.`,
     });
   }
 
-  for (const filePath of draft.boundFiles) {
+  for (const filePath of boundFiles) {
     if (
       filePath.includes("..") ||
       filePath.startsWith("/") ||
@@ -137,7 +157,7 @@ export function evaluateTaskBond(
     }
   }
 
-  const mandateEval = evaluateMandates(draft.boundFiles, mandates);
+  const mandateEval = evaluateMandates(boundFiles, mandates);
 
   for (const violation of mandateEval.violations) {
     violations.push({

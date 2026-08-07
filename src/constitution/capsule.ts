@@ -11,7 +11,8 @@ export type CapsuleInput = {
   traceTail?: string[];
 };
 
-function canonicalize(value: unknown): string {
+/** Stable JSON encode for capsule / Mandate signing (reuse across Ward). */
+export function canonicalize(value: unknown): string {
   return JSON.stringify(value);
 }
 

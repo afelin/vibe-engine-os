@@ -43,6 +43,7 @@ export type BatteryReport = {
 export const UNCLAIMABLE_IDS = Object.freeze([
   "hosted_hpurl",
   "cyberready_live",
+  "ide_ward_interceptor",
 ] as const);
 
 export type UnclaimableId = (typeof UNCLAIMABLE_IDS)[number];
@@ -129,6 +130,11 @@ export const CLAIM_CATALOG: readonly ClaimDefinition[] = Object.freeze([
   {
     id: "cyberready_live",
     text: "CyberReady-ready signed proof for buyers",
+    assert: null,
+  },
+  {
+    id: "ide_ward_interceptor",
+    text: "IDE host interceptor for Ward",
     assert: null,
   },
 ]);

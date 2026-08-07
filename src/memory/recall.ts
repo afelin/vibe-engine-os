@@ -1,4 +1,6 @@
 import { capContext } from "../context/cap.js";
+import type { VerifiedMandate } from "../ward/index.js";
+import { pathFilter } from "../ward/index.js";
 import { readLessons, type EvoLesson } from "./lesson.js";
 
 export type RecallResult = {
@@ -8,12 +10,26 @@ export type RecallResult = {
   truncated: boolean;
 };
 
+export type RecallLessonsOpts = {
+  /** When set, shrink path prefixes to Mandate path_constraints. */
+  verifiedMandate?: VerifiedMandate | null;
+};
+
 export function recallLessons(
   rootDir: string,
   pathPrefixes: string[],
   limit = 5,
+  opts?: RecallLessonsOpts,
 ): RecallResult {
-  const prefixes = pathPrefixes.filter(Boolean);
+  let prefixes = pathPrefixes.filter(Boolean);
+  const constraints = opts?.verifiedMandate?.mandate.path_constraints;
+  if (constraints) {
+    prefixes = pathFilter(prefixes, constraints);
+    if (prefixes.length === 0) {
+      // Still allow matching lessons under constraint prefixes themselves
+      prefixes = [...constraints];
+    }
+  }
   const all = readLessons(rootDir, 200);
 
   const matched = all

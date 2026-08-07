@@ -2,6 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { appendOperatorEvent } from "./src/os/event-ledger.js";
 import { readPersistedApproval, persistApproval } from "./src/os/approval-store.js";
+import { maybeIssueApprovalOverride } from "./src/ward/approve-override.js";
 import { runOSActor } from "./src/os/run.js";
 import { renderCockpitComment, resolvePrUrl } from "./src/operator/cockpit.js";
 import { routeGitHubComment } from "./src/operator/github-comment-router.js";
@@ -79,6 +80,17 @@ async function runOS() {
         if (route.event.type === "approval.granted") {
           persistApproval(".", ISSUE_NUMBER, route.event.actor);
           markApprovedBy(route.event.actor);
+          // Option B: plain-text /approve stays; optional CI-bot override Mandate
+          // tags override_kind (never attributes runner key to the human).
+          const override = await maybeIssueApprovalOverride({
+            rootDir: ".",
+            actor: route.event.actor,
+          });
+          if (override.issued) {
+            console.log(
+              `🔐 CI-bot approval override Mandate issued: ${override.mandate.mandate_id} (comment_actor=${route.event.actor})`,
+            );
+          }
         }
       } else {
         console.log("🧭 Operator command denied.");
