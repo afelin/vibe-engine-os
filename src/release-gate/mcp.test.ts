@@ -153,6 +153,7 @@ describe("release gate MCP handlers", () => {
     const parsed = JSON.parse(text) as Record<string, unknown>;
     expect(parsed.ExecutionDag).toMatchObject({ type: "object" });
     expect(parsed.ScopedContextBundle).toMatchObject({ type: "object" });
+    expect(parsed.ContextPack).toMatchObject({ type: "object" });
     expect(parsed.EvoLesson).toMatchObject({ type: "object" });
   });
 
@@ -161,10 +162,19 @@ describe("release gate MCP handlers", () => {
       root_dir: ".",
       bond_files: ["src/os/run.ts"],
       max_total_chars: 5000,
+      ticket_id: "aw_test_pack",
     });
-    const parsed = JSON.parse(text) as { files: unknown[]; totalChars: number };
+    const parsed = JSON.parse(text) as {
+      files: unknown[];
+      totalChars: number;
+      pack: { version: string; ticket_id?: string; hops: number };
+      hops: number;
+    };
     expect(parsed.files.length).toBeGreaterThan(0);
     expect(parsed.totalChars).toBeGreaterThan(0);
+    expect(parsed.pack.version).toBe("context_pack.v1");
+    expect(parsed.pack.ticket_id).toBe("aw_test_pack");
+    expect(typeof parsed.hops).toBe("number");
   });
 
   it("recalls lessons via MCP", () => {

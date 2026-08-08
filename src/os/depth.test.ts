@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  contextPackOptsForDepth,
   depthCapabilities,
   getVibeDepth,
   healMaxLevelForDepth,
@@ -67,5 +68,19 @@ describe("vibe depth dial", () => {
     expect(healMaxLevelForDepth(1)).toBe(1);
     expect(healMaxLevelForDepth(2)).toBe(3);
     expect(healMaxLevelForDepth(5)).toBe(3);
+  });
+
+  it("maps VIBE_DEPTH to ContextPack hops / charBudget / allowLlm", () => {
+    expect(contextPackOptsForDepth(0)).toEqual({
+      maxHops: 0,
+      charBudget: 2_000,
+      allowLlm: false,
+    });
+    expect(contextPackOptsForDepth(3).maxHops).toBe(1);
+    expect(contextPackOptsForDepth(3).allowLlm).toBe(true);
+    expect(contextPackOptsForDepth(5).maxHops).toBe(2);
+    expect(contextPackOptsForDepth(5).charBudget).toBeGreaterThan(
+      contextPackOptsForDepth(3).charBudget,
+    );
   });
 });

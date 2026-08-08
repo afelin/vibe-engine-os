@@ -20,7 +20,7 @@ Do **not** ask for `/approve` on every ticket — only on approval-prefix / prot
 
 ## Agent path
 
-Agents call MCP **`preflight`** once (CLI: `npm run coreward:authorize -- --files …`). Prefer `prefer_gate` when present. Other MCP tools are advanced.
+Agents call MCP **`preflight`** once (CLI: `npm run coreward:authorize -- --files …`). Prefer `prefer_gate` when present. Cost-plane order: **authorize → prefer_gate → ContextPack → LLM**. Share `ticket_id` across agents; pass it to `build_scoped_context`. Other MCP tools are advanced.
 
 ## Security
 

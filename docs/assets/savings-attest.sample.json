@@ -7,7 +7,8 @@
     "gateHits": 7,
     "totalContextChars": 316,
     "totalTokensEstimate": 0,
-    "runsWithMetrics": 7
+    "runsWithMetrics": 7,
+    "graphCacheHits": 0
   },
   "chain": [
     {

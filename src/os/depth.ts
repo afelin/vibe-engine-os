@@ -74,3 +74,25 @@ export function healMaxLevelForDepth(depth: VibeDepth): 0 | 1 | 2 | 3 {
   if (depth <= 1) return 1;
   return 3;
 }
+
+/** ContextPack radius dial — maps VIBE_DEPTH → hops / char budget / LLM allow. */
+export type ContextPackDepthOpts = {
+  maxHops: number;
+  charBudget: number;
+  allowLlm: boolean;
+};
+
+const CONTEXT_PACK_BY_DEPTH: Record<VibeDepth, ContextPackDepthOpts> = {
+  0: { maxHops: 0, charBudget: 2_000, allowLlm: false },
+  1: { maxHops: 0, charBudget: 4_000, allowLlm: false },
+  2: { maxHops: 1, charBudget: 8_000, allowLlm: true },
+  3: { maxHops: 1, charBudget: 16_000, allowLlm: true },
+  4: { maxHops: 2, charBudget: 24_000, allowLlm: true },
+  5: { maxHops: 2, charBudget: 32_000, allowLlm: true },
+};
+
+export function contextPackOptsForDepth(
+  depth: VibeDepth = getVibeDepth(),
+): ContextPackDepthOpts {
+  return { ...CONTEXT_PACK_BY_DEPTH[depth] };
+}
