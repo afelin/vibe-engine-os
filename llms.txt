@@ -4,15 +4,21 @@
 
 ## Must-read (docs triad)
 
-- [docs/start-here.md](./docs/start-here.md) — activate (`coreward:init` / `activate --governed`)
+- [README.md](./README.md) — lean cold path (pain → GitHub loop → also init)
+- [docs/start-here.md](./docs/start-here.md) — init (`coreward:init`; `activate` = legacy alias)
 - [docs/operate.md](./docs/operate.md) — Go / Approve / Merge
 - [docs/ward-security.md](./docs/ward-security.md) — Ward + house rules vs Mandate
 
 Also: [AGENTS.md](./AGENTS.md) — call MCP `preflight` once · [LICENSE.md](./LICENSE.md)
 
+## Advanced
+
+- [docs/capabilities.md](./docs/capabilities.md) — warm catalog (tiers, modules, honest limits)
+
 ## Commands
 
-- `npm run coreward:init`
+- `npm run coreward:init` — only recommended bootstrap
+- `npm run activate` — legacy alias (compat)
 - `npm run coreward:authorize -- --files a.ts,b.ts`
 - `npm run gate:mcp` — MCP server `coreward-release-gates`
 - `npm run ward:doctor`

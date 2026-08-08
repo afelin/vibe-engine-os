@@ -465,6 +465,22 @@ describe("GitHub Actions workflow", () => {
     expect(firstParagraph).toContain("docs/start-here.md");
   });
 
+  it("README stays lean (no inline capability catalog)", () => {
+    const readmePath = path.join(process.cwd(), "README.md");
+    const readme = fs.readFileSync(readmePath, "utf8");
+    const lineCount = readme.split("\n").length;
+    expect(lineCount).toBeLessThanOrEqual(100);
+    expect(readme).not.toMatch(/Capability\s*\|\s*What you get/);
+  });
+
+  it("docs/capabilities.md holds the warm catalog", () => {
+    const capsPath = path.join(process.cwd(), "docs/capabilities.md");
+    expect(fs.existsSync(capsPath)).toBe(true);
+    const caps = fs.readFileSync(capsPath, "utf8");
+    expect(caps).toContain("TaskBond");
+    expect(caps).toMatch(/Capability\s*\|\s*What you get/);
+  });
+
   it("vibe-starter template exists with vibe/run label and cloud-loop smoke prefills", () => {
     const starterPath = path.join(
       process.cwd(),
