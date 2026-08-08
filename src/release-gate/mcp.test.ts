@@ -10,7 +10,7 @@ import {
 import { computeVowsHash } from "../constitution/vows.js";
 
 describe("release gate MCP handlers", () => {
-  it("advertises nineteen tools with preflight first", () => {
+  it("advertises twenty tools with preflight first", () => {
     expect(RELEASE_GATE_TOOLS.map((tool) => tool.name)).toEqual([
       "preflight",
       "authorize_write",
@@ -29,6 +29,7 @@ describe("release gate MCP handlers", () => {
       "set_legal_space",
       "get_active_stack",
       "cyberready_validate_delta",
+      "cyberready_explain_packet",
       "resolve_agent_profile",
       "coreward_mode_status",
     ]);
@@ -67,6 +68,7 @@ describe("release gate MCP handlers", () => {
         expect.objectContaining({ name: "set_legal_space" }),
         expect.objectContaining({ name: "get_active_stack" }),
         expect.objectContaining({ name: "cyberready_validate_delta" }),
+        expect.objectContaining({ name: "cyberready_explain_packet" }),
       ]),
     });
   });
