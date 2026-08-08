@@ -49,6 +49,10 @@ export const runMetricsSchema = z.object({
   hallucinationBlocked: z.boolean().optional(),
   /** True when a zero-token release gate supplied the patch (no LLM). */
   gateHit: z.boolean().optional(),
+  /** True when ContextPack was served from cache (Agentic Cost Plane). */
+  graphCacheHit: z.boolean().optional(),
+  /** Import hops used when building ContextPack. */
+  hops: z.number().int().nonnegative().optional(),
   healLevel: z.number().int().min(0).max(4).optional(),
   agentSlot: z.string().optional(),
   deterministicFix: z.boolean().optional(),
@@ -375,6 +379,46 @@ export const scopedContextBundleSchema = z.object({
   truncated: z.boolean(),
 });
 
+export const contextPackNodeSchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum(["file", "lesson", "gate"]),
+  path: z.string().optional(),
+  lesson_id: z.string().optional(),
+  gate_id: z.string().optional(),
+});
+
+export const contextPackEdgeSchema = z.object({
+  from: z.string().min(1),
+  to: z.string().min(1),
+  kind: z.enum(["imports", "bound", "lesson_on", "gate_matches"]),
+});
+
+export const contextPackLessonSchema = z.object({
+  id: z.string().min(1),
+  path: z.string(),
+  failureClass: z.string(),
+  reuseWhen: z.array(z.string()),
+  gate_id: z.string().optional(),
+  symptom: z.string(),
+  fix: z.string(),
+});
+
+/** ContextPack v1 — Agentic Cost Plane shared read model. */
+export const contextPackSchema = z.object({
+  version: z.literal("context_pack.v1"),
+  ticket_id: z.string().optional(),
+  root: z.string().min(1),
+  paths: z.array(z.string()),
+  nodes: z.array(contextPackNodeSchema),
+  edges: z.array(contextPackEdgeSchema),
+  lessons: z.array(contextPackLessonSchema),
+  char_budget: z.number().int().nonnegative(),
+  hops: z.number().int().nonnegative(),
+  cache_key: z.string().min(1),
+  built_at: z.string().datetime(),
+  graph_cache_hit: z.boolean().optional(),
+});
+
 export const evoLessonSchema = z.object({
   id: z.string().min(1),
   runId: z.string().min(1),
@@ -426,6 +470,7 @@ export const constitutionCatalog = defineCatalog({
   ActiveStack: activeStackSchema,
   BondPolicy: bondPolicySchema,
   ScopedContextBundle: scopedContextBundleSchema,
+  ContextPack: contextPackSchema,
   EvoLesson: evoLessonSchema,
   RecallResult: recallResultSchema,
   GateFeedbackEntry: gateFeedbackEntrySchema,

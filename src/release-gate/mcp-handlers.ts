@@ -23,11 +23,11 @@ import {
   formatMandateVerdict,
   formatSealVerdict,
 } from "../bond/verdict.js";
-import { getVibeDepth } from "../os/depth.js";
+import { contextPackOptsForDepth, getVibeDepth } from "../os/depth.js";
 import {
-  buildContextBundle,
-  resolveContextFiles,
-} from "../context/bundle.js";
+  buildContextPack,
+  formatContextPackBundle,
+} from "../context/context-pack.js";
 import { recallLessons } from "../memory/recall.js";
 import type { ExecutionDag } from "../os/events.js";
 import { parseExecutionDag } from "../constitution/parse.js";
@@ -45,6 +45,7 @@ import {
 } from "../agent-id/index.js";
 import { authorizeWrite } from "../coreward/authorize-write.js";
 import { assertCorewardMode, isCorewardMode } from "../coreward/mode.js";
+import { axDenialFromReason } from "../coreward/ax-denial.js";
 
 /** Canonical MCP server name (Coreward). */
 export const RELEASE_GATE_MCP = {
@@ -213,15 +214,17 @@ export const RELEASE_GATE_TOOLS = [
   {
     name: "build_scoped_context",
     description:
-      "[advanced] Build a ScopedContextBundle from bond files and optional DAG for promotion context.",
+      "[advanced] Build ContextPack v1 + legacy ScopedContextBundle from bond files. Pass ticket_id for multi-agent shared read model. Order: prefer_gate first — skip this on gate hit.",
     inputSchema: {
       type: "object",
       properties: {
         root_dir: { type: "string" },
         bond_files: { type: "array", items: { type: "string" } },
         dag: { type: "object" },
+        ticket_id: { type: "string" },
         max_total_chars: { type: "number" },
         max_per_file_chars: { type: "number" },
+        max_hops: { type: "number" },
       },
       required: ["bond_files"],
     },
@@ -353,6 +356,14 @@ export function callReleaseGateTool(
   if (name === "preflight") {
     const rootDir = typeof args.root_dir === "string" ? args.root_dir : ".";
     const result = runAuthorizeWriteArgs(args);
+    const denial =
+      !result.ok
+        ? axDenialFromReason(
+            result.reason,
+            result.paths,
+            result.prefer_gate,
+          )
+        : null;
     return JSON.stringify(
       {
         ok: result.ok,
@@ -362,6 +373,16 @@ export function callReleaseGateTool(
         reason: result.reason,
         paths: result.paths,
         ...(result.requiresApproval ? { requiresApproval: true } : {}),
+        ...(denial
+          ? { code: denial.code, next: denial.next }
+          : {}),
+        /** Cost-plane order reminder when gate is available. */
+        ...(result.prefer_gate
+          ? {
+              short_circuit:
+                "prefer_gate → apply gate (skip ContextPack + LLM)",
+            }
+          : {}),
       },
       null,
       2,
@@ -613,16 +634,51 @@ export function callReleaseGateTool(
             })),
           };
 
-    const files = resolveContextFiles(rootDir, dagInput, bondFiles);
-    const bundle = buildContextBundle(rootDir, files, {
-      maxTotalChars:
-        typeof args.max_total_chars === "number" ? args.max_total_chars : undefined,
+    const depth = getVibeDepth();
+    const depthOpts = contextPackOptsForDepth(depth);
+    const maxTotal =
+      typeof args.max_total_chars === "number"
+        ? args.max_total_chars
+        : depthOpts.charBudget;
+    const maxHops =
+      typeof args.max_hops === "number" ? args.max_hops : depthOpts.maxHops;
+    const ticketId =
+      typeof args.ticket_id === "string" ? args.ticket_id : undefined;
+
+    const pack = buildContextPack(rootDir, {
+      bond_files: bondFiles,
+      dag: dagInput,
+      ticket_id: ticketId,
+      maxHops,
+      charBudget: maxTotal,
+      maxPerFileChars:
+        typeof args.max_per_file_chars === "number"
+          ? args.max_per_file_chars
+          : undefined,
+      depth,
+      allowLlm: depthOpts.allowLlm,
+    });
+
+    const formatted = formatContextPackBundle(rootDir, pack, {
       maxPerFileChars:
         typeof args.max_per_file_chars === "number"
           ? args.max_per_file_chars
           : undefined,
     });
-    return JSON.stringify(bundle, null, 2);
+
+    // Backward-compatible: legacy bundle fields + structured ContextPack
+    return JSON.stringify(
+      {
+        files: formatted.files,
+        totalChars: formatted.totalChars,
+        truncated: formatted.truncated,
+        pack: formatted.pack,
+        graph_cache_hit: formatted.pack.graph_cache_hit === true,
+        hops: formatted.pack.hops,
+      },
+      null,
+      2,
+    );
   }
 
   if (name === "recall_lessons") {
@@ -700,7 +756,42 @@ export function callReleaseGateTool(
   }
 
   if (name === "authorize_write") {
-    return JSON.stringify(runAuthorizeWriteArgs(args), null, 2);
+    const result = runAuthorizeWriteArgs(args);
+    if (!result.ok) {
+      const denial = axDenialFromReason(
+        result.reason,
+        result.paths,
+        result.prefer_gate,
+      );
+      return JSON.stringify(
+        {
+          ...result,
+          code: denial.code,
+          next: denial.next,
+          ...(result.prefer_gate
+            ? {
+                short_circuit:
+                  "prefer_gate → apply gate (skip ContextPack + LLM)",
+              }
+            : {}),
+        },
+        null,
+        2,
+      );
+    }
+    return JSON.stringify(
+      {
+        ...result,
+        ...(result.prefer_gate
+          ? {
+              short_circuit:
+                "prefer_gate → apply gate (skip ContextPack + LLM)",
+            }
+          : {}),
+      },
+      null,
+      2,
+    );
   }
 
   if (name === "coreward_mode_status") {

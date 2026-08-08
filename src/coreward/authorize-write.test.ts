@@ -107,6 +107,8 @@ describe("authorize_write", () => {
       });
       expect(result.ok).toBe(false);
       expect(result.reason).toContain("house_forbidden");
+      expect(result.code).toBe("house_forbidden");
+      expect(result.next).toBeTruthy();
       expect(result.ticket_id).toBeUndefined();
     } finally {
       fs.rmSync(root, { recursive: true, force: true });

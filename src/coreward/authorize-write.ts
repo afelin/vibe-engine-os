@@ -25,6 +25,7 @@ import {
   type SignedMandate,
 } from "../ward/index.js";
 import { loadReleaseGates, resolveGateFromRegistry } from "../release-gate/registry.js";
+import { axDenialFromReason, type AxDenial } from "./ax-denial.js";
 
 export type AuthorizeWriteInput = {
   proposed_files: string[];
@@ -45,6 +46,9 @@ export type AuthorizeWriteResult = {
   requiresApproval?: boolean;
   /** True when an existing same-path ticket was refreshed. */
   refreshed?: boolean;
+  /** Compact Ax denial fields when ok=false (Agentic Cost Plane). */
+  code?: string;
+  next?: string;
 };
 
 export type AuthorizeTicket = {
@@ -355,12 +359,36 @@ export function validateAuthorizeTicket(
  * One-call authorize: house AND Mandate pathFilter AND AgentId budget.
  * On success mints (or same-path refreshes) a ticket for Coreward Mode engine-path checks.
  * Auto-exports ticket id into COREWARD_AUTHORIZE_TICKET.
+ *
+ * Cost-plane order: authorize → prefer_gate → ContextPack → LLM.
  */
+function withAxDenial(
+  result: AuthorizeWriteResult & { ok: false },
+): AuthorizeWriteResult {
+  const denial: AxDenial = axDenialFromReason(
+    result.reason,
+    result.paths,
+    result.prefer_gate,
+  );
+  return {
+    ...result,
+    code: denial.code,
+    next: denial.next,
+    ...(denial.prefer_gate != null
+      ? { prefer_gate: denial.prefer_gate }
+      : {}),
+  };
+}
+
 export function authorizeWrite(input: AuthorizeWriteInput): AuthorizeWriteResult {
   const rootDir = input.root_dir ?? ".";
   const paths = normalizePaths(input.proposed_files);
   if (paths.length === 0) {
-    return { ok: false, paths: [], reason: "proposed_files_required" };
+    return withAxDenial({
+      ok: false,
+      paths: [],
+      reason: "proposed_files_required",
+    });
   }
 
   const mandates: Mandates = loadEffectiveMandates(rootDir);
@@ -370,39 +398,39 @@ export function authorizeWrite(input: AuthorizeWriteInput): AuthorizeWriteResult
       .filter((v) => v.rule === "forbidden")
       .map((v) => `${v.path}:${v.prefix}`)
       .join(",");
-    return {
+    return withAxDenial({
       ok: false,
       paths,
       reason: `house_forbidden:${forbidden}`,
       requiresApproval: house.requiresApproval,
-    };
+    });
   }
 
   const mandate = loadActiveMandate(rootDir);
   const budget = agentBudgetPaths(rootDir, input.actor, mandate);
   if (!budget.ok) {
-    return { ok: false, paths, reason: budget.reason };
+    return withAxDenial({ ok: false, paths, reason: budget.reason });
   }
 
   if (budget.maxBound !== undefined && paths.length > budget.maxBound) {
-    return {
+    return withAxDenial({
       ok: false,
       paths,
       reason: `agent_max_bound_files:${paths.length}>${budget.maxBound}`,
-    };
+    });
   }
 
   if (budget.paths !== null) {
     const allowed = pathFilter(paths, budget.paths);
     if (allowed.length !== paths.length) {
       const denied = paths.filter((p) => !allowed.includes(p));
-      return {
+      return withAxDenial({
         ok: false,
         paths,
         reason: mandate
           ? `mandate_pathFilter:${denied.join(",")}`
           : `agent_path_constraints:${denied.join(",")}`,
-      };
+      });
     }
   }
 
@@ -415,7 +443,7 @@ export function authorizeWrite(input: AuthorizeWriteInput): AuthorizeWriteResult
   // Approval-prefix paths: surface requiresApproval but do NOT mint an
   // engine-usable ticket (Coreward Mode must not bypass human /approve).
   if (house.requiresApproval) {
-    return {
+    return withAxDenial({
       ok: false,
       paths,
       reason: prefer_gate
@@ -423,7 +451,7 @@ export function authorizeWrite(input: AuthorizeWriteInput): AuthorizeWriteResult
         : "needs_approval",
       prefer_gate,
       requiresApproval: true,
-    };
+    });
   }
 
   const existing = findFreshTicketForPaths(rootDir, paths);

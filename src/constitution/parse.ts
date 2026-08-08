@@ -15,6 +15,7 @@ import {
   orchestratorIntentSchema,
   recallResultSchema,
   runManifestSchema,
+  contextPackSchema,
   scopedContextBundleSchema,
   scoreboardEntrySchema,
   taskBondEvalSchema,
@@ -100,6 +101,10 @@ export function parseTaskBondEval(data: unknown) {
 
 export function parseScopedContextBundle(data: unknown) {
   return parseWith("ScopedContextBundle", scopedContextBundleSchema, data);
+}
+
+export function parseContextPack(data: unknown) {
+  return parseWith("ContextPack", contextPackSchema, data);
 }
 
 export function parseEvoLesson(data: unknown) {

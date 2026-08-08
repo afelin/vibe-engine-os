@@ -125,6 +125,7 @@ describe("constitution catalog", () => {
         "AwaitingApprovalPhase",
         "BondPolicy",
         "CompletedPhase",
+        "ContextPack",
         "EvoLesson",
         "ExecutionDag",
         "FailedPhase",

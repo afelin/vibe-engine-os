@@ -23,6 +23,12 @@ export type SavingsRunMetrics = {
   contextChars?: number;
   tokensEstimate?: number;
   firstPassGreen?: boolean;
+  /** ContextPack served from cache. */
+  graphCacheHit?: boolean;
+  /** Import hops used for ContextPack. */
+  hops?: number;
+  /** Lesson was absorbed into a gate candidate / prefer_gate path. */
+  gateAbsorbedLesson?: boolean;
 };
 
 export type SavingsRunLink = {
@@ -44,6 +50,7 @@ export type SavingsAttestation = {
     totalContextChars: number;
     totalTokensEstimate: number;
     runsWithMetrics: number;
+    graphCacheHits: number;
   };
   chain: SavingsRunLink[];
   /** Tip of the hash chain (last entryHash), or null if empty. */
@@ -71,6 +78,9 @@ export function pickSavingsMetrics(
     contextChars?: number;
     tokensEstimate?: number;
     firstPassGreen?: boolean;
+    graphCacheHit?: boolean;
+    hops?: number;
+    gateAbsorbedLesson?: boolean;
   } | null,
 ): SavingsRunMetrics {
   if (!metrics) return {};
@@ -89,6 +99,15 @@ export function pickSavingsMetrics(
   }
   if (metrics.firstPassGreen !== undefined) {
     out.firstPassGreen = metrics.firstPassGreen;
+  }
+  if (metrics.graphCacheHit !== undefined) {
+    out.graphCacheHit = metrics.graphCacheHit;
+  }
+  if (typeof metrics.hops === "number") {
+    out.hops = metrics.hops;
+  }
+  if (metrics.gateAbsorbedLesson !== undefined) {
+    out.gateAbsorbedLesson = metrics.gateAbsorbedLesson;
   }
   return out;
 }
@@ -186,7 +205,9 @@ function collectRunSources(
       const hasAny =
         metrics.gateHit !== undefined ||
         typeof metrics.contextChars === "number" ||
-        typeof metrics.tokensEstimate === "number";
+        typeof metrics.tokensEstimate === "number" ||
+        metrics.graphCacheHit !== undefined ||
+        typeof metrics.hops === "number";
       if (hasAny || !byId.has(runId)) {
         byId.set(runId, {
           runId,
@@ -214,7 +235,9 @@ function collectRunSources(
     return (
       m.gateHit !== undefined ||
       typeof m.contextChars === "number" ||
-      typeof m.tokensEstimate === "number"
+      typeof m.tokensEstimate === "number" ||
+      m.graphCacheHit !== undefined ||
+      typeof m.hops === "number"
     );
   });
 }
@@ -235,6 +258,7 @@ export function buildSavingsAttestation(
   let gateHits = 0;
   let totalContextChars = 0;
   let totalTokensEstimate = 0;
+  let graphCacheHits = 0;
 
   for (const src of sources) {
     const metrics = pickSavingsMetrics(src.metrics);
@@ -252,6 +276,7 @@ export function buildSavingsAttestation(
       prevHash,
     });
     if (metrics.gateHit === true) gateHits++;
+    if (metrics.graphCacheHit === true) graphCacheHits++;
     if (typeof metrics.contextChars === "number") {
       totalContextChars += metrics.contextChars;
     }
@@ -271,6 +296,7 @@ export function buildSavingsAttestation(
       totalContextChars,
       totalTokensEstimate,
       runsWithMetrics: chain.length,
+      graphCacheHits,
     },
     chain,
     tipHash: prevHash,

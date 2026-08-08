@@ -2,7 +2,12 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { buildScopedRepomix, resolveScopedFiles } from "./scoped-repomix.js";
+import {
+  buildScopedRepomix,
+  collectImportClosure,
+  resolveLocalImport,
+  resolveScopedFiles,
+} from "./scoped-repomix.js";
 import type { ExecutionDag } from "../os/events.js";
 
 describe("scoped repomix", () => {
@@ -58,6 +63,27 @@ describe("scoped repomix", () => {
     const context = buildScopedRepomix(root, dag);
     expect(context.length).toBeGreaterThanOrEqual(500);
     expect(context).toContain("src/main.ts");
+  });
+
+  it("never escapes ticket∪import closure via path traversal", () => {
+    const root = makeFixture(tmpDirs);
+    fs.writeFileSync(
+      path.join(root, "src/evil.ts"),
+      `import { x } from "../../etc/passwd";\nexport const evil = 1;\n`,
+    );
+    const closure = collectImportClosure(root, ["src/evil.ts"], 2);
+    expect(closure).toContain("src/evil.ts");
+    expect(closure.every((p) => !p.includes(".."))).toBe(true);
+    expect(closure.every((p) => !p.startsWith("/"))).toBe(true);
+    expect(resolveLocalImport(root, "src", "../../etc/passwd")).toBeNull();
+  });
+
+  it("caps hops so 0-hop is seed only", () => {
+    const root = makeFixture(tmpDirs);
+    const zero = collectImportClosure(root, ["src/main.ts"], 0);
+    expect(zero).toEqual(["src/main.ts"]);
+    const one = collectImportClosure(root, ["src/main.ts"], 1);
+    expect(one).toContain("src/util.ts");
   });
 });
 

@@ -45,6 +45,22 @@ describe("pickSavingsMetrics", () => {
       tokensEstimate: 400,
     });
   });
+
+  it("preserves graphCacheHit / hops / gateAbsorbedLesson", () => {
+    expect(
+      pickSavingsMetrics({
+        graphCacheHit: true,
+        hops: 1,
+        gateAbsorbedLesson: true,
+        contextChars: 10,
+      }),
+    ).toMatchObject({
+      graphCacheHit: true,
+      hops: 1,
+      gateAbsorbedLesson: true,
+      contextChars: 10,
+    });
+  });
 });
 
 describe("savings attestation chain", () => {
@@ -98,6 +114,7 @@ describe("savings attestation chain", () => {
     expect(attestation.summary.gateHits).toBe(1);
     expect(attestation.summary.totalContextChars).toBe(600);
     expect(attestation.summary.totalTokensEstimate).toBe(200);
+    expect(attestation.summary.graphCacheHits).toBe(0);
     expect(attestation.chain[0].prevHash).toBeNull();
     expect(attestation.chain[1].prevHash).toBe(attestation.chain[0].entryHash);
     expect(attestation.tipHash).toBe(attestation.chain[1].entryHash);

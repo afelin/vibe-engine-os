@@ -9,6 +9,7 @@ import {
   readAuthorizeTicket,
   validateAuthorizeTicket,
 } from "./authorize-write.js";
+import { axDenialFromReason, type AxDenial } from "./ax-denial.js";
 import type { VerifiedMandate } from "../ward/index.js";
 
 export type CorewardModeConfig = {
@@ -19,7 +20,7 @@ export type EnginePathPhase = "codegen" | "patch" | "promote" | "forever";
 
 export type CorewardModeGateResult =
   | { ok: true; via: "mode_off" | "mandate" | "ticket" }
-  | { ok: false; reason: string };
+  | ({ ok: false; reason: string } & Pick<AxDenial, "code" | "next" | "paths">);
 
 const MODE_REL = path.join(".vibe", "coreward-mode.json");
 
@@ -92,9 +93,14 @@ export function assertCorewardMode(
     "";
 
   if (!ticketId) {
+    const reason = `coreward_mode:${phase}:missing_ticket_or_mandate`;
+    const denial = axDenialFromReason("missing_ticket_or_mandate", paths);
     return {
       ok: false,
-      reason: `coreward_mode:${phase}:missing_ticket_or_mandate`,
+      reason,
+      code: denial.code,
+      next: denial.next,
+      paths,
     };
   }
 
@@ -111,9 +117,14 @@ export function assertCorewardMode(
     actor ? { actor } : undefined,
   );
   if (!validated.ok) {
+    const reason = `coreward_mode:${phase}:${validated.reason}`;
+    const denial = axDenialFromReason(validated.reason, ticketPaths);
     return {
       ok: false,
-      reason: `coreward_mode:${phase}:${validated.reason}`,
+      reason,
+      code: denial.code,
+      next: denial.next,
+      paths: ticketPaths,
     };
   }
   return { ok: true, via: "ticket" };
