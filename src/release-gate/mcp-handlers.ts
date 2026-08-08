@@ -145,6 +145,22 @@ export const RELEASE_GATE_TOOLS = [
     },
   },
   {
+    name: "evaluate_house_rules",
+    description:
+      "[advanced] Alias of evaluate_mandate — house rules only (not Signed Mandate). Prefer preflight.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        proposed_files: {
+          type: "array",
+          items: { type: "string" },
+        },
+        root_dir: { type: "string" },
+      },
+      required: ["proposed_files"],
+    },
+  },
+  {
     name: "constitution_schemas",
     description:
       "[advanced] Export JSON Schema for all constitution catalog artifacts (DAG, manifest, gate failures, mandates).",

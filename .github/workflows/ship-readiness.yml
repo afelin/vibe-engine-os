@@ -50,7 +50,6 @@ jobs:
           VIBE_MANDATE_PRIVATE_KEY: ${{ secrets.VIBE_MANDATE_PRIVATE_KEY }}
           VIBE_MANDATE_PUBLIC_KEY: ${{ secrets.VIBE_MANDATE_PUBLIC_KEY }}
         run: npm run battery:prelaunch -- --cloud
-        continue-on-error: true
 
       - name: Upload battery report
         if: always()

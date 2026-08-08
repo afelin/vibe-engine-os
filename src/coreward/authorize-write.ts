@@ -54,10 +54,35 @@ export type AuthorizeTicket = {
   expires_at: string;
   prefer_gate?: string | null;
   actor?: string;
+  /** When true, Coreward Mode must not treat this ticket as engine authorization. */
+  requires_approval?: boolean;
 };
 
 const TICKETS_REL = path.join(".vibe", "authorize-tickets");
 const DEFAULT_TTL_MS = 60 * 60 * 1000;
+
+/** Per-rootDir ticket binding — preferred over process-global env (H4). */
+const authorizeTicketByRoot = new Map<string, string>();
+
+function rootKey(rootDir: string): string {
+  return path.resolve(rootDir);
+}
+
+export function setAuthorizeTicketBinding(
+  rootDir: string,
+  ticketId: string,
+): void {
+  authorizeTicketByRoot.set(rootKey(rootDir), ticketId);
+}
+
+export function getAuthorizeTicketBinding(rootDir: string): string | undefined {
+  return authorizeTicketByRoot.get(rootKey(rootDir));
+}
+
+/** Test helper — clear in-memory bindings. */
+export function clearAuthorizeTicketBindings(): void {
+  authorizeTicketByRoot.clear();
+}
 
 function ticketsDir(rootDir: string): string {
   return path.join(rootDir, TICKETS_REL);
@@ -155,6 +180,7 @@ export function mintAuthorizeTicket(
     actor?: string;
     ttl_ms?: number;
     ticket_id?: string;
+    requires_approval?: boolean;
   },
 ): AuthorizeTicket {
   const now = Date.now();
@@ -166,6 +192,7 @@ export function mintAuthorizeTicket(
     expires_at: new Date(now + ttl).toISOString(),
     prefer_gate: opts?.prefer_gate ?? null,
     ...(opts?.actor ? { actor: opts.actor } : {}),
+    ...(opts?.requires_approval ? { requires_approval: true } : {}),
   };
   const dir = ticketsDir(rootDir);
   fs.mkdirSync(dir, { recursive: true });
@@ -211,6 +238,7 @@ export function findFreshTicketForPaths(
       ) as AuthorizeTicket;
       if (!raw?.ticket_id || !Array.isArray(raw.paths)) continue;
       if (now.getTime() > Date.parse(raw.expires_at)) continue;
+      if (raw.requires_approval) continue;
       if (!pathsEqual(normalizePaths(raw.paths), wanted)) continue;
       const exp = Date.parse(raw.expires_at);
       if (exp >= bestExp) {
@@ -244,6 +272,7 @@ export function findCoveringTicket(
       ) as AuthorizeTicket;
       if (!raw?.ticket_id || !Array.isArray(raw.paths)) continue;
       if (now.getTime() > Date.parse(raw.expires_at)) continue;
+      if (raw.requires_approval) continue;
       const allowed = new Set(normalizePaths(raw.paths));
       if (!wanted.every((p) => allowed.has(p))) continue;
       const exp = Date.parse(raw.expires_at);
@@ -259,8 +288,8 @@ export function findCoveringTicket(
 }
 
 /**
- * Bind a covering ticket into COREWARD_AUTHORIZE_TICKET for the engine path.
- * Returns the ticket id when bound.
+ * Bind a covering ticket into per-root binding + COREWARD_AUTHORIZE_TICKET.
+ * Prefer getAuthorizeTicketBinding(root) over ambient env for engine asserts.
  */
 export function bindAuthorizeTicketEnv(
   rootDir: string,
@@ -270,24 +299,45 @@ export function bindAuthorizeTicketEnv(
   const ticket =
     findCoveringTicket(rootDir, paths, now) ??
     findFreshTicketForPaths(rootDir, paths, now);
-  if (!ticket) return process.env.COREWARD_AUTHORIZE_TICKET?.trim() || undefined;
+  if (!ticket) {
+    return (
+      getAuthorizeTicketBinding(rootDir) ||
+      process.env.COREWARD_AUTHORIZE_TICKET?.trim() ||
+      undefined
+    );
+  }
+  setAuthorizeTicketBinding(rootDir, ticket.ticket_id);
   process.env.COREWARD_AUTHORIZE_TICKET = ticket.ticket_id;
   return ticket.ticket_id;
 }
 
 /**
  * Validate a ticket covers the requested paths and has not expired.
+ * When the ticket was minted with an actor, opts.actor must match (H3).
  */
 export function validateAuthorizeTicket(
   rootDir: string,
   ticketId: string,
   paths: string[],
   now = new Date(),
+  opts?: { actor?: string },
 ): { ok: true; ticket: AuthorizeTicket } | { ok: false; reason: string } {
   const ticket = readAuthorizeTicket(rootDir, ticketId);
   if (!ticket) return { ok: false, reason: "ticket_not_found" };
   if (now.getTime() > Date.parse(ticket.expires_at)) {
     return { ok: false, reason: "ticket_expired" };
+  }
+  if (ticket.requires_approval) {
+    return { ok: false, reason: "ticket_requires_approval" };
+  }
+  if (ticket.actor) {
+    const actor = opts?.actor?.trim() ?? "";
+    if (!actor) {
+      return { ok: false, reason: "ticket_actor_required" };
+    }
+    if (actor !== ticket.actor) {
+      return { ok: false, reason: `ticket_actor_mismatch:${ticket.actor}` };
+    }
   }
   const allowed = new Set(ticket.paths.map(normalizeProposedPath));
   const normalized = normalizePaths(paths);
@@ -362,6 +412,20 @@ export function authorizeWrite(input: AuthorizeWriteInput): AuthorizeWriteResult
     input.body ?? "",
   );
 
+  // Approval-prefix paths: surface requiresApproval but do NOT mint an
+  // engine-usable ticket (Coreward Mode must not bypass human /approve).
+  if (house.requiresApproval) {
+    return {
+      ok: false,
+      paths,
+      reason: prefer_gate
+        ? `needs_approval;prefer_gate:${prefer_gate}`
+        : "needs_approval",
+      prefer_gate,
+      requiresApproval: true,
+    };
+  }
+
   const existing = findFreshTicketForPaths(rootDir, paths);
   const ticket = mintAuthorizeTicket(rootDir, paths, {
     prefer_gate,
@@ -371,6 +435,7 @@ export function authorizeWrite(input: AuthorizeWriteInput): AuthorizeWriteResult
   });
 
   process.env.COREWARD_AUTHORIZE_TICKET = ticket.ticket_id;
+  setAuthorizeTicketBinding(rootDir, ticket.ticket_id);
 
   const refreshed = Boolean(existing);
   return {
@@ -385,7 +450,7 @@ export function authorizeWrite(input: AuthorizeWriteInput): AuthorizeWriteResult
         ? `authorized;prefer_gate:${prefer_gate}`
         : "authorized",
     prefer_gate,
-    requiresApproval: house.requiresApproval,
+    requiresApproval: false,
     ...(refreshed ? { refreshed: true } : {}),
   };
 }

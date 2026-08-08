@@ -93,7 +93,10 @@ import {
   type VerifiedMandate,
 } from "../ward/index.js";
 import { assertCorewardMode } from "../coreward/mode.js";
-import { bindAuthorizeTicketEnv } from "../coreward/authorize-write.js";
+import {
+  bindAuthorizeTicketEnv,
+  getAuthorizeTicketBinding,
+} from "../coreward/authorize-write.js";
 
 export type RunInput = {
   issueNumber: string;
@@ -757,6 +760,9 @@ ${vibe}`;
     paths: plannedForAuth,
     verifiedMandate,
     ...(boundTicketId ? { ticket_id: boundTicketId } : {}),
+    ...(verifiedMandate?.mandate.authorized_actor
+      ? { actor: verifiedMandate.mandate.authorized_actor }
+      : {}),
   });
   if (!corewardCodegen.ok) {
     return finishRun({
@@ -1161,12 +1167,16 @@ ${vibe}`;
 
   const promotePaths = finalVerifiedFiles.map((f) => f.path);
   const promoteTicketId =
+    getAuthorizeTicketBinding(rootDir) ||
     process.env.COREWARD_AUTHORIZE_TICKET?.trim() ||
     bindAuthorizeTicketEnv(rootDir, plannedForAuth);
   const corewardPromote = assertCorewardMode(rootDir, "promote", {
     paths: promotePaths.length > 0 ? promotePaths : plannedForAuth,
     verifiedMandate,
     ...(promoteTicketId ? { ticket_id: promoteTicketId } : {}),
+    ...(verifiedMandate?.mandate.authorized_actor
+      ? { actor: verifiedMandate.mandate.authorized_actor }
+      : {}),
   });
   if (!corewardPromote.ok) {
     return finishRun({

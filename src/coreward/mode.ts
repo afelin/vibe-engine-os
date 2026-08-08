@@ -5,6 +5,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import {
+  getAuthorizeTicketBinding,
   readAuthorizeTicket,
   validateAuthorizeTicket,
 } from "./authorize-write.js";
@@ -69,6 +70,8 @@ export function assertCorewardMode(
   opts: {
     paths?: string[];
     ticket_id?: string;
+    /** When ticket was minted with actor, must match (AgentId / Mandate actor). */
+    actor?: string;
     verifiedMandate?: VerifiedMandate | null;
     now?: Date;
   } = {},
@@ -84,6 +87,7 @@ export function assertCorewardMode(
   const paths = opts.paths ?? [];
   const ticketId =
     opts.ticket_id?.trim() ||
+    getAuthorizeTicketBinding(rootDir) ||
     process.env.COREWARD_AUTHORIZE_TICKET?.trim() ||
     "";
 
@@ -98,11 +102,13 @@ export function assertCorewardMode(
     paths.length > 0
       ? paths
       : (readAuthorizeTicket(rootDir, ticketId)?.paths ?? []);
+  const actor = opts.actor?.trim() || undefined;
   const validated = validateAuthorizeTicket(
     rootDir,
     ticketId,
     ticketPaths,
     opts.now,
+    actor ? { actor } : undefined,
   );
   if (!validated.ok) {
     return {

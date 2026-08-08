@@ -10,7 +10,7 @@ import {
 import { computeVowsHash } from "../constitution/vows.js";
 
 describe("release gate MCP handlers", () => {
-  it("advertises eighteen tools with preflight first", () => {
+  it("advertises nineteen tools with preflight first", () => {
     expect(RELEASE_GATE_TOOLS.map((tool) => tool.name)).toEqual([
       "preflight",
       "authorize_write",
@@ -18,6 +18,7 @@ describe("release gate MCP handlers", () => {
       "resolve_gate",
       "preview_gate",
       "evaluate_mandate",
+      "evaluate_house_rules",
       "constitution_schemas",
       "validate_capsule",
       "seal_bond",

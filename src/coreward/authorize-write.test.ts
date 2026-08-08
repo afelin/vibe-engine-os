@@ -4,6 +4,8 @@ import * as os from "node:os";
 import * as path from "node:path";
 import {
   authorizeWrite,
+  clearAuthorizeTicketBindings,
+  getAuthorizeTicketBinding,
   preferGateForPaths,
   validateAuthorizeTicket,
 } from "./authorize-write.js";
@@ -30,6 +32,7 @@ describe("authorize_write", () => {
   afterEach(() => {
     delete process.env.COREWARD_AUTHORIZE_TICKET;
     delete process.env.VIBE_WARD_STRICT;
+    clearAuthorizeTicketBindings();
     clearVerifyCache();
   });
 
@@ -107,6 +110,96 @@ describe("authorize_write", () => {
       expect(result.ticket_id).toBeUndefined();
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not mint Coreward Mode tickets for approval-prefix paths", () => {
+    const root = tmpRoot();
+    try {
+      fs.mkdirSync(path.join(root, "src/policy"), { recursive: true });
+      fs.copyFileSync(
+        path.join(process.cwd(), "src/policy/mandates.json"),
+        path.join(root, "src/policy/mandates.json"),
+      );
+      writeCorewardModeConfig(root, { enabled: true });
+      delete process.env.COREWARD_AUTHORIZE_TICKET;
+      const result = authorizeWrite({
+        root_dir: root,
+        proposed_files: ["package.json"],
+      });
+      expect(result.ok).toBe(false);
+      expect(result.requiresApproval).toBe(true);
+      expect(result.reason).toContain("needs_approval");
+      expect(result.ticket_id).toBeUndefined();
+      const mode = assertCorewardMode(root, "codegen", {
+        paths: ["package.json"],
+        ticket_id: result.ticket_id,
+      });
+      expect(mode.ok).toBe(false);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("requires matching actor when ticket was minted with actor", () => {
+    const root = tmpRoot();
+    try {
+      writeCorewardModeConfig(root, { enabled: true });
+      const minted = authorizeWrite({
+        root_dir: root,
+        proposed_files: ["src/ok.ts"],
+        actor: "actor-a",
+      });
+      expect(minted.ok).toBe(true);
+      const noActor = assertCorewardMode(root, "codegen", {
+        paths: ["src/ok.ts"],
+        ticket_id: minted.ticket_id,
+      });
+      expect(noActor.ok).toBe(false);
+      if (!noActor.ok) {
+        expect(noActor.reason).toContain("ticket_actor_required");
+      }
+      const wrong = assertCorewardMode(root, "codegen", {
+        paths: ["src/ok.ts"],
+        ticket_id: minted.ticket_id,
+        actor: "actor-b",
+      });
+      expect(wrong.ok).toBe(false);
+      if (!wrong.ok) {
+        expect(wrong.reason).toContain("ticket_actor_mismatch");
+      }
+      const ok = assertCorewardMode(root, "codegen", {
+        paths: ["src/ok.ts"],
+        ticket_id: minted.ticket_id,
+        actor: "actor-a",
+      });
+      expect(ok.ok).toBe(true);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("binds tickets per rootDir (not only process env)", () => {
+    const rootA = tmpRoot();
+    const rootB = tmpRoot();
+    try {
+      const a = authorizeWrite({
+        root_dir: rootA,
+        proposed_files: ["src/a.ts"],
+      });
+      const b = authorizeWrite({
+        root_dir: rootB,
+        proposed_files: ["src/b.ts"],
+      });
+      expect(a.ok && b.ok).toBe(true);
+      expect(getAuthorizeTicketBinding(rootA)).toBe(a.ticket_id);
+      expect(getAuthorizeTicketBinding(rootB)).toBe(b.ticket_id);
+      expect(getAuthorizeTicketBinding(rootA)).not.toBe(
+        getAuthorizeTicketBinding(rootB),
+      );
+    } finally {
+      fs.rmSync(rootA, { recursive: true, force: true });
+      fs.rmSync(rootB, { recursive: true, force: true });
     }
   });
 
