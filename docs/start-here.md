@@ -6,7 +6,11 @@
 
 **Nomenclature:** a signed **Mandate** is a session contract; **Ward** enforces ALLOW/DENY on CI/promote when a Mandate is on; **house rules** (`mandates.json` + legal-space stackables) are standing forbids — MCP `evaluate_mandate` / alias `evaluate_house_rules`. Receipts never authorize. IDE Edit/Shell can still bypass Ward.
 
+> **Product boundary:** Ward is CI/promote-only when a Mandate is on; IDE Edit/Shell remains out of band for this product generation; `ide_ward_interceptor` stays unbuilt.
+
 > **License: FSL-1.1-Apache-2.0** — free internal use; not free to resell as hosted Coreward until Change Date. See [`LICENSE`](../LICENSE) / [`LICENSE.md`](../LICENSE.md).
+
+Design partners: [design-partner.md](./design-partner.md).
 
 ---
 

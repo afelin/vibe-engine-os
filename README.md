@@ -19,29 +19,15 @@ Sovereign AI dev cluster with a **headless xmachines Play constitution**: one Zo
 
 ## Agent day-1
 
-**`npm run activate && npm run coreward:authorize -- --files …`**
-
 ```bash
-npm run activate
-npm run coreward:authorize -- --files path/to/file.ts
-npm run gate:mcp
-npm run ward:doctor
-npm run savings:attest
+npm run coreward:init
 ```
 
-Enable MCP `coreward-release-gates` (alias `vibe-release-gates`) and follow [AGENTS.md](AGENTS.md) / [`.cursor/skills/coreward`](.cursor/skills/coreward/SKILL.md).
-
-## What it is
-
-**Coreward** is a **promotion gate**, not a codegen toy. Models propose JSON-shaped artifacts; the constitution catalog and OS machine guards reject bad input before disk write. Only verified snapshots promote to Git.
-
-Truth-driven gates (TDD): **deterministic replay** from `events.ndjson`, **Assisted-by** attribution on PRs, and an **adversarial gauntlet** that proves guardrails block forbidden changes.
-
-**Mandate–Ward (opt-in):** a signed **Mandate** is a session work-order/budget (paths, actions, depth, expiry)—not “AI ethics.” When present, **Ward** enforces ALLOW/DENY on the engine path before bond/codegen/patch/promote. **Receipts** are tamper-evident trails (`ward_decision`, capsule, HPURL)—not certification. Absent Mandate ⇒ legacy house rules only. IDE Edit/Shell can still bypass Ward; the product claim is *CI/promote cannot move without Ward when a Mandate is on*. Security invariant + regulated checklist: [docs/ward-security.md](docs/ward-security.md).
+Then **[docs/start-here.md](docs/start-here.md)** (≤5 min). Enable MCP `coreward-release-gates` and call `preflight` once before edits — [AGENTS.md](AGENTS.md) · [`.cursor/skills/coreward`](.cursor/skills/coreward/SKILL.md).
 
 ## Capabilities
 
-**Coreward** is a **promotion gate**, not a codegen toy. Models propose JSON-shaped artifacts; the constitution catalog and OS machine guards reject bad input before disk write. Only verified snapshots promote to Git. Walkthroughs: [Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md) · [Nocode Quickstart](docs/nocode-quickstart.md) · [Agent Protocol](docs/agent-protocol.md).
+Canonical day-1 path and Ward boundary: [docs/start-here.md](docs/start-here.md) · [docs/ward-security.md](docs/ward-security.md). Deeper walks: [Solo Vibe Coder Guide](docs/solo-vibe-coder-guide.md) · [Nocode Quickstart](docs/nocode-quickstart.md) · [Agent Protocol](docs/agent-protocol.md).
 
 | Capability | What you get | How to activate | Status |
 | --- | --- | --- | --- |
