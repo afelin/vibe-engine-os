@@ -2,9 +2,11 @@
 
 Open specification for agents (any framework) integrating with Coreward.
 
-**Solo operators:** start with the [Solo Vibe Coder Guide](./solo-vibe-coder-guide.md). **Stakeholders:** see [Plain-Language Briefing](./plain-language-briefing.md).
+> **Agent surface index.** Day-1 agents: call MCP `preflight` once — see [start-here](./start-here.md) · [AGENTS.md](../AGENTS.md). Deeper satellites (advanced/archive tone): [agent-adapter](./agent-adapter.md) · [agent-contract](./agent-contract.md) · [agent-identity](./agent-identity.md). Promotion semantics stay here and in the warm [capabilities](./capabilities.md) catalog.
 
-**Preflight (before proposing paths):** `get_active_stack` → `list_stackables` → `authorize_write` → `evaluate_mandate` → `validate_bond` → `resolve_gate` → `constitution_schemas` — adapter `required_tools: ["authorize_write"]`; see [agent-adapter](./agent-adapter.md).
+**Solo operators:** start with the [Solo guide](./solo-vibe-coder-guide.md). **Stakeholders:** see [Plain-Language Briefing](./plain-language-briefing.md).
+
+**Preflight (before proposing paths):** Prefer MCP **`preflight` once** (CLI `coreward:authorize`). Advanced chain when needed: `get_active_stack` → `list_stackables` → `authorize_write` → `evaluate_mandate` → `validate_bond` → `resolve_gate` → `constitution_schemas` — adapter `required_tools: ["preflight"]`; see [agent-adapter](./agent-adapter.md).
 
 ## Ingress: PlayEvent
 

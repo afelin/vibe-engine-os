@@ -6,7 +6,7 @@
 
 - [README.md](./README.md) — lean cold path (pain → GitHub loop → also init)
 - [docs/start-here.md](./docs/start-here.md) — init (`coreward:init`; `activate` = legacy alias)
-- [docs/operate.md](./docs/operate.md) — Go / Approve / Merge
+- [docs/operate.md](./docs/operate.md) — Go / Approve / Merge + metrics kill criterion + Friday gate ritual
 - [docs/ward-security.md](./docs/ward-security.md) — Ward + house rules vs Mandate
 
 Also: [AGENTS.md](./AGENTS.md) — call MCP `preflight` once · [LICENSE.md](./LICENSE.md)
@@ -14,12 +14,18 @@ Also: [AGENTS.md](./AGENTS.md) — call MCP `preflight` once · [LICENSE.md](./L
 ## Advanced
 
 - [docs/capabilities.md](./docs/capabilities.md) — warm catalog (tiers, modules, honest limits)
+- [docs/local-first-savings.md](./docs/local-first-savings.md) — Cost Plane + measured dogfood claim
+- [docs/agent-protocol.md](./docs/agent-protocol.md) — agent surface index
 
 ## Commands
 
 - `npm run coreward:init` — only recommended bootstrap
 - `npm run activate` — legacy alias (compat)
 - `npm run coreward:authorize -- --files a.ts,b.ts`
+- `npm run coreward:metrics` — operator metrics show|record|comment
+- `npm run coreward:dogfood-report` — compliance vs ≥80% kill criterion
+- `npm run coreward:cost-dogfood` — bound vs unbound ratio (or `COREWARD_COST_CLAIM=off`)
+- `npm run coreward:gate-candidates -- emit|list|show`
 - `npm run gate:mcp` — MCP server `coreward-release-gates`
 - `npm run ward:doctor`
 
@@ -29,4 +35,4 @@ Also: [AGENTS.md](./AGENTS.md) — call MCP `preflight` once · [LICENSE.md](./L
 
 ## Non-claims
 
-Not a kernel IDE sandbox. Hosted HPURL verify unbuilt (`hosted_hpurl`). CyberReady live buyer proof unbuilt (`cyberready_live`). No pricing tiers in this tree.
+Not a kernel IDE sandbox. Hosted HPURL verify unbuilt (`hosted_hpurl`). CyberReady live buyer proof unbuilt (`cyberready_live`). No pricing tiers in this tree. No compounding SLA until gate candidates merge.

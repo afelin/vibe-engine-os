@@ -10,28 +10,28 @@ This page is the full capability catalog moved off the cold README. Prefer the t
 
 ## Capabilities
 
-Canonical day-1 path and Ward boundary: [start-here.md](./start-here.md) · [ward-security.md](./ward-security.md). Deeper walks: [Solo Vibe Coder Guide](./solo-vibe-coder-guide.md) · [Nocode Quickstart](./nocode-quickstart.md) · [Agent Protocol](./agent-protocol.md).
+Canonical day-1 path and Ward boundary: [start-here.md](./start-here.md) · [ward-security.md](./ward-security.md). **Agent surface (one index):** [agent-protocol.md](./agent-protocol.md) — adapter / contract / identity are advanced satellites of that page. Deeper walks: [Solo guide](./solo-vibe-coder-guide.md) · [Nocode Quickstart](./nocode-quickstart.md).
 
 | Capability | What you get | How to activate | Status |
 | --- | --- | --- | --- |
-| **TaskBond** | Sealed work order — intent, outcomes, bound files (max 16); scope creep blocked at seal time | [Vibe Request](../.github/ISSUE_TEMPLATE/vibe-request.yml) issue with 2–4 paths; MCP `seal_bond` / `validate_bond` | Built-in |
+| **TaskBond** | Sealed work order — intent, outcomes, bound files (max 16); scope creep blocked at seal time | [Coreward Request](../.github/ISSUE_TEMPLATE/vibe-request.yml) issue with 2–4 paths; MCP `seal_bond` / `validate_bond` | Built-in |
 | **House mandates** | Standing law: forbidden prefixes, approval prefixes, max attempts, approver allowlist | Edit `src/policy/mandates.json`; MCP `evaluate_mandate` before proposing paths | Built-in |
 | **Signed Mandate + Ward** | Opt-in session contract (budget); Ward ALLOW/DENY on engine path; context shrink when verified | `npm run mandate:issue` → `.vibe/active_mandate.json`; `npm run ward:doctor`; principals in `.vibe/principals.json` — [ward-security.md](./ward-security.md) | Built-in |
-| **Zero-token gates** | Deterministic patch templates — no LLM, $0 cost for templated chores | Match issue title/body to `src/release-gate/gates.json`; MCP `resolve_gate` / `list_gates` | Built-in |
-| **VIBE_DEPTH dial** | Volume knob 0–5: explain → plan → safe files → tests → deploy → protected `/approve` | `VIBE_DEPTH` env or labels `vibe:plan-only` / `vibe:safe` / `vibe:ship` | Built-in |
+| **Zero-token gates** | Deterministic patch templates — no LLM for templated chores when a gate hits | Match issue title/body to `src/release-gate/gates.json`; MCP `resolve_gate` / `list_gates` | Built-in |
+| **VIBE_DEPTH dial** | Volume knob 0–5: explain → plan → safe files → tests → deploy → protected `/approve` | `VIBE_DEPTH` env or labels `vibe:plan-only` / `vibe:safe` / `vibe:ship` (wire labels) | Built-in |
 | **Capsule + receipt** | Tamper-evident run fingerprint (`capsuleHash`, `vowsHash`) + **View proof** HPURL in issue comment (not a certificate) | Runs automatically; inspect `proof/index.html` or MCP `validate_capsule` | Built-in |
 | **TaskBond gauntlet** | 32/32 adversarial bond + mandate scenarios; baseline ratchet blocks guard drift | `npm run eval:bond`; wired into **Coreward Promotion Gate** preflight | Built-in |
 | **Replay gate** | Flight recorder — re-run `events.ndjson`; mismatch blocks promotion | `npm run replay -- . <runId>`; CI replay determinism check on PRs | Built-in |
-| **Anti-rot / Agentic Cost Plane** | Ticket-bound **ContextPack v1** (file/lesson/gate graph, char+hops caps, cache), bond compliance, evidence-linked lessons → gate *candidates* (human merge). Order: authorize → prefer_gate → ContextPack → LLM. CyberReady stays sibling (optional sock only). | MCP `build_scoped_context` (+ `ticket_id`), `recall_lessons`; `.evomem/lessons.ndjson`; `.vibe/gate-candidates/`; `VIBE_DEPTH` → hops/budget | Built-in |
-| **MCP tools** | Live rulebook in Cursor: `authorize_write` / `preflight` first, then gates, bonds, mandates, schemas, capsule verify | Enable `coreward-release-gates` (alias `vibe-release-gates`) in `mcp.json`; `npm run gate:mcp` smoke | Built-in |
-| **Forever loop** | GitHub issue → plan → codegen → verify → PR + cockpit comment; runs while you sleep | Label `vibe/run` on issue; **Coreward Forever Loop** workflow | Built-in |
+| **Anti-rot / Agentic Cost Plane** | Ticket-bound **ContextPack v1** (sole public context API), bond compliance, lessons → gate *candidates* (human merge; **no compounding SLA**). Order: authorize → prefer_gate → ContextPack → LLM. | MCP `build_scoped_context` (+ `ticket_id`); `.vibe/gate-candidates/`; `npm run coreward:gate-candidates`; `npm run coreward:cost-dogfood` | Built-in |
+| **MCP tools** | Live rulebook in Cursor: `preflight` first, then gates, bonds, mandates, schemas, capsule verify | Enable `coreward-release-gates` in `mcp.json`; `npm run gate:mcp` smoke | Built-in |
+| **Forever loop** | GitHub issue → plan → codegen → verify → PR + cockpit comment | Label `vibe/run` on issue; **Coreward Forever Loop** workflow | Built-in |
 | **Cockpit + explain dial** | Issue/PR comment dashboard: depth, hashes, next action, decision explain (off/short/long/expand) | Auto-posted on runs; labels `vibe:explain-short` / `vibe:explain-long` or `VIBE_EXPLAIN` | Built-in |
 | **Operator commands** | Human steering without terminal: `/status`, `/approve`, `/continue`, `/retry`, `/rollback`, `/details`, `/troubleshoot` | Reply on the issue; see [Agent Protocol](./agent-protocol.md) | Built-in |
 | **Option B `/approve`** | When Mandate path is on, CI may issue a short-lived signed override Mandate (`github-ci-bot-override`); human is audit-only (`approving_comment_actor`)—not human crypto | Issue comment `/approve` with runner key available | Built-in |
-| **Promotion gate** | **Coreward Promotion Gate** — gauntlet green, bond valid, capsule/replay OK before merge | Require check on `main`; runs on vibe PRs via `vibe-pr-gate.yml` | Built-in |
+| **Promotion gate** | **Coreward Promotion Gate** — gauntlet green, bond valid, capsule/replay OK before merge | Require check on `main`; runs on Coreward PRs via wire workflow | Built-in |
 | **Assisted-by attribution** | PR blocked if commits mention AI tools without `Assisted-by:` trailer | Automatic on PRs; engine tags its own commits | Built-in |
 | **Auto-merge** | Squash-merge when branch protection + promotion gate green | Label `vibe/auto-merge` or repo var `VIBE_AUTO_MERGE=1` | Built-in |
-| **Init / adopt** | Recommended: `npm run coreward:init`. Legacy alias: `npm run activate` (kept for compat) | `npm run coreward:init` or `bash runs/adopt.sh /path/to/repo` | Built-in |
+| **Init / adopt** | Recommended: `npm run coreward:init`. Legacy alias: `npm run activate` | `npm run coreward:init` or `bash runs/adopt.sh /path/to/repo` | Built-in |
 | **`launch:readiness`** | Local preflight: workflows, gauntlet vs baseline, MCP smoke, proof page | `npm run launch:readiness` on `main` | Built-in |
 | **`launch:ship`** | One-command ship after readiness green | `npm run launch:ship` — see [Launch Proof runbook](./launch-proof.md) | Built-in |
 | **Launch proof E2E** | Zero-token cloud proof: issue → PR → receipt → green checks; writes `.vibe/launch-proof.json` | Actions → **Launch Proof (zero-token E2E)**; [green run](https://github.com/afelin/coreward/actions/runs/29321223413) on [issue #36](https://github.com/afelin/coreward/issues/36) | **Claimable** |
@@ -49,7 +49,7 @@ Canonical day-1 path and Ward boundary: [start-here.md](./start-here.md) · [war
 
 | Persona | Why |
 | --- | --- |
-| **Solo vibe coder** | Delegate bounded changes overnight; review 2–4 files instead of whole-repo diffs |
+| **Solo operator** | Delegate bounded changes overnight; review 2–4 files instead of whole-repo diffs |
 | **Agentic engineer** | One constitution catalog + MCP — same rules in Cursor, Actions, and custom agents |
 | **Compliance / security MVP** | Capsule hashes, replay, and gauntlet turn “the AI did it” into evidence |
 | **Enterprise operator** | Mandates, approvers, depth dial, and required checks on `main` |
@@ -96,16 +96,18 @@ Ladder + install: [adopt](https://afelin.github.io/coreward/adopt/) · host pack
 
 | Doc | Audience |
 | --- | --- |
-| [Solo Vibe Coder Guide](./solo-vibe-coder-guide.md) | Solo founders — init, first issue, operator commands |
+| [Agent Protocol](./agent-protocol.md) | **Agent surface index** — MCP, TaskBond, schemas, gates; start here for agents |
+| [Agent Adapter](./agent-adapter.md) | Advanced — framework manifest / ingress (satellite of agent-protocol) |
+| [Agent Contract](./agent-contract.md) | Advanced — vows / contract notes |
+| [Agent Identity](./agent-identity.md) | Advanced — `authorized_actor` / Assisted-by (not eIDAS) |
+| [Solo guide](./solo-vibe-coder-guide.md) | Solo founders — init, first issue, operator commands |
 | [Plain-Language Briefing](./plain-language-briefing.md) | Stakeholders — capabilities, problems solved |
-| [Agent Protocol](./agent-protocol.md) | Agents & integrators — MCP, TaskBond, schemas, gates |
-| [Agent Adapter](./agent-adapter.md) | Any framework — manifest, MCP + issue ingress |
 | [Nocode Quickstart](./nocode-quickstart.md) | Issue → PR → receipt, no terminal |
 | [Launch Proof](./launch-proof.md) | Zero-token E2E runbook |
 | [Platform Enforcement](./platform-enforcement.md) | Deploy-from-capsule, GitHub Pro-free enforcement |
 | [Public surface](./PUBLIC.md) | What is public vs `internal/` |
 | [Host packs](./host-packs.md) | Cursor / Claude Code / OpenClaw / Hermes |
-| [Local-first savings](./local-first-savings.md) | Bound context, gate hits, `savings:attest` |
+| [Local-first savings](./local-first-savings.md) | Bound context, gate hits, `savings:attest`, cost-dogfood |
 | [Compare: Cursor rules](./compare-cursor-rules.md) | AGENTS.md / rules alone vs Coreward |
 | [OS Phases](./os-phases.md) | Promotion phase diagram |
 | [GitHub App](./github-app.md) | Enterprise — required checks, branch protection |

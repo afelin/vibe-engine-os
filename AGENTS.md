@@ -15,4 +15,6 @@ MCP server: `coreward-release-gates`. CLI: `npm run coreward:authorize -- --file
 
 **License:** [`LICENSE`](LICENSE) / [`LICENSE.md`](LICENSE.md) — FSL-1.1-Apache-2.0. Machine index: [`llms.txt`](llms.txt).
 
-Docs: [docs/start-here.md](docs/start-here.md) · [docs/operate.md](docs/operate.md) · [docs/ward-security.md](docs/ward-security.md) · [.cursor/skills/coreward/SKILL.md](.cursor/skills/coreward/SKILL.md).
+Docs: [docs/start-here.md](docs/start-here.md) · [docs/operate.md](docs/operate.md) · [docs/ward-security.md](docs/ward-security.md) · [docs/local-first-savings.md](docs/local-first-savings.md) · [.cursor/skills/coreward/SKILL.md](.cursor/skills/coreward/SKILL.md).
+
+Wire footnotes only: `.vibe/`, `VIBE_*`, MCP dual name `vibe-release-gates`, issue labels `vibe/*` — dual-read compatibility, not product voice.
