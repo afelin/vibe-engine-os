@@ -16,9 +16,15 @@ Details: [docs/operate.md](docs/operate.md) · [docs/design-partner.md](docs/des
 
 ## Also (agents / Cursor)
 
+**One-click path:** committed [`.cursor/mcp.json`](.cursor/mcp.json). Open **Customize → MCP** → ensure **coreward-release-gates** is on (reload if grey).
+
 1. `npm run coreward:init`
-2. Cursor Settings → MCP → enable **coreward-release-gates** (if not green)
+2. Customize → MCP → **coreward-release-gates** green (reload if needed)
 3. Chat — agent already has the rule; expect one `preflight`
+
+Cursor is ahead (rule + hooks + init). Claude/Codex: paste snippets in [docs/host-packs.md](docs/host-packs.md). OpenCode/Zed: not yet covered. Local authorize works without an IDE.
+
+Optional CLI presence: [`runs/coreward-statusline.sh`](runs/coreward-statusline.sh) → `statusLine` in `~/.cursor/cli-config.json` ([docs/start-here.md](docs/start-here.md)).
 
 Details: [docs/start-here.md](docs/start-here.md) · [AGENTS.md](AGENTS.md).
 
