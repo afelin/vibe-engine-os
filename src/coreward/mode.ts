@@ -10,7 +10,24 @@ import {
   validateAuthorizeTicket,
 } from "./authorize-write.js";
 import { axDenialFromReason, type AxDenial } from "./ax-denial.js";
+import { bumpModeAllow, bumpModeDeny } from "./operator-metrics.js";
 import type { VerifiedMandate } from "../ward/index.js";
+
+function safeBumpAllow(rootDir: string): void {
+  try {
+    bumpModeAllow(rootDir);
+  } catch {
+    /* metrics best-effort */
+  }
+}
+
+function safeBumpDeny(rootDir: string): void {
+  try {
+    bumpModeDeny(rootDir);
+  } catch {
+    /* metrics best-effort */
+  }
+}
 
 export type CorewardModeConfig = {
   enabled: boolean;
@@ -82,6 +99,7 @@ export function assertCorewardMode(
   }
 
   if (opts.verifiedMandate) {
+    safeBumpAllow(rootDir);
     return { ok: true, via: "mandate" };
   }
 
@@ -95,6 +113,7 @@ export function assertCorewardMode(
   if (!ticketId) {
     const reason = `coreward_mode:${phase}:missing_ticket_or_mandate`;
     const denial = axDenialFromReason("missing_ticket_or_mandate", paths);
+    safeBumpDeny(rootDir);
     return {
       ok: false,
       reason,
@@ -119,6 +138,7 @@ export function assertCorewardMode(
   if (!validated.ok) {
     const reason = `coreward_mode:${phase}:${validated.reason}`;
     const denial = axDenialFromReason(validated.reason, ticketPaths);
+    safeBumpDeny(rootDir);
     return {
       ok: false,
       reason,
@@ -127,5 +147,6 @@ export function assertCorewardMode(
       paths: ticketPaths,
     };
   }
+  safeBumpAllow(rootDir);
   return { ok: true, via: "ticket" };
 }
