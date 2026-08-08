@@ -194,21 +194,9 @@ if [ "$MODE" = "full" ] || [ "$MODE" = "cloud" ]; then
 
   REDTEAM="evals/taskbond-gauntlet-redteam.jsonl"
   if [ -f "$REDTEAM" ]; then
-    if run_step "redteam gauntlet" npx tsx -e '
-import * as fs from "node:fs";
-import * as path from "node:path";
-import {
-  parseGauntletJsonl,
-  runTaskBondGauntlet,
-} from "./src/bond/gauntletRunner.ts";
-
-const root = ".";
-const casesPath = path.join(root, "evals/taskbond-gauntlet-redteam.jsonl");
-const cases = parseGauntletJsonl(fs.readFileSync(casesPath, "utf8"));
-const scorecard = runTaskBondGauntlet(cases, root);
-console.log(`redteam: ${scorecard.pass}/${scorecard.total}`);
-if (scorecard.fail > 0) process.exit(1);
-'; then
+    # Use file entrypoint (not tsx -e): inline -e hits CJS register and
+    # ERR_PACKAGE_PATH_NOT_EXPORTED on ESM-only @xmachines/play-catalog.
+    if run_step "redteam gauntlet" npm run eval:bond -- --redteam; then
       set_assert redteam true
     else
       set_assert redteam false
