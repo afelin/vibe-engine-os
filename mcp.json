@@ -2,11 +2,11 @@
   "mcpServers": {
     "coreward-release-gates": {
       "command": "npx",
-      "args": ["tsx", "src/release-gate/mcp.ts"]
+      "args": ["-y", "@coreward/mcp"]
     },
     "vibe-release-gates": {
       "command": "npx",
-      "args": ["tsx", "src/release-gate/mcp.ts"]
+      "args": ["-y", "@coreward/mcp"]
     }
   }
 }

@@ -16,10 +16,29 @@ import { COREWARD_CURSOR_RULE } from "./cursor-rule.js";
 const OPERATE_URL =
   "https://github.com/afelin/coreward/blob/main/docs/operate.md";
 
-const CURSOR_MCP_SERVER = {
+/** Adopt template — published zero-build entry (no monorepo src/ required). */
+export const ADOPT_MCP_SERVER = {
+  command: "npx",
+  args: ["-y", "@coreward/mcp"],
+} as const;
+
+/** Monorepo dogfood — run server from local TypeScript sources. */
+export const DOGFOOD_MCP_SERVER = {
   command: "npx",
   args: ["tsx", "src/release-gate/mcp.ts"],
 } as const;
+
+/** Prefer local tsx when this checkout has the MCP source; else published package. */
+export function resolveCursorMcpServer(rootDir: string): {
+  command: string;
+  args: readonly string[];
+} {
+  const localMcp = path.join(rootDir, "src", "release-gate", "mcp.ts");
+  if (fs.existsSync(localMcp)) {
+    return { ...DOGFOOD_MCP_SERVER };
+  }
+  return { ...ADOPT_MCP_SERVER };
+}
 
 /** Real path is `.cursor`; tests may override when OS blocks mkdir of that name. */
 export function cursorDirRel(): string {
@@ -57,9 +76,13 @@ function mergeVibeRefScripts(rootDir: string): string | null {
 /** Ensure Cursor mcp.json has only coreward-release-gates (drop dual-name confusion). */
 export function syncCursorMcpJson(rootDir: string): string {
   const cursorMcpPath = path.join(rootDir, cursorDirRel(), "mcp.json");
+  const server = resolveCursorMcpServer(rootDir);
   const desired = {
     mcpServers: {
-      "coreward-release-gates": { ...CURSOR_MCP_SERVER },
+      "coreward-release-gates": {
+        command: server.command,
+        args: [...server.args],
+      },
     },
   };
   const next = `${JSON.stringify(desired, null, 2)}\n`;

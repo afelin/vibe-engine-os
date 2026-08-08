@@ -6,6 +6,7 @@ import { spawnSync } from "node:child_process";
 import {
   confirmCursorHooks,
   cursorDirRel,
+  resolveCursorMcpServer,
   runCorewardInit,
   syncCursorMcpJson,
   syncCursorRule,
@@ -103,10 +104,45 @@ describe("coreward:init sync helpers", () => {
       expect(msg).toMatch(/Synced|Wrote|single/);
       const raw = JSON.parse(
         fs.readFileSync(path.join(root, TEST_CURSOR, "mcp.json"), "utf8"),
-      ) as { mcpServers: Record<string, unknown> };
+      ) as {
+        mcpServers: {
+          "coreward-release-gates": { command: string; args: string[] };
+        };
+      };
       expect(Object.keys(raw.mcpServers)).toEqual(["coreward-release-gates"]);
+      // Adopt root (no local mcp.ts) → published package
+      expect(raw.mcpServers["coreward-release-gates"].args).toEqual([
+        "-y",
+        "@coreward/mcp",
+      ]);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("resolveCursorMcpServer prefers local tsx when mcp.ts exists", () => {
+    const dogfood = tmpRoot();
+    const adopt = tmpRoot();
+    try {
+      fs.mkdirSync(path.join(dogfood, "src", "release-gate"), {
+        recursive: true,
+      });
+      fs.writeFileSync(
+        path.join(dogfood, "src", "release-gate", "mcp.ts"),
+        "// dogfood\n",
+        "utf8",
+      );
+      expect(resolveCursorMcpServer(dogfood).args).toEqual([
+        "tsx",
+        "src/release-gate/mcp.ts",
+      ]);
+      expect(resolveCursorMcpServer(adopt).args).toEqual([
+        "-y",
+        "@coreward/mcp",
+      ]);
+    } finally {
+      fs.rmSync(dogfood, { recursive: true, force: true });
+      fs.rmSync(adopt, { recursive: true, force: true });
     }
   });
 
