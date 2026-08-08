@@ -445,11 +445,11 @@ describe("GitHub Actions workflow", () => {
     expect(startHere).toContain("vibe-request.yml");
     expect(startHere).toMatch(/Coreward Request/i);
 
-    // Path 2 — Cursor + MCP + skill
-    expect(startHere).toContain("mcp.json");
-    expect(startHere).toContain(".cursor/skills/coreward");
+    // Path 2 — Cursor + MCP + skill (three bullets)
     expect(startHere).toContain("coreward:init");
+    expect(startHere).toContain("coreward-release-gates");
     expect(startHere).toMatch(/preflight/i);
+    expect(startHere).toMatch(/agent already has the rule/i);
 
     // Path 3 — Legal space dial
     expect(startHere).toMatch(/legal.?space/i);

@@ -27,6 +27,7 @@ import {
 import { loadReleaseGates, resolveGateFromRegistry } from "../release-gate/registry.js";
 import { axDenialFromReason, type AxDenial } from "./ax-denial.js";
 import { bumpPreflightOk } from "./operator-metrics.js";
+import { writeCorewardPresence } from "./presence.js";
 
 export type AuthorizeWriteInput = {
   proposed_files: string[];
@@ -470,6 +471,12 @@ export function authorizeWrite(input: AuthorizeWriteInput): AuthorizeWriteResult
     bumpPreflightOk(rootDir);
   } catch {
     // Metrics are best-effort — never fail authorize.
+  }
+
+  try {
+    writeCorewardPresence(rootDir, { ticket_id: ticket.ticket_id });
+  } catch {
+    // Presence is best-effort for hooks/status — never fail authorize.
   }
 
   const refreshed = Boolean(existing);
