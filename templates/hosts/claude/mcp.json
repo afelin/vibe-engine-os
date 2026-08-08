@@ -3,10 +3,6 @@
     "coreward-release-gates": {
       "command": "npx",
       "args": ["-y", "@coreward/mcp"]
-    },
-    "vibe-release-gates": {
-      "command": "npx",
-      "args": ["-y", "@coreward/mcp"]
     }
   }
 }

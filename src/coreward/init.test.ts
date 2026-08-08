@@ -6,6 +6,7 @@ import { spawnSync } from "node:child_process";
 import {
   confirmCursorHooks,
   cursorDirRel,
+  resolveCursorMcpServer,
   runCorewardInit,
   syncCursorMcpJson,
   syncCursorRule,
@@ -103,10 +104,45 @@ describe("coreward:init sync helpers", () => {
       expect(msg).toMatch(/Synced|Wrote|single/);
       const raw = JSON.parse(
         fs.readFileSync(path.join(root, TEST_CURSOR, "mcp.json"), "utf8"),
-      ) as { mcpServers: Record<string, unknown> };
+      ) as {
+        mcpServers: {
+          "coreward-release-gates": { command: string; args: string[] };
+        };
+      };
       expect(Object.keys(raw.mcpServers)).toEqual(["coreward-release-gates"]);
+      // Adopt root (no local mcp.ts) → published package
+      expect(raw.mcpServers["coreward-release-gates"].args).toEqual([
+        "-y",
+        "@coreward/mcp",
+      ]);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("resolveCursorMcpServer prefers local tsx when mcp.ts exists", () => {
+    const dogfood = tmpRoot();
+    const adopt = tmpRoot();
+    try {
+      fs.mkdirSync(path.join(dogfood, "src", "release-gate"), {
+        recursive: true,
+      });
+      fs.writeFileSync(
+        path.join(dogfood, "src", "release-gate", "mcp.ts"),
+        "// dogfood\n",
+        "utf8",
+      );
+      expect(resolveCursorMcpServer(dogfood).args).toEqual([
+        "tsx",
+        "src/release-gate/mcp.ts",
+      ]);
+      expect(resolveCursorMcpServer(adopt).args).toEqual([
+        "-y",
+        "@coreward/mcp",
+      ]);
+    } finally {
+      fs.rmSync(dogfood, { recursive: true, force: true });
+      fs.rmSync(adopt, { recursive: true, force: true });
     }
   });
 
@@ -167,6 +203,8 @@ describe("coreward:init run", () => {
       const out = logs.join("\n");
       expect(out).toContain("Coreward ON");
       expect(out).toContain("════════════════════════════════");
+      expect(out).toContain("Reload MCP in Cursor Customize if tools missing");
+      expect(out).toContain("CLI presence: add statusLine → runs/coreward-statusline.sh");
       expect(out).toMatch(/aw_/);
       expect(out).toContain("If MCP is offline:");
       expect(
@@ -181,6 +219,54 @@ describe("coreward:init run", () => {
       const presence = readCorewardPresence(root);
       expect(presence?.mode).toBe("ON");
       expect(presence?.ticket_id).toMatch(/^aw_/);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("coreward-statusline.sh", () => {
+  it("prints Mode/ticket/Ward from presence file", () => {
+    const root = tmpRoot();
+    try {
+      fs.mkdirSync(path.join(root, ".vibe"), { recursive: true });
+      fs.writeFileSync(
+        path.join(root, ".vibe", "coreward-presence.json"),
+        JSON.stringify({
+          mode: "ON",
+          ticket_id: "aw_test_statusline",
+          updated_at: new Date().toISOString(),
+        }) + "\n",
+        "utf8",
+      );
+      const script = path.join(process.cwd(), "runs", "coreward-statusline.sh");
+      const result = spawnSync("bash", [script], {
+        cwd: root,
+        encoding: "utf8",
+        env: { ...process.env, COREWARD_ROOT: root },
+      });
+      expect(result.status).toBe(0);
+      expect(result.stdout.trim()).toBe(
+        "Coreward Mode=ON ticket=fresh Ward=LEGACY",
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("prints OFF/none/LEGACY when presence missing", () => {
+    const root = tmpRoot();
+    try {
+      const script = path.join(process.cwd(), "runs", "coreward-statusline.sh");
+      const result = spawnSync("bash", [script], {
+        cwd: root,
+        encoding: "utf8",
+        env: { ...process.env, COREWARD_ROOT: root },
+      });
+      expect(result.status).toBe(0);
+      expect(result.stdout.trim()).toBe(
+        "Coreward Mode=OFF ticket=none Ward=LEGACY",
+      );
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

@@ -40,9 +40,38 @@ Details: [operate.md](./operate.md).
 
 ## 2. Cursor + MCP + skill
 
+**One-click path:** this repo already commits [`.cursor/mcp.json`](../.cursor/mcp.json). Open Cursor **Customize → MCP** → ensure **coreward-release-gates** is on (reload if grey). Not Marketplace deeplinks — we don’t own a Settings toggle.
+
 1. `npm run coreward:init`
-2. Cursor Settings → MCP → enable **coreward-release-gates** (if not green)
+2. Customize → MCP → **coreward-release-gates** green (reload if needed)
 3. Chat — agent already has the rule; expect one `preflight`
+
+**CLI statusline (optional):** bind Agent CLI to presence via [`runs/coreward-statusline.sh`](../runs/coreward-statusline.sh) in `~/.cursor/cli-config.json`:
+
+```json
+"statusLine": {
+  "type": "command",
+  "command": "/absolute/path/to/repo/runs/coreward-statusline.sh"
+}
+```
+
+Reads cwd `.vibe/coreward-presence.json` → `Coreward Mode=… ticket=… Ward=…`. Same command works for Claude Code statusline if your host supports a cwd-based command statusline.
+
+### Hosts
+
+Same vow everywhere: `preflight` once → prefer_gate → ContextPack. Packs: [host-packs.md](./host-packs.md). Generator: `npx tsx src/coreward/host-pack.ts --host …`.
+
+**Cursor** — Committed `.cursor/mcp.json` + alwaysApply rule + soft hooks. `npm run coreward:init` → Customize → MCP green (reload if grey). Or `--host cursor`.
+
+**Claude Code** — `--host claude` writes `.mcp.json` (`npx -y @coreward/mcp`) + slim `CLAUDE.md`. Reload MCP; expect one `preflight`.
+
+**OpenCode** — `--host opencode` writes `opencode.json` MCP local server + slim `AGENTS.md`.
+
+**Zed** — `--host zed` writes `.zed/settings.json` `context_servers` (`source: custom`) + slim `AGENTS.md`.
+
+**Codex** — Paste `templates/hosts/codex/mcp-snippet.json` (`@coreward/mcp`); keep vow in `AGENTS.md`.
+
+**Local / CI** — No MCP. `npm run coreward:init` then `npm run coreward:authorize -- --files a.ts,b.ts`.
 
 ---
 

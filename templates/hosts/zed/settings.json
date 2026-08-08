@@ -1,0 +1,10 @@
+{
+  "context_servers": {
+    "coreward-release-gates": {
+      "source": "custom",
+      "command": "npx",
+      "args": ["-y", "@coreward/mcp"],
+      "env": {}
+    }
+  }
+}
