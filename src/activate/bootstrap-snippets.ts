@@ -79,10 +79,10 @@ export function renderBootstrapSnippets(rootDir = "."): BootstrapSnippets {
 
   const cursor = [
     "## Cursor + MCP + skill",
-    "1. Enable MCP from repo-root mcp.json (or copy to .cursor/mcp.json).",
+    "1. npm run coreward:init  — or: npx tsx src/coreward/host-pack.ts --host cursor",
     `2. MCP server command: ${mcpCommandLine}`,
-    `3. Enable skill path: ${SKILL_PATH} (SKILL.md).`,
-    "4. Smoke: npm run gate:mcp · Init: npm run coreward:init",
+    `3. Enable skill path: ${SKILL_PATH} (SKILL.md). Customize → MCP → coreward-release-gates green.`,
+    "4. Smoke: npm run gate:mcp",
     "",
     "mcp.json:",
     "```json",
@@ -93,42 +93,43 @@ export function renderBootstrapSnippets(rootDir = "."): BootstrapSnippets {
   ].join("\n");
 
   const claude = [
-    "## Claude / Claude Code — paste MCP server config",
-    "Add this server to your Claude MCP settings (copy from mcp.json):",
+    "## Claude / Claude Code",
+    "1. npx tsx src/coreward/host-pack.ts --host claude  → project .mcp.json + CLAUDE.md",
+    "2. Or paste this server into Claude MCP settings:",
     "",
     "```json",
     mcpBlock,
     "```",
     "",
-    `Skill reference (Cursor-native): ${SKILL_PATH}`,
+    "Templates: templates/hosts/claude/ · docs/host-packs.md",
     "",
     preflightBlock(),
   ].join("\n");
 
   const codex = [
-    "## Codex — paste MCP server config",
-    "Register the coreward-release-gates MCP server (same as mcp.json):",
+    "## Codex",
+    "Register coreward-release-gates (templates/hosts/codex/mcp-snippet.json):",
     "",
     "```json",
     mcpBlock,
     "```",
     "",
     `Command: ${mcpCommandLine}`,
-    `Skill path (when using Cursor): ${SKILL_PATH}`,
+    "Keep the slim vow in AGENTS.md (templates/hosts/codex/AGENTS.md).",
     "",
     preflightBlock(),
   ].join("\n");
 
   const generic = [
-    "## Generic agent / IDE",
-    "1. Point your agent at the MCP surface from mcp.json.",
-    `2. Command: ${mcpCommandLine}`,
-    "3. Call preflight once before proposing paths; stop.",
+    "## Generic agent / IDE (OpenCode · Zed · local)",
+    "Host packs: npx tsx src/coreward/host-pack.ts --host opencode|zed",
+    "OpenCode → opencode.json · Zed → .zed/settings.json (context_servers, source: custom).",
+    "Local/CI (no MCP): npm run coreward:authorize -- --files a.ts,b.ts",
+    `MCP command: ${mcpCommandLine}`,
     "",
     preflightBlock(),
     "",
-    "Adapter manifest: .vibe/agent-adapter.json (npm run activate).",
-    "Docs: docs/start-here.md · docs/operate.md.",
+    "Adapter: .vibe/agent-adapter.json (npm run activate). Docs: docs/host-packs.md · docs/start-here.md.",
   ].join("\n");
 
   return bootstrapSnippetsSchema.parse({

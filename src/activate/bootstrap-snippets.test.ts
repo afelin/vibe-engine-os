@@ -27,9 +27,12 @@ describe("renderBootstrapSnippets", () => {
     expect(snippets.cursor).toContain(".cursor/skills/coreward");
     expect(snippets.claude).toContain("coreward-release-gates");
     expect(snippets.claude).toContain("@coreward/mcp");
+    expect(snippets.claude).toContain("host-pack");
     expect(snippets.codex).toContain("coreward-release-gates");
     expect(snippets.codex).toContain("@coreward/mcp");
     expect(snippets.generic).toContain("preflight");
+    expect(snippets.generic).toContain("opencode");
+    expect(snippets.generic).toContain("zed");
     expect(snippets.github).toContain("Coreward Request");
     expect(snippets.github).toContain("/go");
   });

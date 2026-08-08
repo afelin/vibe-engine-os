@@ -24,7 +24,7 @@ Details: [docs/operate.md](docs/operate.md) · [docs/design-partner.md](docs/des
 
 Adopt (no monorepo `src/`): `npx -y @coreward/mcp` — [docs/publish-mcp.md](docs/publish-mcp.md). This checkout dogfoods `npx tsx src/release-gate/mcp.ts`.
 
-Cursor is ahead (rule + hooks + init). Host packs (Claude / OpenCode / Zed / local): [docs/host-packs.md](docs/host-packs.md). Local authorize works without an IDE.
+Cursor is ahead (rule + hooks + init). Host packs: `npx tsx src/coreward/host-pack.ts --host cursor|claude|opencode|zed` — [docs/host-packs.md](docs/host-packs.md). Local authorize works without an IDE.
 
 Optional CLI presence: [`runs/coreward-statusline.sh`](runs/coreward-statusline.sh) → `statusLine` in `~/.cursor/cli-config.json` ([docs/start-here.md](docs/start-here.md)).
 

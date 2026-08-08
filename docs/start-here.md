@@ -57,14 +57,21 @@ Details: [operate.md](./operate.md).
 
 Reads cwd `.vibe/coreward-presence.json` → `Coreward Mode=… ticket=… Ward=…`. Same command works for Claude Code statusline if your host supports a cwd-based command statusline.
 
-### Hosts (honesty)
+### Hosts
 
-| Host | Status |
-| --- | --- |
-| **Cursor** | Ahead — committed MCP + alwaysApply rule + soft hooks + init ON chip |
-| **Claude / Codex** | Paste snippets — [host-packs.md](./host-packs.md) / `.vibe/bootstrap-snippets.json` |
-| **OpenCode / Zed** | Not yet covered (host packs later) |
-| **Local / CI** | `npm run coreward:authorize` — no IDE required |
+Same vow everywhere: `preflight` once → prefer_gate → ContextPack. Packs: [host-packs.md](./host-packs.md). Generator: `npx tsx src/coreward/host-pack.ts --host …`.
+
+**Cursor** — Committed `.cursor/mcp.json` + alwaysApply rule + soft hooks. `npm run coreward:init` → Customize → MCP green (reload if grey). Or `--host cursor`.
+
+**Claude Code** — `--host claude` writes `.mcp.json` (`npx -y @coreward/mcp`) + slim `CLAUDE.md`. Reload MCP; expect one `preflight`.
+
+**OpenCode** — `--host opencode` writes `opencode.json` MCP local server + slim `AGENTS.md`.
+
+**Zed** — `--host zed` writes `.zed/settings.json` `context_servers` (`source: custom`) + slim `AGENTS.md`.
+
+**Codex** — Paste `templates/hosts/codex/mcp-snippet.json` (`@coreward/mcp`); keep vow in `AGENTS.md`.
+
+**Local / CI** — No MCP. `npm run coreward:init` then `npm run coreward:authorize -- --files a.ts,b.ts`.
 
 ---
 
