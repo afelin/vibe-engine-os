@@ -21,6 +21,7 @@ import {
   resolveLocalImport,
   IMPORT_RE,
 } from "./scoped-repomix.js";
+import type { VerifiedMandate } from "../ward/index.js";
 
 export const CONTEXT_PACK_VERSION = "context_pack.v1" as const;
 
@@ -85,6 +86,8 @@ export type BuildContextPackOpts = {
   now?: () => string;
   /** Disable cache for tests. */
   useCache?: boolean;
+  /** When set, shrink resolved paths to Mandate∩profile path_constraints. */
+  verifiedMandate?: VerifiedMandate | null;
 };
 
 type CacheEntry = { pack: ContextPack; built_at: string };
@@ -178,8 +181,14 @@ export function buildContextPack(
 
   const seedPaths =
     bondFiles.length > 0
-      ? resolveContextFiles(rootDir, dag, bondFiles)
-      : resolveContextFiles(rootDir, dag, []);
+      ? resolveContextFiles(rootDir, dag, bondFiles, {
+          verifiedMandate: opts.verifiedMandate,
+          rootDir,
+        })
+      : resolveContextFiles(rootDir, dag, [], {
+          verifiedMandate: opts.verifiedMandate,
+          rootDir,
+        });
 
   // Import closure capped by hops; seed paths are the ticket/bond set.
   const closure = collectImportClosure(rootDir, seedPaths, hops);

@@ -18,6 +18,10 @@ export type RunMetrics = {
   hallucinationBlocked?: boolean;
   /** True when a zero-token release gate supplied the patch (no LLM). */
   gateHit?: boolean;
+  /** True when ContextPack was served from cache. */
+  graphCacheHit?: boolean;
+  /** Import hops used when building ContextPack. */
+  hops?: number;
   healLevel?: number;
   agentSlot?: string;
   deterministicFix?: boolean;

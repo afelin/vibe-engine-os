@@ -15,6 +15,7 @@ import { classifyProblem, domainToAgentSlot } from "./classify.js";
 import { classifyFromSymptom } from "./diagnose.js";
 import { runTroubleshootDiagnostics } from "./npm-diagnostics.js";
 import { routeExternalAgent, type AgentSlotId } from "./registry.js";
+import { fenceUntrusted } from "../context/untrusted-fence.js";
 
 /** Caps the heal ladder at L0–L3. Default 3 preserves full ladder. */
 export type HealMaxLevel = 0 | 1 | 2 | 3;
@@ -194,10 +195,12 @@ async function callCriticVerdict(
   recommendation: string,
 ): Promise<string> {
   const system =
-    "You are a Judea Pearl Causal Critic for vibe-engine-os heal recommendations. " +
+    "You are a Judea Pearl Causal Critic for Coreward heal recommendations. " +
     "If the recommendation is safe and actionable, reply EXACTLY 'PASS'. " +
     "If it fails, explain why in one short paragraph.";
-  const user = `Review this heal recommendation:\n\n${recommendation}`;
+  const user =
+    `Review this heal recommendation:\n\n` +
+    fenceUntrusted("heal.recommendation", recommendation);
 
   if (critic.kind === "off") return "PASS";
 
