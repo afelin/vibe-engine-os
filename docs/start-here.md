@@ -1,8 +1,8 @@
 # Start here
 
-*≤5 minutes.* Activate Coreward, call one preflight, ship with a receipt.
+*≤5 minutes.* Init Coreward, call one preflight, ship with a receipt.
 
-**Three living docs:** this page (activate) · [operate.md](./operate.md) (Go / Approve / Merge) · [ward-security.md](./ward-security.md) (governed Ward).
+**Three living docs:** this page (init) · [operate.md](./operate.md) (Go / Approve / Merge) · [ward-security.md](./ward-security.md) (governed Ward).
 
 **Nomenclature:** a signed **Mandate** is a session contract; **Ward** enforces ALLOW/DENY on CI/promote when a Mandate is on; **house rules** (`mandates.json` + legal-space stackables) are standing forbids — MCP `evaluate_mandate` / alias `evaluate_house_rules`. Receipts never authorize. IDE Edit/Shell can still bypass Ward.
 
@@ -10,7 +10,7 @@
 
 > **License: FSL-1.1-Apache-2.0** — free internal use; not free to resell as hosted Coreward until Change Date. See [`LICENSE`](../LICENSE) / [`LICENSE.md`](../LICENSE.md).
 
-Design partners: [design-partner.md](./design-partner.md).
+Design partners: [design-partner.md](./design-partner.md). Warm catalog (after first green PR): [capabilities.md](./capabilities.md).
 
 ---
 
@@ -18,9 +18,11 @@ Design partners: [design-partner.md](./design-partner.md).
 
 ```bash
 npm run coreward:init          # Node check → Mode ON → MCP smoke → ward:doctor → operate URL
-# or
+# legacy alias (compat):
 npm run activate -- --governed # Visibility strip: Ward LEGACY|ON · Mode OFF|ON · ticket …
 ```
+
+**Recommended bootstrap:** `npm run coreward:init` only. `npm run activate` is a legacy alias kept for compatibility — do not treat it as a second product path.
 
 Cockpit and activate always print the strip — never silent LEGACY/OFF.
 
@@ -38,7 +40,7 @@ Details: [operate.md](./operate.md).
 
 ## 2. Cursor + MCP + skill
 
-1. `npm run coreward:init` (or `npm run activate -- --governed`).
+1. `npm run coreward:init` (legacy: `npm run activate -- --governed`).
 2. Enable MCP `coreward-release-gates` from [`mcp.json`](../mcp.json).
 3. Agents call MCP **`preflight` once** with proposed paths — then stop. Skill: [`.cursor/skills/coreward/SKILL.md`](../.cursor/skills/coreward/SKILL.md).
 
@@ -52,4 +54,4 @@ MCP `list_stackables` → `set_legal_space` (`none` | `eu-nis2-cra` | `us-baseli
 
 ## Deeper / archive
 
-Historical and specialized guides live under [history/](./history/) or remain linked for search: host packs, solo guide, adapter protocol, prelaunch battery, launch-proof. Prefer the triad above for day-one work.
+Historical and specialized guides live under [history/](./history/) or remain linked for search: host packs, solo guide, adapter protocol, prelaunch battery, launch-proof. Prefer the triad above for day-one work. Full capability tables: [capabilities.md](./capabilities.md).
