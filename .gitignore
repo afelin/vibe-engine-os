@@ -19,3 +19,6 @@ site/proof/
 
 # Local git worktrees (do not commit)
 .worktrees/
+
+# @coreward/mcp build outputs (dist/ already ignored)
+packages/mcp/policy/

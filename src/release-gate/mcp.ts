@@ -6,7 +6,7 @@ function writeMessage(payload: unknown): void {
   process.stdout.write(`Content-Length: ${Buffer.byteLength(body, "utf8")}\r\n\r\n${body}`);
 }
 
-function startReleaseGateMcpServer(): void {
+export function startReleaseGateMcpServer(): void {
   let buffer = "";
   let contentLength: number | null = null;
 
