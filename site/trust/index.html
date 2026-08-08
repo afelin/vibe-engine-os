@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Trust — Coreward</title>
-  <meta name="description" content="Claim-safe disclosure: what Coreward claims and does not claim; how to read capsule, HPURL, and Ward receipts as evidence." />
+  <meta name="description" content="Claim-safe disclosure: only claim-ledger pass rows are quoted; hosted_hpurl, cyberready_live, and ide_ward_interceptor stay unbuilt/Planned." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet" />
@@ -33,13 +33,19 @@
       <p class="hero__eyebrow">Transparency</p>
       <h1>Trust</h1>
       <p class="lede">
-        How to read Coreward evidence without mistaking receipts for certification.
-        Status of product claims lives on <a href="../status/">Status</a>; this page is the disclosure hub.
+        Public copy quotes only claim-ledger rows with status <code>pass</code>
+        (see <a href="https://github.com/afelin/coreward/blob/main/docs/prelaunch-battery.md">prelaunch battery</a>).
+        Receipts are evidence — not certification, and not an IDE sandbox product.
+        Product posture also lives on <a href="../status/">Status</a>.
       </p>
     </section>
 
     <section class="section">
-      <h2>Claimed</h2>
+      <h2>Quoted only when <code>pass</code></h2>
+      <p>
+        CI, scars, and marketing may cite these families only while the ledger marks them <code>pass</code>
+        for a given run — never invent readiness from an <code>unclaimed</code> or <code>fail</code> row.
+      </p>
       <ul>
         <li>Portable OSS promotion gate: bonds, house mandates, optional signed Mandate + Ward on the CI/promote engine path, zero-token gates, capsules, replay, gauntlet, MCP <code>authorize_write</code>.</li>
         <li>Capsules and <code>ward_decision</code> events are <strong>tamper-evident</strong> hashes and logs — mismatch is detectable.</li>
@@ -48,15 +54,27 @@
     </section>
 
     <section class="section">
+      <h2>Unbuilt / Planned (<code>UNCLAIMABLE_IDS</code>)</h2>
+      <p>
+        These claim IDs stay <code>unclaimed</code> in
+        <a href="https://github.com/afelin/coreward/blob/main/src/launch/claim-ledger.ts"><code>src/launch/claim-ledger.ts</code></a>
+        until the product exists. Do not quote them as shipped.
+      </p>
+      <ul>
+        <li><code>hosted_hpurl</code> — Hosted receipt verify · <strong>unbuilt / Planned</strong></li>
+        <li><code>cyberready_live</code> — CyberReady-ready signed proof for buyers · <strong>unbuilt / Planned</strong> (bridge may fail-open as <code>not_installed</code>)</li>
+        <li><code>ide_ward_interceptor</code> — IDE host interceptor for Ward · <strong>unbuilt / Planned</strong> (Edit/Shell stay out of band)</li>
+      </ul>
+    </section>
+
+    <section class="section">
       <h2>Not claimed</h2>
       <ul>
-        <li><strong>Not</strong> tamper-proof storage or legal/auditor certification.</li>
-        <li><strong>Not</strong> a kernel IDE sandbox — Edit/Shell and soft MCP paths can bypass Ward.</li>
-        <li><strong>CyberReady:</strong> Planned / fail-open when not installed — not a shipped Coreward mode.</li>
-        <li><strong>Hosted HPURL verify:</strong> unclaimed until that product exists (local/comment proof still works).</li>
+        <li><strong>Not</strong> tamper-proof storage, legal advice, or auditor/regulatory certification.</li>
+        <li><strong>Not</strong> a kernel IDE sandbox — Coreward Mode and Ward cover the engine/CI/promote path; host Edit/Shell can bypass.</li>
         <li>No SOC2 / paid bounty theater in this repository.</li>
       </ul>
-      <p>See also the claim ledger unclaimables and <a href="../status/">status</a>.</p>
+      <p>See also <a href="../status/">Status</a> for Available vs Planned boxes.</p>
     </section>
 
     <section class="section" id="signals">
@@ -97,7 +115,7 @@
         <dt>Capsule</dt>
         <dd>Run fingerprint (<code>capsuleHash</code>, <code>vowsHash</code>). Recompute locally with <code>validate_capsule</code> / <code>npm run gate:validate-capsule</code>. Evidence of what the governed run recorded — <strong>never</strong> an authorization token.</dd>
         <dt>HPURL</dt>
-        <dd>Proof-link fragment for the receipt viewer (<a href="../proof/">Proof</a>). Helps humans inspect a run; does not replace promote re-verify.</dd>
+        <dd>Proof-link fragment for the receipt viewer (<a href="../proof/">Proof</a>). Helps humans inspect a run; does not replace promote re-verify. Hosted verify remains Planned (<code>hosted_hpurl</code>).</dd>
         <dt>Ward receipt</dt>
         <dd><code>ward_decision</code> / <code>ward.json</code> record ALLOW/DENY under a Mandate. Promote always re-verifies the persisted Mandate — receipts do not authorize.</dd>
       </dl>
@@ -106,6 +124,7 @@
     <section class="section">
       <h2>Further reading</h2>
       <ul>
+        <li><a href="https://github.com/afelin/coreward/blob/main/docs/prelaunch-battery.md">docs/prelaunch-battery.md</a> — claim ledger rules (quote only <code>pass</code>)</li>
         <li><a href="https://github.com/afelin/coreward/blob/main/docs/ward-security.md">docs/ward-security.md</a> — Ward invariant + regulated checklist</li>
         <li><a href="https://github.com/afelin/coreward/blob/main/SECURITY.md">SECURITY.md</a> — reporting</li>
         <li><a href="https://github.com/afelin/coreward/blob/main/LICENSE.md">LICENSE.md</a> — FSL FAQ</li>

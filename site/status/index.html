@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Status — Coreward</title>
-  <meta name="description" content="Claim-safe status: Coreward available; CyberReady Planned only." />
+  <meta name="description" content="Claim-safe status: Coreward available; hosted_hpurl, cyberready_live, and ide_ward_interceptor remain Planned/unbuilt." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet" />
@@ -33,8 +33,10 @@
       <p class="hero__eyebrow">Claim-safe</p>
       <h1>Status</h1>
       <p class="lede">
-        What you can run today versus what remains Planned. This page avoids
-        certification and product-readiness language.
+        What you can run today versus what remains Planned / unbuilt in the claim ledger.
+        This page quotes only ledger <code>pass</code> posture for Available items and avoids
+        certification or IDE sandbox product claims. Disclosure hub:
+        <a href="../trust/">Trust</a>.
       </p>
     </section>
 
@@ -45,18 +47,40 @@
         Open-source promotion primitives in this repository: house mandates,
         optional Signed Mandate + Ward + AgentId, TaskBond, zero-token gates,
         capsule receipts, gauntlet, replay, adopt-into-repo, and GitHub Actions
-        workflows. Free to clone and run under the project license.
+        workflows. Free to clone and run under the project license. Public
+        marketing may cite these only while the backing claim-ledger asserts are
+        <code>pass</code>.
       </p>
     </article>
 
     <article class="status-box">
       <span class="status-box__label status-box__label--planned">Planned</span>
-      <h2>CyberReady</h2>
+      <h2>CyberReady <code>cyberready_live</code></h2>
       <p>
         Optional external bridge only. Not shipped as a built-in mode of Coreward.
         If the bridge is absent, validation fails open (<code>not_installed</code>)
         and does not block promote or the vibe path. No “CyberReady-ready”
-        claim until a live evaluation exists.
+        claim until a live evaluation exists — ledger id stays unclaimed.
+      </p>
+    </article>
+
+    <article class="status-box">
+      <span class="status-box__label status-box__label--planned">Planned</span>
+      <h2>Hosted HPURL verify <code>hosted_hpurl</code></h2>
+      <p>
+        Hosted receipt verify remains <strong>unbuilt</strong>. Local / comment proof
+        and the in-repo <a href="../proof/">Proof</a> viewer still work; do not claim
+        a hosted verify product until the ledger marks this id pass.
+      </p>
+    </article>
+
+    <article class="status-box">
+      <span class="status-box__label status-box__label--planned">Planned</span>
+      <h2>IDE Ward interceptor <code>ide_ward_interceptor</code></h2>
+      <p>
+        No IDE host interceptor for Ward. Product boundary is CI/promote when a
+        Mandate is on; Edit/Shell and soft MCP paths stay out of band. This id
+        stays <strong>unbuilt</strong> — Coreward is not an IDE sandbox.
       </p>
     </article>
 
@@ -64,7 +88,9 @@
       <p>
         Regulation-agnostic core: posture packs and legal-space dials are
         configuration aids. They are not law, not certification, and not a
-        substitute for counsel.
+        substitute for counsel. Ledger unclaimables:
+        <code>hosted_hpurl</code>, <code>cyberready_live</code>,
+        <code>ide_ward_interceptor</code>.
       </p>
     </div>
   </main>
