@@ -25,3 +25,26 @@ Agents call MCP **`preflight`** once (CLI: `npm run coreward:authorize -- --file
 ## Security
 
 Governed Mode + Mandate keys: [ward-security.md](./ward-security.md).
+
+## Operator metrics (14-day dogfood)
+
+Three counters — fill after each dogfood session. **Not SaaS:** store as an issue comment *or* local `.vibe/operator-metrics.json`.
+
+| Counter | Meaning | How to fill |
+| --- | --- | --- |
+| **Turns before first preflight** | Agent turns (chat/tool rounds) before the first successful MCP `preflight` / `coreward:authorize` | Count manually from the session, or `npx tsx src/coreward/operator-metrics.ts record --turns N` |
+| **Mode denies vs allows** | Coreward Mode DENY vs ALLOW on the engine path this session | From cockpit / ward decisions; `… record --denies D --allows A` |
+| **Time-to-first green PR** | Minutes from issue open (or init) to first PR with green promotion checks | Wall clock or Actions timestamps; `… record --ttf-green-pr-min M` |
+
+```bash
+# Print template + current local artifact
+npx tsx src/coreward/operator-metrics.ts show
+
+# Write/merge local counters (creates .vibe/operator-metrics.json)
+npx tsx src/coreward/operator-metrics.ts record --turns 3 --denies 1 --allows 4 --ttf-green-pr-min 28
+
+# Markdown block to paste as an issue comment
+npx tsx src/coreward/operator-metrics.ts comment
+```
+
+DoD: after one dogfood session you can fill all three.

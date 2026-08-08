@@ -17,6 +17,10 @@ Also: [AGENTS.md](./AGENTS.md) — call MCP `preflight` once · [LICENSE.md](./L
 - `npm run gate:mcp` — MCP server `coreward-release-gates`
 - `npm run ward:doctor`
 
+## Product boundary
+
+> **Product boundary:** Ward is CI/promote-only when a Mandate is on; IDE Edit/Shell remains out of band for this product generation; `ide_ward_interceptor` stays unbuilt.
+
 ## Non-claims
 
-Not a kernel IDE sandbox. Hosted HPURL verify unbuilt. No pricing tiers in this tree.
+Not a kernel IDE sandbox. Hosted HPURL verify unbuilt (`hosted_hpurl`). CyberReady live buyer proof unbuilt (`cyberready_live`). No pricing tiers in this tree.

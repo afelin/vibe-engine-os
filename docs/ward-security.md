@@ -1,5 +1,9 @@
 # Ward security (one page)
 
+> **Product boundary:** Ward is CI/promote-only when a Mandate is on; IDE Edit/Shell remains out of band for this product generation; `ide_ward_interceptor` stays unbuilt.
+
+Matches claim-ledger `UNCLAIMABLE_IDS` (`hosted_hpurl`, `cyberready_live`, `ide_ward_interceptor`) — never quote those as shipped.
+
 ## The invariant
 
 When a Signed Mandate is in play, **authorization = `verifyOnce(principals)` + house rules (`evaluate_mandate` / `evaluate_house_rules`) AND + actor rules (STRICT / no `*`)**.
