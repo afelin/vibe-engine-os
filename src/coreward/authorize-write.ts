@@ -26,6 +26,7 @@ import {
 } from "../ward/index.js";
 import { loadReleaseGates, resolveGateFromRegistry } from "../release-gate/registry.js";
 import { axDenialFromReason, type AxDenial } from "./ax-denial.js";
+import { bumpPreflightOk } from "./operator-metrics.js";
 
 export type AuthorizeWriteInput = {
   proposed_files: string[];
@@ -464,6 +465,12 @@ export function authorizeWrite(input: AuthorizeWriteInput): AuthorizeWriteResult
 
   process.env.COREWARD_AUTHORIZE_TICKET = ticket.ticket_id;
   setAuthorizeTicketBinding(rootDir, ticket.ticket_id);
+
+  try {
+    bumpPreflightOk(rootDir);
+  } catch {
+    // Metrics are best-effort — never fail authorize.
+  }
 
   const refreshed = Boolean(existing);
   return {

@@ -1,3 +1,6 @@
+/**
+ * @internal — Import BFS used by ContextPack. Prefer `buildContextPack`.
+ */
 import * as fs from "node:fs";
 import * as path from "node:path";
 import type { ExecutionDag } from "../os/events.js";

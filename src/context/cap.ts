@@ -1,3 +1,7 @@
+/**
+ * @internal — Char truncation helpers used by ContextPack / bundle.
+ * Prefer `buildContextPack` for agent context.
+ */
 export function dedupeLines(text: string): string {
   const lines = text.split("\n");
   const kept = new Set<string>();

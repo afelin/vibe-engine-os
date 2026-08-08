@@ -14,6 +14,7 @@ Coreward is a **promotion gate with an Agentic Cost Plane**: agents propose insi
 | `contextChars` / `tokensEstimate` | Cockpit / attest |
 | `graph_cache_hit` / `hops` | ContextPack + attest (`graphCacheHit`, `hops`) |
 | Gate candidates | `.vibe/gate-candidates/` (not auto-merged) |
+| Cost dogfood | `npm run coreward:cost-dogfood` → `.vibe/cost-dogfood.json` |
 
 Order is fixed: **authorize → prefer_gate → ContextPack → LLM**. Multi-agent swarms share one `ticket_id` and one ContextPack. `VIBE_DEPTH` maps to ContextPack `{ maxHops, charBudget, allowLlm }`.
 
@@ -21,21 +22,26 @@ CyberReady (sibling repo) may later consume the same path/ticket contract; this 
 
 ## Day-one checklist (felt savings)
 
-1. **Activate** — `npm run activate`.
-2. **Match gates** — call `resolve_gate` / `authorize_write` before LLM; ≥12 zero-token chores in `src/release-gate/gates.json`.
+1. **Init** — `npm run coreward:init` (`activate` = legacy alias).
+2. **Match gates** — call `resolve_gate` / `authorize_write` before LLM; templated chores in `src/release-gate/gates.json`.
 3. **Mandate + AgentId** — `mandate:issue` / default profile to shrink path and context caps.
 4. **Read the cockpit** — after a governed run, look for **Savings:** `gate_hit=yes|no · contextChars=N · tokensEstimate=N` (plus `graphCacheHit` / `hops` when ContextPack ran).
 5. **Export attestation** — `npm run savings:attest` writes a hash-chained JSON (`.vibe/savings-attestation.json`) from those metrics. Local export is claimable; **hosted verify** of attestations stays unclaimed until built. Sample shape: [docs/assets/savings-attest.sample.json](./assets/savings-attest.sample.json).
+6. **Prove the bound ratio** — `npm run coreward:cost-dogfood` measures unbound vs ContextPack `contextChars` on a checked-in fixture.
 
 | Lever | Operator move | Felt benefit |
 |-------|---------------|--------------|
-| Zero-token `resolve_gate` | Match issue/chore to gate first | **$0** for templated work |
+| Zero-token `resolve_gate` | Match issue/chore to gate first | **$0** for templated work when a gate hits |
 | Mandate + AgentId path/context caps | `mandate:issue` / default profile | Fewer files in prompt |
 | `VIBE_DEPTH` 0–2 | Labels `vibe:safe` / plan-only | Less codegen surface + tighter ContextPack radius |
 | `authorize_write` → `prefer_gate` | Single preflight | Agents stop “thinking” when a gate exists |
-| ContextPack cache | Same ticket paths mid-session | Turn 2..N ≈ free graph |
-| Lessons → gate candidates | Review `.vibe/gate-candidates/` | Scar tissue → zero-token library |
-| `savings:attest` | Export after a gated week | Provable ROI artifact (local) |
+| ContextPack cache | Same ticket paths mid-session | Repeated graph builds can hit cache (`graph_cache_hit`) |
+| Lessons → gate candidates | Friday ritual: `coreward:gate-candidates` | **Stubs available; no compounding SLA** until human merges into `gates.json` |
+| `savings:attest` + cost-dogfood | Export after a gated week | Provable ROI artifact (local); claim is **measured on dogfood fixture** |
+
+### Measured claim (cost dogfood)
+
+Do not advertise a fixed “5–10× cheaper” multiplier. Run `npm run coreward:cost-dogfood` and cite **`ratio_unbound_over_bound`** from `.vibe/cost-dogfood.json` (fixture: bonded ContextPack vs naive multi-dir concat). Last local dogfood on this tree measured **≈17×** unbound/bound at the default char budget; the script exits nonzero below **5×** unless `COREWARD_COST_CLAIM=off`.
 
 ## Local/open models + Coreward (why policy can say yes)
 
@@ -54,7 +60,7 @@ Do not treat Hermes memory or OpenClaw sessions as a substitute for Ward. Packs:
 | Lessons | `.evomem/lessons.ndjson` | Scar tissue / retrieval on **your** disk |
 | Capsules / events | `.runs/` | Replayable evidence for later private-model eval |
 | Mandates / AgentId / house law | `.vibe/`, `src/policy/` | Policy portable when inference moves in-house |
-| Gates | `gates.json` | Deterministic skill library — zero frontier dependency |
+| Gates | `gates.json` | Deterministic skill library — zero frontier dependency when a gate hits |
 
 ## Migration sketch
 

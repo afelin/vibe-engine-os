@@ -80,6 +80,40 @@ export function writeGateCandidate(
   return out;
 }
 
+/** List candidate stubs on disk (newest first by createdAt when present). */
+export function listGateCandidates(rootDir: string): GateCandidateStub[] {
+  const dir = path.join(rootDir, GATE_CANDIDATES_REL);
+  if (!fs.existsSync(dir)) return [];
+  const out: GateCandidateStub[] = [];
+  for (const name of fs.readdirSync(dir)) {
+    if (!name.endsWith(".json")) continue;
+    try {
+      const raw = JSON.parse(
+        fs.readFileSync(path.join(dir, name), "utf8"),
+      ) as GateCandidateStub;
+      if (raw?.schema === "coreward.gate_candidate.v1") out.push(raw);
+    } catch {
+      /* skip */
+    }
+  }
+  return out.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+}
+
+export function readGateCandidate(
+  rootDir: string,
+  id: string,
+): GateCandidateStub | null {
+  const p = gateCandidatePath(rootDir, id);
+  if (!fs.existsSync(p)) return null;
+  try {
+    const raw = JSON.parse(fs.readFileSync(p, "utf8")) as GateCandidateStub;
+    if (raw?.schema !== "coreward.gate_candidate.v1") return null;
+    return raw;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Scan lessons and write candidate stubs for those with reuseWhen.
  * Returns written paths (skips overwrite if identical id already exists).

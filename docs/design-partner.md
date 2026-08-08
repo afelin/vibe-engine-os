@@ -8,7 +8,7 @@ Teams drowning in AI PRs — many agent diffs, weak scope, unclear “what lande
 
 ## Path
 
-1. Open a [Coreward Request](../.github/ISSUE_TEMPLATE/vibe-request.yml) (Vibe Request) with **Intent**, **Outcome**, and **2–4 files**.
+1. Open a [Coreward Request](../.github/ISSUE_TEMPLATE/vibe-request.yml) with **Intent**, **Outcome**, and **2–4 files**.
 2. Comment **`/go`** — three next actions (blocking / unblock / merge-or-deploy). See [operate.md](./operate.md).
 3. Merge when CI is green (optional auto-merge label). Expect visibility strip + capsule receipt — not certification.
 

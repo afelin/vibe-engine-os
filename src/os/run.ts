@@ -53,9 +53,11 @@ import {
   writeActorSnapshot,
 } from "../run/manifest.js";
 import {
-  buildContextBundle,
+  buildContextPack,
+  formatContextPackBundle,
+} from "../context/context-pack.js";
+import {
   formatContextBundleForPrompt,
-  resolveContextFiles,
   type ScopedContextBundle,
 } from "../context/bundle.js";
 import { capContext } from "../context/cap.js";
@@ -482,14 +484,22 @@ export async function runOSActor(
       ],
     };
 
-    const contextFiles = resolveContextFiles(rootDir, fallbackDag, boundFiles, {
+    const plannerPack = buildContextPack(rootDir, {
+      bond_files: boundFiles,
+      dag: fallbackDag,
+      ticket_id: getAuthorizeTicketBinding(rootDir) || undefined,
+      ...(wardMaxContextChars !== undefined
+        ? { charBudget: wardMaxContextChars }
+        : {}),
+      depth,
       verifiedMandate,
     });
-    const plannerBundle = buildContextBundle(rootDir, contextFiles, {
-      ...(wardMaxContextChars !== undefined
-        ? { maxTotalChars: wardMaxContextChars }
-        : {}),
-    });
+    const plannerFormatted = formatContextPackBundle(rootDir, plannerPack);
+    const plannerBundle: ScopedContextBundle = {
+      files: plannerFormatted.files,
+      totalChars: plannerFormatted.totalChars,
+      truncated: plannerFormatted.truncated,
+    };
     const contextBlob =
       boundFiles.length > 0
         ? formatContextBundleForPrompt(plannerBundle)
@@ -795,14 +805,27 @@ ${vibe}`;
   let hallucinationBlocked = false;
   const gateHit = Boolean(deterministicPatch);
 
-  const codegenContextFiles = resolveContextFiles(rootDir, dag, boundFiles, {
+  const codegenPack = buildContextPack(rootDir, {
+    bond_files: boundFiles.length > 0 ? boundFiles : plannedFiles,
+    dag,
+    ticket_id:
+      boundTicketId ||
+      getAuthorizeTicketBinding(rootDir) ||
+      undefined,
+    ...(wardMaxContextChars !== undefined
+      ? { charBudget: wardMaxContextChars }
+      : {}),
+    depth,
     verifiedMandate,
   });
-  const codegenBundle = buildContextBundle(rootDir, codegenContextFiles, {
-    ...(wardMaxContextChars !== undefined
-      ? { maxTotalChars: wardMaxContextChars }
-      : {}),
-  });
+  const codegenFormatted = formatContextPackBundle(rootDir, codegenPack);
+  const codegenBundle: ScopedContextBundle = {
+    files: codegenFormatted.files,
+    totalChars: codegenFormatted.totalChars,
+    truncated: codegenFormatted.truncated,
+  };
+  const graphCacheHit = codegenPack.graph_cache_hit === true;
+  const packHops = codegenPack.hops;
   const allowedCodegenPaths = [...new Set([...plannedFiles, ...boundFiles])];
 
   while (attempts < mandates.max_attempts) {
@@ -1128,6 +1151,8 @@ ${vibe}`;
       truncated: codegenBundle.truncated,
       hallucinationBlocked,
       gateHit,
+      graphCacheHit,
+      hops: packHops,
     });
   }
 
@@ -1161,6 +1186,8 @@ ${vibe}`;
         truncated: codegenBundle.truncated,
         hallucinationBlocked,
         gateHit,
+        graphCacheHit,
+        hops: packHops,
       });
     }
   }
@@ -1201,6 +1228,8 @@ ${vibe}`;
       truncated: codegenBundle.truncated,
       hallucinationBlocked,
       gateHit,
+      graphCacheHit,
+      hops: packHops,
     });
   }
 
@@ -1226,6 +1255,8 @@ ${vibe}`;
     truncated: codegenBundle.truncated,
     hallucinationBlocked,
     gateHit,
+    graphCacheHit,
+    hops: packHops,
   });
 }
 
@@ -1252,6 +1283,8 @@ type FinishRunInput = {
   truncated?: boolean;
   hallucinationBlocked?: boolean;
   gateHit?: boolean;
+  graphCacheHit?: boolean;
+  hops?: number;
 };
 
 function finishRun(args: FinishRunInput): RunOutput {
@@ -1265,6 +1298,8 @@ function finishRun(args: FinishRunInput): RunOutput {
     truncated: args.truncated,
     hallucinationBlocked: args.hallucinationBlocked,
     gateHit: args.gateHit,
+    graphCacheHit: args.graphCacheHit,
+    hops: args.hops,
   };
 
   const bondHash =

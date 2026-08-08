@@ -6,6 +6,8 @@ import { appendLesson } from "./lesson.js";
 import {
   emitGateCandidatesFromLessons,
   lessonToGateCandidate,
+  listGateCandidates,
+  readGateCandidate,
 } from "./gate-candidates.js";
 
 describe("gate candidates from lessons", () => {
@@ -50,5 +52,9 @@ describe("gate candidates from lessons", () => {
     };
     expect(loaded.status).toBe("candidate");
     expect(loaded.schema).toBe("coreward.gate_candidate.v1");
+
+    const listed = listGateCandidates(root);
+    expect(listed.length).toBe(1);
+    expect(readGateCandidate(root, listed[0]!.id)?.id).toBe(listed[0]!.id);
   });
 });
