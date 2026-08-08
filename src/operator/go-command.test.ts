@@ -64,7 +64,9 @@ describe("/go command", () => {
     expect(body).toMatch(/1\.\s+\*\*Blocking:\*\*/);
     expect(body).toMatch(/2\.\s+\*\*Fastest unblock:\*\*/);
     expect(body).toMatch(/3\.\s+\*\*Merge or deploy next:\*\*/);
-    expect(body.toLowerCase()).toMatch(/vibe request|vibe\/run/);
+    expect(body.toLowerCase()).toMatch(
+      /coreward request|vibe request|vibe\/run/,
+    );
   });
 
   it("routes /go through the GitHub comment router to renderGoGuide", async () => {

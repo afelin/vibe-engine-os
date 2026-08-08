@@ -301,15 +301,16 @@ describe("GitHub Actions workflow", () => {
     expect(action).toContain("Deploy placeholder (opt-in)");
   });
 
-  it("tells nocode users they get PR and receipt in issue template", () => {
+  it("Coreward Request template documents operator loop", () => {
     const template = fs.readFileSync(
       path.join(process.cwd(), ".github/ISSUE_TEMPLATE/vibe-request.yml"),
       "utf8",
     );
 
-    expect(template).toContain(
-      "You'll get a PR link and receipt in comments—no terminal required.",
-    );
+    expect(template).toMatch(/name:\s*Coreward Request/);
+    expect(template).toContain("/go");
+    expect(template).toContain("/approve");
+    expect(template).toMatch(/Merge/i);
   });
 
   it("updates cockpit comment with PR link after promotion", () => {
@@ -430,30 +431,30 @@ describe("GitHub Actions workflow", () => {
     expect(pkg.scripts["launch:scar"]).toContain("scar-post.mjs");
   });
 
-  it("start-here hub exists with four entry paths and Vibe Request link", () => {
+  it("start-here hub documents triad paths and Coreward Request", () => {
     const startHerePath = path.join(process.cwd(), "docs/start-here.md");
     expect(fs.existsSync(startHerePath)).toBe(true);
 
     const startHere = fs.readFileSync(startHerePath, "utf8");
     expect(startHere).toMatch(/5 minutes/i);
+    expect(startHere).toMatch(/Three living docs|triad/i);
+    expect(startHere).toContain("operate.md");
+    expect(startHere).toContain("ward-security.md");
 
-    // Path 1 — GitHub-only nocode
-    expect(startHere).toContain("nocode-quickstart.md");
+    // Path 1 — GitHub-only
     expect(startHere).toContain("vibe-request.yml");
+    expect(startHere).toMatch(/Coreward Request/i);
 
     // Path 2 — Cursor + MCP + skill
     expect(startHere).toContain("mcp.json");
     expect(startHere).toContain(".cursor/skills/coreward");
+    expect(startHere).toContain("coreward:init");
+    expect(startHere).toMatch(/preflight/i);
 
-    // Path 3 — External agent/IDE via adapter
-    expect(startHere).toContain("agent-adapter.md");
-    expect(startHere).toContain("agent-protocol.md");
-
-    // Path 4 — Pick legal space dial
+    // Path 3 — Legal space dial
     expect(startHere).toMatch(/legal.?space/i);
     expect(startHere).toContain("set_legal_space");
     expect(startHere).toContain("list_stackables");
-    expect(startHere).toContain(".vibe/active-stack.json");
     expect(startHere).toContain("eu-nis2-cra");
     expect(startHere).toContain("us-baseline");
   });
@@ -480,12 +481,14 @@ describe("GitHub Actions workflow", () => {
     expect(starter).toContain("src/cloud-loop-smoke.test.ts");
   });
 
-  it("start-here links First green PR to Starter template", () => {
+  it("start-here documents Coreward triad activation path", () => {
     const startHere = fs.readFileSync(
       path.join(process.cwd(), "docs/start-here.md"),
       "utf8",
     );
-    expect(startHere).toMatch(/First green PR/i);
-    expect(startHere).toContain("vibe-starter.yml");
+    expect(startHere).toContain("coreward:init");
+    expect(startHere).toMatch(/preflight/i);
+    expect(startHere).toContain("operate.md");
+    expect(startHere).toMatch(/Three living docs|triad/i);
   });
 });
