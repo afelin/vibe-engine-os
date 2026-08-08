@@ -37,7 +37,10 @@ import {
   readActiveStack,
   setLegalSpace,
 } from "../policy/stackables.js";
-import { cyberreadyValidateDelta } from "./cyberready-bridge.js";
+import {
+  cyberreadyExplainPacket,
+  cyberreadyValidateDelta,
+} from "./cyberready-bridge.js";
 import {
   getDefaultProfile,
   profileHash,
@@ -293,6 +296,25 @@ export const RELEASE_GATE_TOOLS = [
         payload: {
           type: "object",
           description: "Optional opaque validate_delta payload for IPC",
+        },
+      },
+    },
+  },
+  {
+    name: "cyberready_explain_packet",
+    description:
+      "[advanced] Optional CyberReady explain-packet for tutors only. Passes airlocked untrusted_metadata to chat; never greenlights. After proposed fixes, call cyberready_validate_delta — never trust the model. Fail-open when not installed.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        sock_path: {
+          type: "string",
+          description: "Override CYBERREADY_SOCK Unix socket path",
+        },
+        packet_path: {
+          type: "string",
+          description:
+            "Optional path to explain-packet.json (skips sock when set)",
         },
       },
     },
@@ -730,6 +752,18 @@ export function callReleaseGateTool(
         : undefined;
     return JSON.stringify(
       cyberreadyValidateDelta({ sockPath, payload }),
+      null,
+      2,
+    );
+  }
+
+  if (name === "cyberready_explain_packet") {
+    const sockPath =
+      typeof args.sock_path === "string" ? args.sock_path : undefined;
+    const packetPath =
+      typeof args.packet_path === "string" ? args.packet_path : undefined;
+    return JSON.stringify(
+      cyberreadyExplainPacket({ sockPath, packetPath }),
       null,
       2,
     );
