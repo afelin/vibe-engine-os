@@ -16,6 +16,7 @@ import {
   resolveExplainDepth,
 } from "./explain.js";
 import { loadActiveMandate, readWardDecisions, readWardRunState } from "../ward/index.js";
+import { renderGovernanceStrip } from "../activate/visibility.js";
 
 export function resolvePrUrl(rootDir = "."): string | undefined {
   const fromEnv = process.env.VIBE_PR_URL?.trim();
@@ -117,9 +118,9 @@ function resolvePreRunGoActions(): {
   return {
     blocking: "No active run yet — the engine has nothing to steer.",
     unblock:
-      "Open a Vibe Request (`.github/ISSUE_TEMPLATE/vibe-request.yml`) with labels `vibe/run` + `vibe:safe`.",
+      "Open a Coreward Request (`.github/ISSUE_TEMPLATE/vibe-request.yml`) and comment `/go`.",
     mergeOrDeploy:
-      "After the first PR is green, merge (optional `vibe/auto-merge`) to land the change.",
+      "After the first PR is green, merge to land the change.",
   };
 }
 
@@ -203,9 +204,12 @@ export function renderCockpitComment(
   const gauntletLine = renderGauntletLine(rootDir);
   const tokensSavedLine = renderTokensSavedLine(manifest);
   const wardLine = renderWardLine(rootDir, manifest?.runId);
+  const governanceStrip = renderGovernanceStrip(rootDir);
 
   const plainBlock = [
     "## Coreward",
+    "",
+    `**${governanceStrip}**`,
     "",
     prUrl ? `**Pull request:** [Open PR](${prUrl})` : undefined,
     prUrl ? "" : undefined,
@@ -231,7 +235,9 @@ export function renderCockpitComment(
     renderExplainBlock(state, options?.labels),
     renderExplainBlock(state, options?.labels) ? "" : undefined,
     "### Commands",
-    "`/status` · `/approve` · `/continue` · `/retry` · `/rollback` · `/details`",
+    state === "awaiting_approval"
+      ? "`/approve` · `/go` · `/status` · `/retry` · `/rollback` · `/details`"
+      : "`/go` · `/status` · `/continue` · `/retry` · `/rollback` · `/details`",
     "",
   ]
     .filter((line): line is string => line !== undefined)

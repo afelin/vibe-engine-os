@@ -19,7 +19,9 @@
           <li><a href="../whitepaper/">White paper</a></li>
           <li><a href="./" aria-current="page">Adopt</a></li>
           <li><a href="../status/">Status</a></li>
+          <li><a href="../trust/">Trust</a></li>
           <li><a href="../proof/">Proof</a></li>
+          <li><a href="../community/">Community</a></li>
           <li><a href="../legal/">Legal</a></li>
         </ul>
       </nav>
@@ -31,21 +33,47 @@
       <p class="hero__eyebrow">Portable primitive</p>
       <h1>Adopt into an existing repo</h1>
       <p class="lede">
-        Copy the promotion layer into a target repository, merge scripts and
-        dependencies deliberately, then enable Actions. The engine is free to run;
-        adoption is a merge + wiring job—not a one-click product install.
+        Start with the modular ladder—use only the slices you need—then optionally
+        copy the full promotion layer. The engine is free to run under FSL for
+        internal use; Competing Use stays restricted until the Change Date.
         Optional Signed Mandate + Ward + AgentId stay dormant until you set
         Actions secrets—see <code>docs/ward-security.md</code>.
       </p>
     </section>
 
     <section class="prose">
-      <h2>1. Install into the target repo</h2>
+      <h2>Use only what you need</h2>
+      <p>
+        Same monorepo; progressive enablement—not separate npm packages.
+        Start at Tier 1; add forever or Ward only if you want overnight
+        issue→PR or session budgets.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Tier</th><th>What</th><th>Forever required?</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>MCP <code>authorize_write</code> + <code>resolve_gate</code> / house <code>evaluate_mandate</code></td><td>No</td></tr>
+          <tr><td>2</td><td>TaskBond + house <code>mandates.json</code></td><td>No</td></tr>
+          <tr><td>3</td><td><code>activate</code> + attribution / PR gate workflows</td><td>Actions yes; forever no</td></tr>
+          <tr><td>4</td><td>Forever loop (<code>vibe/run</code>)</td><td>Yes</td></tr>
+          <tr><td>5</td><td>Signed Mandate + Ward STRICT + principals</td><td>Promote path / CI</td></tr>
+          <tr><td>6</td><td><code>savings:attest</code> after gated weeks</td><td>No (CLI)</td></tr>
+        </tbody>
+      </table>
+      <p>
+        Host packs: <a href="https://github.com/afelin/coreward/blob/main/docs/host-packs.md">docs/host-packs.md</a>.
+        Local-first: <a href="https://github.com/afelin/coreward/blob/main/docs/local-first-savings.md">docs/local-first-savings.md</a>.
+      </p>
+
+      <h2>1. Install into the target repo (full tree)</h2>
       <p>From a clone of <code>Coreward</code>:</p>
 <pre><code>bash runs/install-into-repo.sh /path/to/your-repo</code></pre>
       <p>
         This copies source, workflows, issue templates, proof viewer, evals,
-        scripts, and a Cursor skill. It does <strong>not</strong> overwrite an
+        scripts, and the canonical Cursor skill under
+        <code>.cursor/skills/coreward/</code> (plus a thin
+        <code>vibe-engine</code> alias). It does <strong>not</strong> overwrite an
         existing <code>package.json</code>. Instead it writes
         <code>package.json.vibe-ref</code> as a merge reference.
       </p>

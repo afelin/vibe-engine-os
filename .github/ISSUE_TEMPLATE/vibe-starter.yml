@@ -1,6 +1,6 @@
-name: Vibe Starter
-description: Prefilled safe starter — cloud-loop smoke for a first green PR
-title: "[vibe] cloud-loop smoke — verify forever loop is alive"
+name: Coreward Starter
+description: Prefilled safe starter — first green PR via Go → Merge
+title: "[coreward] cloud-loop smoke — verify forever loop is alive"
 labels:
   - vibe/run
   - vibe:safe
@@ -8,11 +8,9 @@ body:
   - type: markdown
     attributes:
       value: |
-        **First green PR.** Submit as-is (or tweak lightly). Labels `vibe/run` + `vibe:safe` are already set.
+        **First green PR.** Submit as-is (or tweak lightly).
 
-        This starter recreates the deterministic cloud-loop smoke from `.planning/milestones/ISSUE_901_PLAN.md` so CI can verify the forever loop is alive.
-
-        Operator commands: `/status` · `/approve` · `/retry` · `/rollback`
+        **Operator loop:** `/go` → wait for PR → **Merge** when green. Use `/approve` only if cockpit pauses on a protected path.
 
   - type: textarea
     id: intent

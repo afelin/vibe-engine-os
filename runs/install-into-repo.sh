@@ -12,7 +12,7 @@ fi
 
 SOURCE="$(cd "$(dirname "$0")/.." && pwd)"
 
-mkdir -p "$TARGET/src" "$TARGET/.github/workflows" "$TARGET/.github/ISSUE_TEMPLATE" "$TARGET/.cursor/skills/vibe-engine" "$TARGET/runs" "$TARGET/.vibe" "$TARGET/proof" "$TARGET/evals" "$TARGET/scripts" "$TARGET/docs"
+mkdir -p "$TARGET/src" "$TARGET/.github/workflows" "$TARGET/.github/ISSUE_TEMPLATE" "$TARGET/.cursor/skills/coreward" "$TARGET/.cursor/skills/vibe-engine" "$TARGET/runs" "$TARGET/.vibe" "$TARGET/proof" "$TARGET/evals" "$TARGET/scripts" "$TARGET/docs"
 
 copy_if_exists() {
   local src="$1"
@@ -66,7 +66,8 @@ copy_if_exists "$SOURCE/runs/scoreboard.sh" "$TARGET/runs/scoreboard.sh"
 copy_if_exists "$SOURCE/runs/autoresearch.sh" "$TARGET/runs/autoresearch.sh"
 copy_if_exists "$SOURCE/runs/smoke.sh" "$TARGET/runs/smoke.sh"
 
-# Cursor skill
+# Cursor skill — canonical coreward; vibe-engine remains thin dual-read alias
+copy_if_exists "$SOURCE/.cursor/skills/coreward/SKILL.md" "$TARGET/.cursor/skills/coreward/SKILL.md"
 copy_if_exists "$SOURCE/.cursor/skills/vibe-engine/SKILL.md" "$TARGET/.cursor/skills/vibe-engine/SKILL.md"
 
 echo ""

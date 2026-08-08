@@ -65,7 +65,7 @@ vibe-deploy:
 
 ## Composite action opt-in
 
-The `vibe-validate` composite action (`action.yml`) accepts `deploy_after_validate: false` by default. Set to `true` to echo the deploy placeholder after local capsule validation—useful for customer repos that wrap validation in their own workflows.
+The `Coreward validate` composite action (`action.yml`; historical wire/badge id may still say `vibe-validate`) accepts `deploy_after_validate: false` by default. Set to `true` to echo the deploy placeholder after local capsule validation—useful for customer repos that wrap validation in their own workflows.
 
 ---
 

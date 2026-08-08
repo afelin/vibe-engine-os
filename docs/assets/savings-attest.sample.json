@@ -1,0 +1,94 @@
+{
+  "schema": "coreward.savings_attestation.v1",
+  "generatedAt": "2026-08-07T22:13:02.739Z",
+  "rootHint": "coreward",
+  "runCount": 7,
+  "summary": {
+    "gateHits": 7,
+    "totalContextChars": 316,
+    "totalTokensEstimate": 0,
+    "runsWithMetrics": 7
+  },
+  "chain": [
+    {
+      "runId": "issue-3-2026-07-11T19-55-46-196Z",
+      "createdAt": "2026-07-11T19:56:12.090Z",
+      "metrics": {
+        "gateHit": true,
+        "tokensEstimate": 0,
+        "firstPassGreen": true
+      },
+      "entryHash": "158e00338eba6448ae18d2e0977778717828206f31f337ca2617bec6b69d6e75",
+      "prevHash": null
+    },
+    {
+      "runId": "issue-3-2026-07-11T19-57-37-199Z",
+      "createdAt": "2026-07-11T19:57:50.977Z",
+      "metrics": {
+        "gateHit": true,
+        "tokensEstimate": 0,
+        "firstPassGreen": true
+      },
+      "entryHash": "11f25c104dcb0be52e50e9117b7bbdb70ea04a9ac85e2ba393aaddd7459b77b2",
+      "prevHash": "158e00338eba6448ae18d2e0977778717828206f31f337ca2617bec6b69d6e75"
+    },
+    {
+      "runId": "issue-4-2026-07-11T19-58-07-566Z",
+      "createdAt": "2026-07-11T19:58:20.964Z",
+      "metrics": {
+        "gateHit": true,
+        "tokensEstimate": 0,
+        "firstPassGreen": true
+      },
+      "entryHash": "f9eb3ef5d108c5b0bbcc01a5b1556e6b970658f20bd518e26aea6b69a488ce86",
+      "prevHash": "11f25c104dcb0be52e50e9117b7bbdb70ea04a9ac85e2ba393aaddd7459b77b2"
+    },
+    {
+      "runId": "issue-3-2026-07-11T20-24-42-660Z",
+      "createdAt": "2026-07-11T20:25:00.369Z",
+      "metrics": {
+        "gateHit": true,
+        "tokensEstimate": 0,
+        "firstPassGreen": true
+      },
+      "entryHash": "342e8cf59b76d35b68d9809aff5e4f8d8e3dcba00a4154c051a18f745e3e8706",
+      "prevHash": "f9eb3ef5d108c5b0bbcc01a5b1556e6b970658f20bd518e26aea6b69a488ce86"
+    },
+    {
+      "runId": "issue-3-2026-07-12T00-24-10-440Z",
+      "createdAt": "2026-07-12T00:24:46.177Z",
+      "metrics": {
+        "gateHit": true,
+        "tokensEstimate": 0,
+        "firstPassGreen": true
+      },
+      "entryHash": "9ca130ee48cf234789ec38330effbec8fa06414b7aad3505f2c56add44e6767c",
+      "prevHash": "342e8cf59b76d35b68d9809aff5e4f8d8e3dcba00a4154c051a18f745e3e8706"
+    },
+    {
+      "runId": "issue-3-2026-07-12T21-38-27-350Z",
+      "createdAt": "2026-07-12T21:40:10.819Z",
+      "metrics": {
+        "gateHit": true,
+        "tokensEstimate": 0,
+        "firstPassGreen": true
+      },
+      "entryHash": "4aa0ea2192d674599c1630ad68a0ddac824a89e089dc08d6b7b8d063ab785216",
+      "prevHash": "9ca130ee48cf234789ec38330effbec8fa06414b7aad3505f2c56add44e6767c"
+    },
+    {
+      "runId": "issue-3-2026-07-14T09-18-07-589Z",
+      "createdAt": "2026-07-14T09:18:34.952Z",
+      "metrics": {
+        "gateHit": true,
+        "contextChars": 316,
+        "tokensEstimate": 0,
+        "firstPassGreen": true
+      },
+      "entryHash": "d6eec9c081862b17f67c1197c8dfa92b28abc3dd4e934462531585f9e8b18322",
+      "prevHash": "4aa0ea2192d674599c1630ad68a0ddac824a89e089dc08d6b7b8d063ab785216"
+    }
+  ],
+  "tipHash": "d6eec9c081862b17f67c1197c8dfa92b28abc3dd4e934462531585f9e8b18322",
+  "_sample": "Local savings:attest export (sanitized rootHint). Raw metrics only — no absolute-% claims. Hosted verify unclaimed."
+}

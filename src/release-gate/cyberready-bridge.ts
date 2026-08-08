@@ -1,5 +1,6 @@
 import * as fs from "node:fs";
 import * as net from "node:net";
+import { spawnSync } from "node:child_process";
 
 export type CyberreadyValidateDeltaResult = {
   ok: boolean;
@@ -9,10 +10,13 @@ export type CyberreadyValidateDeltaResult = {
 };
 
 /**
- * Thin optional CyberReady bridge (Phase 7). Fail-open for the vibe path:
+ * Thin optional CyberReady bridge. Fail-open for the vibe path:
  * - missing CYBERREADY_SOCK → `{ ok: false, reason: "not_installed" }`
  * - socket set but connect/IPC fails → `{ ok: false, reason: "unavailable" }`
  * Never throws. Does not embed OPA, SBOM/VEX, FIDO2, or git notes.
+ *
+ * When CyberReady `sock` is running, sends `{"op":"validate_delta"}` and
+ * returns the GateFailure-shaped JSON response.
  */
 export function cyberreadyValidateDelta(
   opts: { sockPath?: string; payload?: Record<string, unknown> } = {},
@@ -39,7 +43,11 @@ export function cyberreadyValidateDelta(
     }
 
     const payload = opts.payload ?? { op: "validate_delta" };
-    return attemptUnixIpc(sockPath, payload);
+    const body =
+      typeof payload.op === "string"
+        ? payload
+        : { op: "validate_delta", payload };
+    return attemptUnixIpc(sockPath, body);
   } catch (error) {
     return {
       ok: false,
@@ -50,28 +58,61 @@ export function cyberreadyValidateDelta(
 }
 
 /**
- * Best-effort sync-friendly Unix socket probe. Full CyberReady protocol is
- * deferred; we only confirm the socket accepts a connection without crashing.
+ * Sync Unix IPC via a short-lived Node child (spawnSync) so callers stay sync
+ * and Coreward's fail-open contract is preserved on timeout/error.
  */
 function attemptUnixIpc(
   sockPath: string,
   payload: Record<string, unknown>,
 ): CyberreadyValidateDeltaResult {
   try {
-    const connected = probeUnixSocket(sockPath);
-    if (!connected) {
+    const script = `
+const net = require("net");
+const sock = process.argv[1];
+const body = process.argv[2];
+const client = net.createConnection({ path: sock });
+let buf = "";
+const timer = setTimeout(() => { process.exit(2); }, 1500);
+client.on("error", () => process.exit(3));
+client.on("connect", () => client.write(body + "\\n"));
+client.on("data", (c) => {
+  buf += c.toString("utf8");
+  const nl = buf.indexOf("\\n");
+  const slice = nl >= 0 ? buf.slice(0, nl) : buf.trim();
+  if (!slice) return;
+  try {
+    JSON.parse(slice);
+    clearTimeout(timer);
+    process.stdout.write(slice);
+    process.exit(0);
+  } catch {
+    if (nl >= 0) process.exit(4);
+  }
+});
+`;
+    const result = spawnSync(
+      process.execPath,
+      ["-e", script, sockPath, JSON.stringify(payload)],
+      { encoding: "utf8", timeout: 2500 },
+    );
+    if (result.status !== 0 || !result.stdout?.trim()) {
       return {
         ok: false,
         reason: "unavailable",
-        detail: "CyberReady socket connect failed or timed out",
+        detail:
+          result.stderr?.trim() ||
+          "CyberReady socket connect/read failed or timed out",
       };
     }
+    const response = JSON.parse(result.stdout.trim()) as Record<
+      string,
+      unknown
+    >;
     return {
-      ok: false,
-      reason: "unavailable",
+      ok: response.ok === true,
       detail:
-        "CyberReady socket reachable; validate_delta protocol not wired (thin stub)",
-      response: { sock: sockPath, requested: payload },
+        typeof response.detail === "string" ? response.detail : undefined,
+      response,
     };
   } catch (error) {
     return {
@@ -82,13 +123,16 @@ function attemptUnixIpc(
   }
 }
 
-function probeUnixSocket(sockPath: string): boolean {
-  const client = net.createConnection({ path: sockPath });
-  // Destroy immediately — we only need createConnection not to throw synchronously.
-  // Async connect errors are ignored (fail-open).
-  client.on("error", () => {
-    /* ignore */
-  });
-  client.destroy();
-  return true;
+/** @deprecated kept for tests that imported probe behavior — prefer cyberreadyValidateDelta */
+export function __probeOnly(sockPath: string): boolean {
+  try {
+    const client = net.createConnection({ path: sockPath });
+    client.on("error", () => {
+      /* ignore */
+    });
+    client.destroy();
+    return true;
+  } catch {
+    return false;
+  }
 }

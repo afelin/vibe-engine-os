@@ -8,7 +8,7 @@ Coreward does **not** train or host foundation weights. It **reduces what you mu
 2. **Match gates** — call `resolve_gate` / `authorize_write` before LLM; ≥12 zero-token chores in `src/release-gate/gates.json`.
 3. **Mandate + AgentId** — `mandate:issue` / default profile to shrink path and context caps.
 4. **Read the cockpit** — after a governed run, look for **Savings:** `gate_hit=yes|no · contextChars=N · tokensEstimate=N`.
-5. **Export attestation** — `npm run savings:attest` writes a hash-chained JSON (`.vibe/savings-attestation.json`) from those metrics. Local export is claimable; **hosted verify** of attestations stays unclaimed until built.
+5. **Export attestation** — `npm run savings:attest` writes a hash-chained JSON (`.vibe/savings-attestation.json`) from those metrics. Local export is claimable; **hosted verify** of attestations stays unclaimed until built. Sample shape: [docs/assets/savings-attest.sample.json](./assets/savings-attest.sample.json).
 
 | Lever | Operator move | Felt benefit |
 |-------|---------------|--------------|

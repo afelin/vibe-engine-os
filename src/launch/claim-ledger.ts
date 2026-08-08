@@ -1,19 +1,23 @@
 /**
  * Prelaunch claim ledger — every marketing claim maps to an assert ID.
- * Claims with assert: null stay unclaimed (never pass) until the product exists.
+ * Claims with assert: null stay unbuilt (never pass) until the product exists.
+ * Assert key absent → not_run (mode did not exercise this assert).
  * CI / scar / docs may only quote claims with status "pass".
+ * Default battery UI hides unbuilt claims.
  */
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-export type ClaimStatus = "pass" | "fail" | "unclaimed";
+export type ClaimStatus = "pass" | "fail" | "unbuilt" | "not_run";
+/** @deprecated Use unbuilt | not_run — kept for dual-read of older reports. */
+export type LegacyClaimStatus = "unclaimed";
 export type BatteryMode = "fast" | "full" | "cloud";
 export type KillerStatus = "pass" | "fail" | "soft" | "skip";
 
 export type ClaimDefinition = {
   id: string;
   text: string;
-  /** Assert key in assertResults. null = permanently unclaimed until product ships. */
+  /** Assert key in assertResults. null = permanently unbuilt until product ships. */
   assert: string | null;
 };
 
@@ -177,8 +181,8 @@ export function isUnclaimable(id: string): boolean {
 
 /**
  * Evaluate one claim against assert results.
- * - assert null or unclaimable id → always unclaimed (never pass)
- * - assert key absent → unclaimed (not run in this mode)
+ * - assert null or unclaimable id → always unbuilt (never pass)
+ * - assert key absent → not_run (not exercised in this mode)
  * - assert present + true → pass
  * - assert present + false → fail
  */
@@ -191,12 +195,12 @@ export function evaluateClaim(
       id: def.id,
       text: def.text,
       assert: null,
-      status: "unclaimed",
+      status: "unbuilt",
     };
   }
 
   if (!Object.prototype.hasOwnProperty.call(assertResults, def.assert)) {
-    return { ...def, status: "unclaimed" };
+    return { ...def, status: "not_run" };
   }
 
   const result = assertResults[def.assert];
@@ -219,20 +223,25 @@ export function quotableClaims(claims: ClaimEntry[]): ClaimEntry[] {
   return claims.filter((c) => c.status === "pass");
 }
 
+/** Default battery UI: hide permanently unbuilt product stubs. */
+export function visibleBatteryClaims(claims: ClaimEntry[]): ClaimEntry[] {
+  return claims.filter((c) => c.status !== "unbuilt");
+}
+
 /** True when any claim that should have evidence failed. */
 export function hasFailedClaims(claims: ClaimEntry[]): boolean {
   return claims.some((c) => c.status === "fail");
 }
 
 /**
- * Hard rule: hosted_hpurl and cyberready_live must remain unclaimed.
- * Returns false if either is pass or has a non-null assert with pass status.
+ * Hard rule: hosted_hpurl / cyberready_live / ide_ward_interceptor must remain unbuilt.
+ * Returns false if any is pass/fail/not_run or has a non-null assert.
  */
 export function unclaimableStayUnclaimed(claims: ClaimEntry[]): boolean {
   for (const id of UNCLAIMABLE_IDS) {
     const entry = claims.find((c) => c.id === id);
     if (!entry) return false;
-    if (entry.status !== "unclaimed") return false;
+    if (entry.status !== "unbuilt") return false;
     if (entry.assert !== null) return false;
   }
   return true;
@@ -415,7 +424,7 @@ if (invokedAsCli) {
   process.stdout.write(`${outPath}\n`);
   if (!unclaimableStayUnclaimed(report.claims)) {
     process.stderr.write(
-      "claim-ledger: hosted_hpurl / cyberready_live must stay unclaimed\n",
+      "claim-ledger: hosted_hpurl / cyberready_live / ide_ward_interceptor must stay unbuilt\n",
     );
     process.exit(1);
   }
@@ -425,9 +434,11 @@ if (invokedAsCli) {
       `claim-ledger: ${failed.length} claim(s) failed: ${failed.map((c) => c.id).join(", ")}\n`,
     );
   }
-  const passed = report.claims.filter((c) => c.status === "pass").length;
-  const unclaimed = report.claims.filter((c) => c.status === "unclaimed").length;
+  const visible = visibleBatteryClaims(report.claims);
+  const passed = visible.filter((c) => c.status === "pass").length;
+  const notRun = visible.filter((c) => c.status === "not_run").length;
+  const unbuilt = report.claims.filter((c) => c.status === "unbuilt").length;
   process.stdout.write(
-    `claim-ledger: ${passed} pass, ${failed.length} fail, ${unclaimed} unclaimed\n`,
+    `claim-ledger: ${passed} pass, ${failed.length} fail, ${notRun} not_run (${unbuilt} unbuilt hidden)\n`,
   );
 }

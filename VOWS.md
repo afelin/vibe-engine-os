@@ -1,8 +1,8 @@
-# Vibe Engine Vows
+# Coreward Vows
 
 **One invariant:** Generative proposes; **Vows + Constitution + Tests** decide; Git makes it real.
 
-These vows codify [agent.md](agent.md) directives and promotion principles into normative law for humans and machines.
+These vows codify [AGENTS.md](AGENTS.md) directives and promotion principles into normative law for humans and machines.
 
 ## Engine Vows
 

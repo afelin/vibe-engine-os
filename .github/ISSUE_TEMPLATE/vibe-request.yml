@@ -1,6 +1,6 @@
-name: Vibe Request
-description: Structured task for Coreward — intent, outcome, and file paths
-title: "[vibe] "
+name: Coreward Request
+description: Structured task for Coreward — Intent, Outcome, Files; then Go / Approve / Merge
+title: "[coreward] "
 labels:
   - vibe/run
   - vibe:safe
@@ -8,20 +8,13 @@ body:
   - type: markdown
     attributes:
       value: |
-        **How this works:** Fill the fields below, submit the issue, and Coreward runs from the issue body — not from Cursor chat history.
+        **How this works:** Fill the fields below, submit the issue, and Coreward runs from the issue body.
 
-        **Depth labels** (change after submit if needed):
-        - `vibe:safe` — small/safe codegen (default on this template)
-        - `vibe:plan-only` — plan only, no code
-        - `vibe:ship` — tests + implementation + ship-oriented depth
+        **Operator loop:** `/go` (what next?) · `/approve` (only when cockpit asks) · **Merge** when the PR is green.
 
-        **Bound files:** list **2–4 exact paths** under Files to touch — enough to scope codegen, not so many that context rots.
+        **Bound files:** list **2–4 exact paths** under Files to touch.
 
-        **Explain dial** (optional): labels `vibe:explain-short`, `vibe:explain-long`, `vibe:explain-expand`, or `vibe:explain-off` — extra plain-language “why” in cockpit comments.
-
-        **Operator commands** (issue comments): `/go` (what next?) · Advanced: `/status` · `/approve` · `/retry` · `/rollback`
-
-        You'll get a PR link and receipt in comments—no terminal required.
+        Advanced labels (CI dual-read): `vibe:plan-only`, `vibe:ship`, `vibe:explain-*` — optional after submit.
 
   - type: textarea
     id: intent
@@ -47,11 +40,10 @@ body:
     id: files
     attributes:
       label: Files to touch (exact paths)
-      description: List 2–4 paths (required at depth ≥ 2). Scopes codegen and TaskBond — fewer paths, less context rot.
+      description: List 2–4 paths (required at depth ≥ 2). Scopes codegen and TaskBond.
       placeholder: |
         src/health.ts
         src/health.test.ts
-        src/routes/health-route.ts
     validations:
       required: false
 
@@ -59,11 +51,11 @@ body:
     id: depth
     attributes:
       label: Depth
-      description: Matches issue labels. After submit, edit labels if this dropdown differs from the defaults.
+      description: Safe is the default. Change labels after submit if needed.
       options:
-        - vibe:safe — safe generated files (default)
-        - vibe:plan-only — plan only, no codegen
-        - vibe:ship — ship-oriented (tests + broader scope)
+        - safe — small/safe codegen (default)
+        - plan-only — plan only, no codegen
+        - ship — tests + broader scope
     validations:
       required: true
 
@@ -85,20 +77,5 @@ body:
       description: Links or 2–3 bullets max. Avoid pasting long chat logs.
       placeholder: |
         Related issue #12
-        Must match existing patterns in src/cloud/
-    validations:
-      required: false
-
-  - type: dropdown
-    id: explain_depth
-    attributes:
-      label: Explain depth (optional)
-      description: Adds pedagogical context in issue comments. Match with labels after submit if needed.
-      options:
-        - Default (short)
-        - vibe:explain-off
-        - vibe:explain-short
-        - vibe:explain-long
-        - vibe:explain-expand
     validations:
       required: false

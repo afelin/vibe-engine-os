@@ -1,0 +1,27 @@
+# Coreward — llms.txt
+
+> Governance spine for agent-written code: authorize → bound work → evidence → promote.
+
+## Must-read
+
+- [AGENTS.md](./AGENTS.md) — agent vows (`authorize_write` first)
+- [LICENSE.md](./LICENSE.md) — FSL-1.1-Apache-2.0 FAQ (Change Date → Apache-2.0)
+- [LICENSE](./LICENSE) — full Functional Source License text
+- [docs/start-here.md](./docs/start-here.md) — five-minute paths
+- [docs/host-packs.md](./docs/host-packs.md) — Cursor / OpenClaw / Hermes / Claude packs
+- [docs/local-first-savings.md](./docs/local-first-savings.md) — local/open models + Coreward
+
+## Commands
+
+- `npm run coreward:authorize -- --files a.ts,b.ts`
+- `npm run savings:attest` — hash-chained savings JSON from run metrics
+- `npm run gate:mcp` — MCP server `coreward-release-gates`
+
+## Community
+
+- [Community (Pages)](https://afelin.github.io/coreward/community/) — Telegram + voluntary support tip (not a product catalog)
+- [docs/community.md](./docs/community.md) — owner URL setup
+
+## Non-claims
+
+Not a kernel IDE sandbox. Hosted HPURL verify unclaimed. No pricing tiers in this tree. Tips ≠ license purchase.

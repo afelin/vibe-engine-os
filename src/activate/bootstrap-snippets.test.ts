@@ -24,25 +24,22 @@ describe("renderBootstrapSnippets", () => {
     expect(snippets.cursor).toContain("mcp.json");
     expect(snippets.cursor).toContain("npx");
     expect(snippets.cursor).toContain("src/release-gate/mcp.ts");
-    expect(snippets.cursor).toContain(".cursor/skills/vibe-engine");
-    expect(snippets.claude).toContain("vibe-release-gates");
+    expect(snippets.cursor).toContain(".cursor/skills/coreward");
+    expect(snippets.claude).toContain("coreward-release-gates");
     expect(snippets.claude).toContain("src/release-gate/mcp.ts");
-    expect(snippets.codex).toContain("vibe-release-gates");
+    expect(snippets.codex).toContain("coreward-release-gates");
     expect(snippets.codex).toContain("src/release-gate/mcp.ts");
-    expect(snippets.generic).toContain("evaluate_mandate");
-    expect(snippets.generic).toContain("validate_bond");
-    expect(snippets.github).toContain("Vibe Request");
+    expect(snippets.generic).toContain("preflight");
+    expect(snippets.github).toContain("Coreward Request");
+    expect(snippets.github).toContain("/go");
   });
 
-  it("includes preflight order and set_legal_space dial", () => {
+  it("includes one-call preflight vow and operate docs", () => {
     const snippets = renderBootstrapSnippets(".");
     const joined = Object.values(snippets).join("\n");
-    expect(joined).toMatch(
-      /evaluate_mandate\s*→\s*validate_bond\s*→\s*resolve_gate\s*→\s*constitution_schemas/,
-    );
-    expect(joined).toContain("set_legal_space");
-    expect(joined).toContain("list_stackables");
-    expect(joined).toMatch(/eu-nis2-cra|us-baseline/);
+    expect(joined).toMatch(/preflight/);
+    expect(joined).toContain("docs/operate.md");
+    expect(joined).toContain("docs/start-here.md");
   });
 
   it("validates written JSON against schema", () => {

@@ -24,9 +24,9 @@ Strategy B (optional later): full OSS mirror of the engine under RISE GitHub (st
 | `papers/coreward-whitepaper.md` (+ rendered HTML) | Claim-safe technical paper |
 | `papers/rise-project-blurb.md` | RI.SE paste + three deep links |
 | `CITATION.cff` | Institute citation hygiene |
-| `site/` public pages (home, whitepaper, adopt, status, legal) | Built by site agent; calm research/engineering tone |
+| `site/` public pages (home, whitepaper, adopt, status, trust, community, legal) | Built by site agent; calm research/engineering tone; community = chat + voluntary tip only |
 | `proof/` static proof UI / sample receipts | Evidence surface; no hosted-verify product claims |
-| `VOWS.md`, `docs/start-here.md`, `docs/solo-vibe-coder-guide.md`, `docs/nocode-quickstart.md`, `docs/agent-protocol.md`, `docs/agent-adapter.md`, `docs/agent-contract.md`, `docs/launch-proof.md`, `docs/prelaunch-battery.md`, `docs/PUBLIC.md` | Operator/run books (strip or rewrite any absolute-% / certification phrasing before export if present) |
+| `VOWS.md`, `docs/start-here.md`, `docs/solo-vibe-coder-guide.md`, `docs/nocode-quickstart.md`, `docs/agent-protocol.md`, `docs/agent-adapter.md`, `docs/agent-contract.md`, `docs/launch-proof.md`, `docs/prelaunch-battery.md`, `docs/PUBLIC.md`, `docs/community.md` | Operator/run books (strip or rewrite any absolute-% / certification phrasing before export if present) |
 | `README.md` capability tables | Prefer claim-ledger–safe language; fix “tamper-proof” → “tamper-evident” on export if still present |
 | Engine / evals (strategy B) | `src/`, `runs/`, `scripts/`, `evals/` — still exclude secrets |
 | License / NOTICE / this file (`docs/rise-export.md`) | Export policy itself |

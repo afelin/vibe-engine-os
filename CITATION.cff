@@ -25,12 +25,12 @@ keywords:
   - reproducible evidence
   - open source
 license: "FSL-1.1-Apache-2.0"
-version: "UNPUBLISHED"
-date-released: "YYYY-MM-DD"
+version: "2.0.0"
+date-released: "2026-08-07"
 identifiers:
   - type: other
-    value: "TO_BE_FILLED_AT_PUBLISH"
-    description: "Git commit SHA of the cited published tree; fill at publish"
+    value: "1b84892a17229e24b7237bfa0e87cb6565e1477d"
+    description: "Git commit SHA of the cited tree (uptake sync); next tag/merge may supersede"
 preferred-citation:
   type: article
   title: "Coreward: Portable Promotion Primitives for Agent-Written Code"
@@ -40,5 +40,6 @@ preferred-citation:
   journal: "Technical white paper"
   url: "https://github.com/afelin/coreward/blob/main/papers/coreward-whitepaper.md"
   notes: >-
-    Version, date, and source SHA are placeholders until publish.
+    Version 2.0.0 / 2026-08-07 / SHA 1b84892a17229e24b7237bfa0e87cb6565e1477d
+    (post-uptake sync tree; update SHA at next publish commit).
     Capsules are tamper-evident, not tamper-proof; no certification claims.

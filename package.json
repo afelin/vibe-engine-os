@@ -28,6 +28,7 @@
     "pr:auto-merge": "tsx src/promote/auto-merge-cli.ts",
     "gate:mcp": "tsx src/release-gate/mcp.ts",
     "coreward:authorize": "tsx src/coreward/authorize-cli.ts",
+    "coreward:init": "tsx src/coreward/init.ts",
     "savings:attest": "tsx src/savings/attest-cli.ts",
     "constitution:export": "tsx src/constitution/cli.ts",
     "constitution:serve": "tsx src/cloud/verify-server.ts",

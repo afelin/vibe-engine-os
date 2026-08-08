@@ -69,16 +69,44 @@ export type JsonRpcResponse = {
   error?: { code: number; message: string };
 };
 
+const PREFLIGHT_INPUT_SCHEMA = {
+  type: "object",
+  properties: {
+    proposed_files: {
+      type: "array",
+      items: { type: "string" },
+    },
+    root_dir: { type: "string" },
+    title: { type: "string" },
+    body: { type: "string" },
+    actor: { type: "string" },
+  },
+  required: ["proposed_files"],
+} as const;
+
 export const RELEASE_GATE_TOOLS = [
   {
+    name: "preflight",
+    description:
+      "REQUIRED default tool before edits. House rules + Signed Mandate pathFilter + AgentId budget + prefer_gate. Returns { ok, ticket_id, prefer_gate?, stack, reason }. Call once; stop.",
+    inputSchema: PREFLIGHT_INPUT_SCHEMA,
+  },
+  {
+    name: "authorize_write",
+    description:
+      "[advanced] Alias of preflight (same args/result shape without stack). Prefer preflight.",
+    inputSchema: PREFLIGHT_INPUT_SCHEMA,
+  },
+  {
     name: "list_gates",
-    description: "List deterministic release gate ids loaded from gates.json.",
+    description:
+      "[advanced] List deterministic release gate ids loaded from gates.json.",
     inputSchema: { type: "object", properties: {} },
   },
   {
     name: "resolve_gate",
     description:
-      "Match issue/review title and body against the gate registry. Returns a patch preview or null.",
+      "[advanced] Match issue/review title and body against the gate registry. Returns a patch preview or null. Prefer prefer_gate from preflight.",
     inputSchema: {
       type: "object",
       properties: {
@@ -91,7 +119,7 @@ export const RELEASE_GATE_TOOLS = [
   {
     name: "preview_gate",
     description:
-      "Return the compiled files for a gate id without matching title/body.",
+      "[advanced] Return the compiled files for a gate id without matching title/body.",
     inputSchema: {
       type: "object",
       properties: {
@@ -103,7 +131,23 @@ export const RELEASE_GATE_TOOLS = [
   {
     name: "evaluate_mandate",
     description:
-      "Evaluate proposed file paths against agent mandates merged with the active legal-space stackable (forbidden and approval prefixes).",
+      "[advanced] House rules only (standing forbids / approval prefixes from mandates.json + legal-space stackable). Not the Signed Mandate. Prefer preflight. Alias: evaluate_house_rules.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        proposed_files: {
+          type: "array",
+          items: { type: "string" },
+        },
+        root_dir: { type: "string" },
+      },
+      required: ["proposed_files"],
+    },
+  },
+  {
+    name: "evaluate_house_rules",
+    description:
+      "[advanced] Alias of evaluate_mandate — house rules only (not Signed Mandate). Prefer preflight.",
     inputSchema: {
       type: "object",
       properties: {
@@ -119,13 +163,13 @@ export const RELEASE_GATE_TOOLS = [
   {
     name: "constitution_schemas",
     description:
-      "Export JSON Schema for all constitution catalog artifacts (DAG, manifest, gate failures, mandates).",
+      "[advanced] Export JSON Schema for all constitution catalog artifacts (DAG, manifest, gate failures, mandates).",
     inputSchema: { type: "object", properties: {} },
   },
   {
     name: "validate_capsule",
     description:
-      "Parse a local run capsule (manifest + actor snapshot) against the constitution catalog.",
+      "[advanced] Parse a local run capsule (manifest + actor snapshot) against the constitution catalog.",
     inputSchema: {
       type: "object",
       properties: {
@@ -139,7 +183,7 @@ export const RELEASE_GATE_TOOLS = [
   {
     name: "seal_bond",
     description:
-      "Parse and seal a TaskBond from issue body (intent, outcomes, bound files). Writes .runs/bonds/issue-N.bond.json.",
+      "[advanced] Parse and seal a TaskBond from issue body (intent, outcomes, bound files). Writes .runs/bonds/issue-N.bond.json.",
     inputSchema: {
       type: "object",
       properties: {
@@ -155,7 +199,7 @@ export const RELEASE_GATE_TOOLS = [
   {
     name: "validate_bond",
     description:
-      "Evaluate issue body as TaskBond without writing. Uses agent mandates and optional VIBE_PROJECT_PROFILE.",
+      "[advanced] Evaluate issue body as TaskBond without writing. Uses house rules and optional VIBE_PROJECT_PROFILE.",
     inputSchema: {
       type: "object",
       properties: {
@@ -169,7 +213,7 @@ export const RELEASE_GATE_TOOLS = [
   {
     name: "build_scoped_context",
     description:
-      "Build a ScopedContextBundle from bond files and optional DAG for promotion context.",
+      "[advanced] Build a ScopedContextBundle from bond files and optional DAG for promotion context.",
     inputSchema: {
       type: "object",
       properties: {
@@ -185,7 +229,7 @@ export const RELEASE_GATE_TOOLS = [
   {
     name: "recall_lessons",
     description:
-      "Deterministic lesson recall by path prefix (no embeddings).",
+      "[advanced] Deterministic lesson recall by path prefix (no embeddings).",
     inputSchema: {
       type: "object",
       properties: {
@@ -199,7 +243,7 @@ export const RELEASE_GATE_TOOLS = [
   {
     name: "list_stackables",
     description:
-      "List available legal-space stackables and project profiles (fail-closed catalog).",
+      "[advanced] List available legal-space stackables and project profiles (fail-closed catalog).",
     inputSchema: {
       type: "object",
       properties: {
@@ -210,7 +254,7 @@ export const RELEASE_GATE_TOOLS = [
   {
     name: "set_legal_space",
     description:
-      "Write .vibe/active-stack.json with legalSpace (+ optional projectProfile). Rejects unknown ids. Does not edit policy packs.",
+      "[advanced] Write .vibe/active-stack.json with legalSpace (+ optional projectProfile). Rejects unknown ids. Does not edit policy packs.",
     inputSchema: {
       type: "object",
       properties: {
@@ -224,7 +268,7 @@ export const RELEASE_GATE_TOOLS = [
   {
     name: "get_active_stack",
     description:
-      "Read current .vibe/active-stack.json selection (legalSpace, projectProfile, activatedAt).",
+      "[advanced] Read current .vibe/active-stack.json selection (legalSpace, projectProfile, activatedAt).",
     inputSchema: {
       type: "object",
       properties: {
@@ -235,7 +279,7 @@ export const RELEASE_GATE_TOOLS = [
   {
     name: "cyberready_validate_delta",
     description:
-      "Optional CyberReady bridge: validate compliance delta via CYBERREADY_SOCK. Fail-open when not installed — does not block evaluate_mandate or promote.",
+      "[advanced] Optional CyberReady bridge: validate compliance delta via CYBERREADY_SOCK. Fail-open when not installed — does not block house rules or promote.",
     inputSchema: {
       type: "object",
       properties: {
@@ -253,7 +297,7 @@ export const RELEASE_GATE_TOOLS = [
   {
     name: "resolve_agent_profile",
     description:
-      "Resolve an AgentId profile for an actor (principals + builtin CI override). Returns null when actor has no profile fields (legacy string actor still valid).",
+      "[advanced] Resolve an AgentId profile for an actor (principals + builtin CI override). Returns null when actor has no profile fields (legacy string actor still valid).",
     inputSchema: {
       type: "object",
       properties: {
@@ -270,28 +314,9 @@ export const RELEASE_GATE_TOOLS = [
     },
   },
   {
-    name: "authorize_write",
-    description:
-      "Coreward Mode preflight: house evaluate_mandate AND Signed Mandate pathFilter (when present) AND AgentId budget. Prefers resolve_gate when paths ⊆ a gate. Returns { ok, ticket_id, paths, reason, prefer_gate? }.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        proposed_files: {
-          type: "array",
-          items: { type: "string" },
-        },
-        root_dir: { type: "string" },
-        title: { type: "string" },
-        body: { type: "string" },
-        actor: { type: "string" },
-      },
-      required: ["proposed_files"],
-    },
-  },
-  {
     name: "coreward_mode_status",
     description:
-      "Report whether Coreward Mode is enabled (.vibe/coreward-mode.json or COREWARD_MODE=1) and optionally assert engine-path authorization for paths/ticket.",
+      "[advanced] Report whether Coreward Mode is enabled (.vibe/coreward-mode.json or COREWARD_MODE=1) and optionally assert engine-path authorization for paths/ticket.",
     inputSchema: {
       type: "object",
       properties: {
@@ -307,10 +332,42 @@ export const RELEASE_GATE_TOOLS = [
   },
 ] as const;
 
+function runAuthorizeWriteArgs(args: Record<string, unknown>) {
+  const rootDir = typeof args.root_dir === "string" ? args.root_dir : ".";
+  const proposedFiles = Array.isArray(args.proposed_files)
+    ? args.proposed_files.filter((item): item is string => typeof item === "string")
+    : [];
+  return authorizeWrite({
+    proposed_files: proposedFiles,
+    root_dir: rootDir,
+    title: typeof args.title === "string" ? args.title : undefined,
+    body: typeof args.body === "string" ? args.body : undefined,
+    actor: typeof args.actor === "string" ? args.actor : undefined,
+  });
+}
+
 export function callReleaseGateTool(
   name: string,
   args: Record<string, unknown> = {},
 ): string {
+  if (name === "preflight") {
+    const rootDir = typeof args.root_dir === "string" ? args.root_dir : ".";
+    const result = runAuthorizeWriteArgs(args);
+    return JSON.stringify(
+      {
+        ok: result.ok,
+        ticket_id: result.ticket_id,
+        prefer_gate: result.prefer_gate ?? null,
+        stack: readActiveStack(rootDir) ?? { legalSpace: "none" },
+        reason: result.reason,
+        paths: result.paths,
+        ...(result.requiresApproval ? { requiresApproval: true } : {}),
+      },
+      null,
+      2,
+    );
+  }
+
   if (name === "list_gates") {
     return JSON.stringify(listReleaseGateIds(), null, 2);
   }
@@ -327,7 +384,7 @@ export function callReleaseGateTool(
     return JSON.stringify(gate, null, 2);
   }
 
-  if (name === "evaluate_mandate") {
+  if (name === "evaluate_mandate" || name === "evaluate_house_rules") {
     const rootDir = typeof args.root_dir === "string" ? args.root_dir : ".";
     const proposedFiles = Array.isArray(args.proposed_files)
       ? args.proposed_files.filter((item): item is string => typeof item === "string")
@@ -643,18 +700,7 @@ export function callReleaseGateTool(
   }
 
   if (name === "authorize_write") {
-    const rootDir = typeof args.root_dir === "string" ? args.root_dir : ".";
-    const proposedFiles = Array.isArray(args.proposed_files)
-      ? args.proposed_files.filter((item): item is string => typeof item === "string")
-      : [];
-    const result = authorizeWrite({
-      proposed_files: proposedFiles,
-      root_dir: rootDir,
-      title: typeof args.title === "string" ? args.title : undefined,
-      body: typeof args.body === "string" ? args.body : undefined,
-      actor: typeof args.actor === "string" ? args.actor : undefined,
-    });
-    return JSON.stringify(result, null, 2);
+    return JSON.stringify(runAuthorizeWriteArgs(args), null, 2);
   }
 
   if (name === "coreward_mode_status") {

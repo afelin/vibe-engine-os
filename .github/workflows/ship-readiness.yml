@@ -1,0 +1,62 @@
+# Coreward Ship Readiness — weekly full battery + cloud launch-proof when enabled
+name: Coreward Ship Readiness
+
+on:
+  schedule:
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/launch/**"
+      - "src/coreward/**"
+      - "src/ward/**"
+      - "runs/battery-prelaunch.sh"
+      - ".github/workflows/ship-readiness.yml"
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+  checks: write
+  actions: write
+
+jobs:
+  ship-readiness:
+    name: Coreward Ship Readiness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Full prelaunch battery
+        env:
+          VIBE_BATTERY_MODE: full
+        run: npm run battery:prelaunch -- --full
+
+      - name: Cloud launch-proof (schedule / manual)
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VIBE_BATTERY_CLOUD: "1"
+          VIBE_BATTERY_MODE: cloud
+          VIBE_MANDATE_PRIVATE_KEY: ${{ secrets.VIBE_MANDATE_PRIVATE_KEY }}
+          VIBE_MANDATE_PUBLIC_KEY: ${{ secrets.VIBE_MANDATE_PUBLIC_KEY }}
+        run: npm run battery:prelaunch -- --cloud
+
+      - name: Upload battery report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coreward-ship-readiness
+          path: |
+            .vibe/battery-prelaunch.json
+            .vibe/launch-proof.json
+          if-no-files-found: warn

@@ -93,6 +93,10 @@ import {
   type VerifiedMandate,
 } from "../ward/index.js";
 import { assertCorewardMode } from "../coreward/mode.js";
+import {
+  bindAuthorizeTicketEnv,
+  getAuthorizeTicketBinding,
+} from "../coreward/authorize-write.js";
 
 export type RunInput = {
   issueNumber: string;
@@ -751,9 +755,14 @@ ${vibe}`;
       ...(releaseGate?.files.map((f) => f.path) ?? []),
     ]),
   ];
+  const boundTicketId = bindAuthorizeTicketEnv(rootDir, plannedForAuth);
   const corewardCodegen = assertCorewardMode(rootDir, "codegen", {
     paths: plannedForAuth,
     verifiedMandate,
+    ...(boundTicketId ? { ticket_id: boundTicketId } : {}),
+    ...(verifiedMandate?.mandate.authorized_actor
+      ? { actor: verifiedMandate.mandate.authorized_actor }
+      : {}),
   });
   if (!corewardCodegen.ok) {
     return finishRun({
@@ -766,7 +775,7 @@ ${vibe}`;
       success: false,
       state: "failed",
       generatedFiles: [],
-      feedbackMarkdown: `## Coreward Mode DENY\n\n${corewardCodegen.reason}\n\nCall MCP \`authorize_write\` (or \`npm run coreward:authorize\`) or load a verified Mandate.`,
+      feedbackMarkdown: `## Coreward Mode DENY\n\n${corewardCodegen.reason}\n\nCall MCP \`preflight\` / \`authorize_write\` (or \`npm run coreward:authorize\`) or load a verified Mandate.`,
       gateFailures: [],
       recordedErrors: [corewardCodegen.reason],
       attempts: 0,
@@ -1156,9 +1165,18 @@ ${vibe}`;
     }
   }
 
+  const promotePaths = finalVerifiedFiles.map((f) => f.path);
+  const promoteTicketId =
+    getAuthorizeTicketBinding(rootDir) ||
+    process.env.COREWARD_AUTHORIZE_TICKET?.trim() ||
+    bindAuthorizeTicketEnv(rootDir, plannedForAuth);
   const corewardPromote = assertCorewardMode(rootDir, "promote", {
-    paths: finalVerifiedFiles.map((f) => f.path),
+    paths: promotePaths.length > 0 ? promotePaths : plannedForAuth,
     verifiedMandate,
+    ...(promoteTicketId ? { ticket_id: promoteTicketId } : {}),
+    ...(verifiedMandate?.mandate.authorized_actor
+      ? { actor: verifiedMandate.mandate.authorized_actor }
+      : {}),
   });
   if (!corewardPromote.ok) {
     return finishRun({

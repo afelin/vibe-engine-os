@@ -6,7 +6,7 @@
 
 **coreward (Coreward) is a rulebook-and-checkpoint system that sits between AI coding agents and your product.** Nothing an AI writes becomes permanent until it passes inspection and leaves a tamper-evident paper trail.
 
-**The “so what”:** you can let AI build largely unattended — nights, weekends, while you sleep — and still prove to a customer, investor, or auditor exactly what changed, why, and that every safety rule was enforced. It is not a tool that writes code; it is **border control** for code that AI writes.
+**The “so what”:** you can let AI build largely unattended — nights, weekends, while you sleep — and still show a customer, investor, or reviewer what changed, why, and that the configured safety checks ran on the governed path. It is not a tool that writes code; it is **border control** for code that AI writes. Receipts are evidence, not certificates; IDE edits outside the engine path are out of band.
 
 ---
 
@@ -24,15 +24,15 @@
 
 ---
 
-### Capsule hashes — the notarized receipt
+### Capsule hashes — the run receipt
 
 **What it is.** Every run produces a **capsule**: manifest, final machine state, and activity trace compressed into one cryptographic fingerprint. Change one character and the seal no longer matches.
 
 **Problem solved.** “Trust me, the AI did it right” is not evidence. The capsule is evidence.
 
-**So what.** For compliance-sensitive buyers, this is the difference between a claim and a proof.
+**So what.** For compliance-sensitive buyers, this is the difference between a claim and a verifiable record.
 
-**Estimated advantage.** **Near-100% detection of after-the-fact tampering** with run records *(cryptographic property, not a guess)*, at zero ongoing cost.
+**Estimated advantage.** Strong detection of after-the-fact tampering with run records *(cryptographic mismatch when digests diverge)*, at zero ongoing cost — not a claim of physically tamper-proof storage.
 
 ---
 
@@ -44,7 +44,7 @@
 
 **So what.** Templated routine changes can ship at **$0 AI cost**. Risky paths always route through a human.
 
-**Estimated advantage.** **~100% of templated routine changes ship at $0 AI cost** *(by construction — no model is called)*.
+**Estimated advantage.** Templated routine changes can ship at **$0 AI cost** *(by construction — no model is called when a deterministic gate matches)*.
 
 ---
 
@@ -64,7 +64,7 @@
 
 **Problem solved.** Guardrails rot silently as code evolves. The gauntlet makes any weakening loud and blocking.
 
-**Estimated advantage.** **100% of behavioral changes across covered scenarios are blocked pre-ship** *(deterministic comparison; coverage grows as the scenario set grows)*.
+**Estimated advantage.** Covered scenario drift that weakens refusal vs the locked baseline is **blocked pre-ship** *(deterministic comparison; coverage grows as the scenario set grows)*.
 
 ---
 
@@ -84,7 +84,7 @@
 
 **Problem solved.** Silent logic drift and doctored run records. If either happens, replay fails.
 
-**Estimated advantage.** Converts “we believe it’s deterministic” into a **per-run mathematical proof**; ledger tampering detection is effectively 100%.
+**Estimated advantage.** Converts “we believe it’s deterministic” into a **per-run replay check**; ledger digests that no longer match fail promote.
 
 ---
 
@@ -94,7 +94,7 @@
 
 **Problem solved.** Undisclosed AI authorship is becoming a legal, licensing, and customer-trust liability.
 
-**Estimated advantage.** **100% of AI-mentioning commits on PRs carry attribution or don’t merge** *(mechanical enforcement; catches mentions, not silent omissions)*.
+**Estimated advantage.** Commits that mention AI tooling on PRs must carry attribution or they don’t merge *(mechanical enforcement; catches mentions, not silent omissions)*.
 
 ---
 
@@ -120,9 +120,9 @@
 
 ## What you can now say out loud
 
-1. **“Every change my AI ships carries a tamper-evident, independently verifiable receipt — and each run can be replayed from its flight recorder to prove the system behaved exactly as recorded.”**
+1. **“Governed AI changes can carry a tamper-evident, independently re-checkable receipt — and each run can be replayed from its event log to check the recorded ending still matches.”**
 2. **“Our guardrails are attack-tested: the test suite tries to break in — forbidden files, secret paths, negative-balance checkout — and must be blocked on every release.”**
-3. **“Every AI-assisted commit is labeled as such, enforced by automation that blocks unlabeled work — including the engine’s own commits.”**
+3. **“AI-assisted commits that mention tooling are labeled as such, enforced by automation that blocks unlabeled mentions — including the engine’s own commits.”**
 
 ---
 
@@ -131,13 +131,13 @@
 | Capability | Problem solved | Quantified benefit |
 | --- | --- | --- |
 | House mandates, Signed Mandate/Ward & bonds | AI scope creep | ~3–5× faster review *(est.)* |
-| Capsule hashes | Unverifiable AI work | ~100% tamper detection *(cryptographic)* |
-| Release gates & depth dial | All-or-nothing autonomy | $0 AI cost on templated changes |
+| Capsule hashes | Unverifiable AI work | Strong tamper detection *(cryptographic mismatch)* |
+| Release gates & depth dial | All-or-nothing autonomy | $0 AI cost on templated gate hits |
 | Forever loop | Founder hours are the bottleneck | ~2–3× routine throughput *(est.)* |
-| Gauntlet evals | Silent guardrail rot | 100% of covered-scenario drift blocked |
+| Gauntlet evals | Silent guardrail rot | Covered-scenario drift blocked vs baseline |
 | MCP + Cursor | Rules bypassed across tools | Feedback in minutes, not hours *(est.)* |
-| Replay gate | Logic drift, doctored records | Per-run determinism proof |
-| Attribution audit | Undisclosed AI authorship | 100% of AI-mentioning PR commits attributed or blocked |
+| Replay gate | Logic drift, doctored records | Per-run determinism check |
+| Attribution audit | Undisclosed AI authorship | AI-mentioning PR commits attributed or blocked |
 | Adversarial gauntlet | “Do the locks actually hold?” | Attack classes permanently regression-proofed |
 
 ---

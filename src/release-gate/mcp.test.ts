@@ -10,12 +10,15 @@ import {
 import { computeVowsHash } from "../constitution/vows.js";
 
 describe("release gate MCP handlers", () => {
-  it("advertises seventeen deterministic tools", () => {
+  it("advertises nineteen tools with preflight first", () => {
     expect(RELEASE_GATE_TOOLS.map((tool) => tool.name)).toEqual([
+      "preflight",
+      "authorize_write",
       "list_gates",
       "resolve_gate",
       "preview_gate",
       "evaluate_mandate",
+      "evaluate_house_rules",
       "constitution_schemas",
       "validate_capsule",
       "seal_bond",
@@ -27,9 +30,14 @@ describe("release gate MCP handlers", () => {
       "get_active_stack",
       "cyberready_validate_delta",
       "resolve_agent_profile",
-      "authorize_write",
       "coreward_mode_status",
     ]);
+    expect(RELEASE_GATE_TOOLS[0]?.description).toMatch(/REQUIRED default/i);
+    expect(
+      RELEASE_GATE_TOOLS.filter((t) => t.name !== "preflight").every((t) =>
+        t.description.startsWith("[advanced]"),
+      ),
+    ).toBe(true);
   });
 
   it("handles initialize and tools/list", () => {
@@ -52,6 +60,7 @@ describe("release gate MCP handlers", () => {
 
     expect(tools?.result).toMatchObject({
       tools: expect.arrayContaining([
+        expect.objectContaining({ name: "preflight" }),
         expect.objectContaining({ name: "resolve_gate" }),
         expect.objectContaining({ name: "authorize_write" }),
         expect.objectContaining({ name: "list_stackables" }),
@@ -334,5 +343,46 @@ src/x.ts
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
+  });
+
+  it("preflight returns ok, ticket_id, stack, and prefer_gate shape", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "vibe-mcp-pf-"));
+    try {
+      const text = callReleaseGateTool("preflight", {
+        root_dir: root,
+        proposed_files: ["src/ok.ts"],
+        title: "chore",
+      });
+      const parsed = JSON.parse(text) as {
+        ok: boolean;
+        ticket_id?: string;
+        stack?: { legalSpace?: string };
+        reason: string;
+        prefer_gate?: string | null;
+      };
+      expect(parsed.ok).toBe(true);
+      expect(parsed.ticket_id).toMatch(/^aw_/);
+      expect(parsed.stack).toBeDefined();
+      expect(parsed.reason).toMatch(/authorized/);
+      expect(parsed).toHaveProperty("prefer_gate");
+    } finally {
+      delete process.env.COREWARD_AUTHORIZE_TICKET;
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("evaluate_house_rules aliases evaluate_mandate", () => {
+    const a = JSON.parse(
+      callReleaseGateTool("evaluate_mandate", {
+        proposed_files: ["src/auth/session.ts"],
+      }),
+    );
+    const b = JSON.parse(
+      callReleaseGateTool("evaluate_house_rules", {
+        proposed_files: ["src/auth/session.ts"],
+      }),
+    );
+    expect(b.ok).toBe(a.ok);
+    expect(b.reason).toBe(a.reason);
   });
 });

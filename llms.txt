@@ -1,22 +1,22 @@
 # Coreward — llms.txt
 
-> Governance spine for agent-written code: authorize → bound work → evidence → promote.
+> Governance spine for agent-written code: preflight → bound work → evidence → promote.
 
-## Must-read
+## Must-read (docs triad)
 
-- [AGENTS.md](./AGENTS.md) — agent vows (`authorize_write` first)
-- [LICENSE.md](./LICENSE.md) — FSL-1.1-Apache-2.0 FAQ (Change Date → Apache-2.0)
-- [LICENSE](./LICENSE) — full Functional Source License text
-- [docs/start-here.md](./docs/start-here.md) — five-minute paths
-- [docs/host-packs.md](./docs/host-packs.md) — Cursor / OpenClaw / Hermes / Claude packs
-- [docs/local-first-savings.md](./docs/local-first-savings.md) — local/open models + Coreward
+- [docs/start-here.md](./docs/start-here.md) — activate (`coreward:init` / `activate --governed`)
+- [docs/operate.md](./docs/operate.md) — Go / Approve / Merge
+- [docs/ward-security.md](./docs/ward-security.md) — Ward + house rules vs Mandate
+
+Also: [AGENTS.md](./AGENTS.md) — call MCP `preflight` once · [LICENSE.md](./LICENSE.md)
 
 ## Commands
 
+- `npm run coreward:init`
 - `npm run coreward:authorize -- --files a.ts,b.ts`
-- `npm run savings:attest` — hash-chained savings JSON from run metrics
 - `npm run gate:mcp` — MCP server `coreward-release-gates`
+- `npm run ward:doctor`
 
 ## Non-claims
 
-Not a kernel IDE sandbox. Hosted HPURL verify unclaimed. No pricing in this tree.
+Not a kernel IDE sandbox. Hosted HPURL verify unbuilt. No pricing tiers in this tree.

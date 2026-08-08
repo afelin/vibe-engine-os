@@ -33,6 +33,7 @@ import {
   quotableClaims,
   UNCLAIMABLE_IDS,
   unclaimableStayUnclaimed,
+  visibleBatteryClaims,
   writeBatteryReport,
 } from "./claim-ledger.js";
 
@@ -194,10 +195,10 @@ describe("claim ledger rules", () => {
     const def = CLAIM_CATALOG.find((c) => c.id === "savings_attestation_local");
     expect(def?.assert).toBe("savings_attest");
     expect(evaluateClaim(def!, { savings_attest: true }).status).toBe("pass");
-    expect(evaluateClaim(def!, {}).status).toBe("unclaimed");
+    expect(evaluateClaim(def!, {}).status).toBe("not_run");
   });
 
-  it("unclaimable claims stay unclaimed even if assertResults try to pass them", () => {
+  it("unclaimable claims stay unbuilt even if assertResults try to pass them", () => {
     const poisoned = evaluateAssertResults({
       hosted_hpurl: true,
       cyberready_live: true,
@@ -205,14 +206,14 @@ describe("claim ledger rules", () => {
     });
     const hosted = poisoned.find((c) => c.id === "hosted_hpurl");
     const live = poisoned.find((c) => c.id === "cyberready_live");
-    expect(hosted?.status).toBe("unclaimed");
+    expect(hosted?.status).toBe("unbuilt");
     expect(hosted?.assert).toBeNull();
-    expect(live?.status).toBe("unclaimed");
+    expect(live?.status).toBe("unbuilt");
     expect(live?.assert).toBeNull();
     expect(unclaimableStayUnclaimed(poisoned)).toBe(true);
   });
 
-  it("evaluateClaim: true → pass, false → fail, missing → unclaimed", () => {
+  it("evaluateClaim: true → pass, false → fail, missing → not_run; null assert → unbuilt", () => {
     const def = {
       id: "gauntlet_blocks_forbidden",
       text: "Forbidden paths are rejected",
@@ -220,7 +221,20 @@ describe("claim ledger rules", () => {
     };
     expect(evaluateClaim(def, { eval_bond: true }).status).toBe("pass");
     expect(evaluateClaim(def, { eval_bond: false }).status).toBe("fail");
-    expect(evaluateClaim(def, {}).status).toBe("unclaimed");
+    expect(evaluateClaim(def, {}).status).toBe("not_run");
+    expect(
+      evaluateClaim(
+        { id: "hosted_hpurl", text: "x", assert: null },
+        {},
+      ).status,
+    ).toBe("unbuilt");
+  });
+
+  it("visibleBatteryClaims hides unbuilt stubs", () => {
+    const claims = evaluateAssertResults({ eval_bond: true });
+    const visible = visibleBatteryClaims(claims);
+    expect(visible.every((c) => c.status !== "unbuilt")).toBe(true);
+    expect(visible.some((c) => c.id === "hosted_hpurl")).toBe(false);
   });
 
   it("quotableClaims only returns pass; hasFailedClaims detects fails", () => {
@@ -262,10 +276,10 @@ describe("claim ledger rules", () => {
     expect(out).toContain("battery-prelaunch.json");
     const loaded = JSON.parse(fs.readFileSync(out, "utf8")) as typeof report;
     expect(loaded.claims.find((c) => c.id === "hosted_hpurl")?.status).toBe(
-      "unclaimed",
+      "unbuilt",
     );
     expect(loaded.claims.find((c) => c.id === "cyberready_live")?.status).toBe(
-      "unclaimed",
+      "unbuilt",
     );
 
     const written = buildAndWriteBatteryReport(root, {

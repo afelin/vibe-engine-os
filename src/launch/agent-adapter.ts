@@ -37,6 +37,10 @@ export type AgentAdapterManifest = {
 };
 
 const PREFLIGHT_TOOLS = [
+  "preflight",
+] as const;
+
+const ADVANCED_PREFLIGHT_TOOLS = [
   "get_active_stack",
   "list_stackables",
   "authorize_write",
@@ -71,7 +75,7 @@ export function buildAgentAdapterManifest(rootDir = "."): AgentAdapterManifest {
     brand: "Coreward",
     mcp_server: "coreward-release-gates",
     mcp_server_alias: "vibe-release-gates",
-    required_tools: ["authorize_write"],
+    required_tools: ["preflight"],
     ingress: {
       github_issue_labels: ["vibe/run", "vibe:safe", "vibe:ship", "vibe:plan-only"],
       slash_commands: [
@@ -87,9 +91,10 @@ export function buildAgentAdapterManifest(rootDir = "."): AgentAdapterManifest {
       ],
       mcp_seal_bond: "seal_bond",
     },
-    preflight_tools: [...PREFLIGHT_TOOLS],
+    preflight_tools: [...PREFLIGHT_TOOLS, ...ADVANCED_PREFLIGHT_TOOLS],
     postrun_tools: [...POSTRUN_TOOLS],
     troubleshoot_tools: [
+      "preflight",
       "authorize_write",
       "resolve_gate",
       "build_scoped_context",

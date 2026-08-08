@@ -15,10 +15,9 @@ export const bootstrapSnippetsSchema = z.object({
 
 export type BootstrapSnippets = z.infer<typeof bootstrapSnippetsSchema>;
 
-const PREFLIGHT_ORDER =
-  "evaluate_mandate → validate_bond → resolve_gate → constitution_schemas";
+const PREFLIGHT_ORDER = "preflight (or authorize_write) once — prefer_gate; stop";
 
-const SKILL_PATH = ".cursor/skills/vibe-engine";
+const SKILL_PATH = ".cursor/skills/coreward";
 
 type McpServerConfig = {
   command: string;
@@ -30,9 +29,11 @@ function loadMcpServerConfig(rootDir: string): McpServerConfig {
   const raw = JSON.parse(fs.readFileSync(mcpPath, "utf8")) as {
     mcpServers?: Record<string, McpServerConfig>;
   };
-  const server = raw.mcpServers?.["vibe-release-gates"];
+  const server =
+    raw.mcpServers?.["coreward-release-gates"] ??
+    raw.mcpServers?.["vibe-release-gates"];
   if (!server?.command || !Array.isArray(server.args)) {
-    throw new Error("mcp.json missing vibe-release-gates command/args");
+    throw new Error("mcp.json missing coreward-release-gates command/args");
   }
   return server;
 }
@@ -41,7 +42,7 @@ function formatMcpJsonBlock(server: McpServerConfig): string {
   return JSON.stringify(
     {
       mcpServers: {
-        "vibe-release-gates": {
+        "coreward-release-gates": {
           command: server.command,
           args: server.args,
         },
@@ -54,9 +55,9 @@ function formatMcpJsonBlock(server: McpServerConfig): string {
 
 function preflightBlock(): string {
   return [
-    `Preflight order: ${PREFLIGHT_ORDER}`,
-    "Postrun: validate_capsule → build_scoped_context → recall_lessons",
-    "Legal space: list_stackables → set_legal_space (none | eu-nis2-cra | us-baseline).",
+    `Agent vow: ${PREFLIGHT_ORDER}`,
+    "Operate: /go · /approve (only when requiresApproval) · Merge when PR green.",
+    "Docs: docs/start-here.md · docs/operate.md · docs/ward-security.md",
   ].join("\n");
 }
 
@@ -67,13 +68,13 @@ export function renderBootstrapSnippets(rootDir = "."): BootstrapSnippets {
 
   const github = [
     "## GitHub-only (nocode)",
-    "1. Open a Vibe Request issue (labels vibe/run + vibe:safe).",
+    "1. Open a Coreward Request issue.",
     "2. Fill Intent, Outcome, and Files to touch (2–4 paths).",
-    "3. Wait for the forever loop; merge when checks are green.",
+    "3. Comment /go; merge when checks are green.",
     "",
     preflightBlock(),
     "",
-    "See docs/start-here.md §1.",
+    "See docs/start-here.md · docs/operate.md.",
   ].join("\n");
 
   const cursor = [
@@ -81,7 +82,7 @@ export function renderBootstrapSnippets(rootDir = "."): BootstrapSnippets {
     "1. Enable MCP from repo-root mcp.json (or copy to .cursor/mcp.json).",
     `2. MCP server command: ${mcpCommandLine}`,
     `3. Enable skill path: ${SKILL_PATH} (SKILL.md).`,
-    "4. Smoke: npm run gate:mcp",
+    "4. Smoke: npm run gate:mcp · Init: npm run coreward:init",
     "",
     "mcp.json:",
     "```json",
@@ -106,7 +107,7 @@ export function renderBootstrapSnippets(rootDir = "."): BootstrapSnippets {
 
   const codex = [
     "## Codex — paste MCP server config",
-    "Register the vibe-release-gates MCP server (same as mcp.json):",
+    "Register the coreward-release-gates MCP server (same as mcp.json):",
     "",
     "```json",
     mcpBlock,
@@ -122,12 +123,12 @@ export function renderBootstrapSnippets(rootDir = "."): BootstrapSnippets {
     "## Generic agent / IDE",
     "1. Point your agent at the MCP surface from mcp.json.",
     `2. Command: ${mcpCommandLine}`,
-    "3. Call tools in preflight order before proposing paths.",
+    "3. Call preflight once before proposing paths; stop.",
     "",
     preflightBlock(),
     "",
     "Adapter manifest: .vibe/agent-adapter.json (npm run activate).",
-    "Docs: docs/agent-adapter.md + docs/start-here.md.",
+    "Docs: docs/start-here.md · docs/operate.md.",
   ].join("\n");
 
   return bootstrapSnippetsSchema.parse({

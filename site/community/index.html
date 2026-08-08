@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Community — Coreward</title>
+  <meta name="description" content="Join Coreward community chat on Telegram and optionally support development. Chat is not an SLA; tips are voluntary, not a license purchase." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/site.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a class="brand" href="../">Coreward</a>
+      <nav aria-label="Primary">
+        <ul class="nav">
+          <li><a href="../whitepaper/">White paper</a></li>
+          <li><a href="../adopt/">Adopt</a></li>
+          <li><a href="../status/">Status</a></li>
+          <li><a href="../trust/">Trust</a></li>
+          <li><a href="../proof/">Proof</a></li>
+          <li><a href="./" aria-current="page">Community</a></li>
+          <li><a href="../legal/">Legal</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="site-main">
+    <section class="hero">
+      <p class="hero__eyebrow">Public channel</p>
+      <h1>Community</h1>
+      <p class="lede">
+        A thin place to chat with other operators and optionally tip development.
+        No product catalog, no paid packaging theater — FSL still governs the software.
+      </p>
+    </section>
+
+    <div class="note" role="note">
+      <p>
+        <strong>Honesty:</strong> community chat is not a support SLA.
+        Payments are voluntary support for Coreward development — not a license purchase,
+        not entitlement to hosted Competing Use, and not a paid support contract.
+        Software terms remain in <a href="https://github.com/afelin/coreward/blob/main/LICENSE.md">LICENSE.md</a>.
+      </p>
+    </div>
+
+    <section class="section">
+      <h2>Telegram</h2>
+      <p>
+        Public chat for questions, ideas, and operator notes (when an invite is published).
+        Prefer GitHub issues for security reports
+        (<a href="https://github.com/afelin/coreward/blob/main/SECURITY.md">SECURITY.md</a>).
+      </p>
+      <div class="cta-row" id="telegram-cta-row" hidden>
+        <a class="btn" id="telegram-cta" href="#" rel="noopener noreferrer">Join Telegram</a>
+      </div>
+      <p id="telegram-todo" class="lede" style="margin-top: 0.75rem; font-size: 0.95rem;">
+        Owner TODO: set a real <code>telegram_url</code> in <code>config.json</code> before advertising Join
+        (see <a href="https://github.com/afelin/coreward/blob/main/docs/community.md">docs/community.md</a>).
+        Until then, use GitHub Discussions / issues — no dead invite link.
+      </p>
+    </section>
+
+    <section class="section">
+      <h2>Support development</h2>
+      <p>
+        One optional tip — thank you if you find Coreward useful.
+        This does not buy a product tier, certification, or Competing Use hosting rights.
+      </p>
+      <div class="cta-row">
+        <a class="btn btn--ghost" id="support-cta" href="https://donate.stripe.com/8x24gzfZy2gG0g3bRCbsc00" rel="noopener noreferrer">Support Coreward development</a>
+      </div>
+      <p id="stripe-todo" class="lede" hidden style="margin-top: 0.75rem; font-size: 0.95rem;">
+        Owner TODO: paste a live Stripe Payment Link into <code>config.json</code>
+        (<a href="https://github.com/afelin/coreward/blob/main/docs/community.md">docs/community.md</a>).
+      </p>
+    </section>
+
+    <section class="section">
+      <h2>Further reading</h2>
+      <ul class="link-list">
+        <li><a href="https://github.com/afelin/coreward/blob/main/docs/start-here.md">docs/start-here.md</a> — five-minute paths</li>
+        <li><a href="../trust/">Trust</a> — claim-safe disclosure</li>
+        <li><a href="https://github.com/afelin/coreward/blob/main/SECURITY.md">SECURITY.md</a> — reporting</li>
+        <li><a href="https://github.com/afelin/coreward/blob/main/LICENSE.md">LICENSE.md</a> — FSL FAQ</li>
+        <li><a href="https://github.com/afelin/coreward/blob/main/docs/community.md">docs/community.md</a> — owner setup (Telegram + Stripe)</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <span><a href="../">Coreward</a></span>
+      <span><a href="../legal/">Legal notices</a></span>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var PLACEHOLDER_TG = "YOUR_HANDLE";
+      var PLACEHOLDER_STRIPE = "TEST_PLACEHOLDER";
+
+      function isPlaceholder(url, needle) {
+        return !url || String(url).indexOf(needle) !== -1;
+      }
+
+      fetch("./config.json", { cache: "no-store" })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (cfg) {
+          if (!cfg) return;
+          var tg = document.getElementById("telegram-cta");
+          var tip = document.getElementById("support-cta");
+          var tgTodo = document.getElementById("telegram-todo");
+          var stripeTodo = document.getElementById("stripe-todo");
+
+          if (cfg.telegram_url && tg) {
+            var tgRow = document.getElementById("telegram-cta-row");
+            if (isPlaceholder(cfg.telegram_url, PLACEHOLDER_TG)) {
+              if (tgTodo) tgTodo.hidden = false;
+              if (tgRow) tgRow.hidden = true;
+            } else {
+              tg.setAttribute("href", cfg.telegram_url);
+              if (tgRow) tgRow.hidden = false;
+              if (tgTodo) tgTodo.hidden = true;
+            }
+          }
+          if (cfg.stripe_payment_link && tip) {
+            tip.setAttribute("href", cfg.stripe_payment_link);
+            if (isPlaceholder(cfg.stripe_payment_link, PLACEHOLDER_STRIPE) && stripeTodo) {
+              stripeTodo.hidden = false;
+            }
+          }
+        })
+        .catch(function () { /* keep static href fallbacks */ });
+    })();
+  </script>
+</body>
+</html>

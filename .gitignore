@@ -16,3 +16,6 @@ repomix-output.txt
 !.vibe/corp-boundary.example
 # Generated into unified Pages root by scripts/build-whitepaper.mjs
 site/proof/
+
+# Local git worktrees (do not commit)
+.worktrees/
