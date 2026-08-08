@@ -74,3 +74,7 @@ echo ""
 echo "Done. Next steps in target repo:"
 echo "  bash runs/adopt.sh ."
 echo "  # or manually: npm install && npm run activate"
+echo ""
+echo "MCP (prefer published entry — no full src/ copy required for tools):"
+echo '  npx -y @coreward/mcp'
+echo "  # config: command npx / args [\"-y\",\"@coreward/mcp\"]  → see docs/publish-mcp.md"

@@ -14,11 +14,13 @@
 
 Details: [docs/operate.md](docs/operate.md) · [docs/design-partner.md](docs/design-partner.md).
 
-## Also (agents / Cursor)
+**Also (agents / Cursor)**
 
 1. `npm run coreward:init`
 2. Cursor Settings → MCP → enable **coreward-release-gates** (if not green)
 3. Chat — agent already has the rule; expect one `preflight`
+
+Adopt (no monorepo `src/`): `npx -y @coreward/mcp` — [docs/publish-mcp.md](docs/publish-mcp.md). This checkout dogfoods `npx tsx src/release-gate/mcp.ts`.
 
 Details: [docs/start-here.md](docs/start-here.md) · [AGENTS.md](AGENTS.md).
 

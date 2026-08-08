@@ -1,0 +1,38 @@
+{
+  "name": "@coreward/mcp",
+  "version": "0.1.0",
+  "description": "Coreward release-gates MCP server — zero-build npx entry for any host",
+  "type": "module",
+  "license": "FSL-1.1-Apache-2.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "bin": {
+    "coreward-mcp": "./bin/coreward-mcp.js"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "policy",
+    "README.md"
+  ],
+  "exports": {
+    ".": "./dist/cli.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/afelin/coreward.git",
+    "directory": "packages/mcp"
+  },
+  "homepage": "https://github.com/afelin/coreward#readme",
+  "keywords": [
+    "coreward",
+    "mcp",
+    "release-gates",
+    "preflight"
+  ],
+  "scripts": {
+    "build": "node ../../scripts/build-mcp-package.mjs",
+    "prepack": "npm run build"
+  }
+}

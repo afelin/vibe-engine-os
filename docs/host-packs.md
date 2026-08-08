@@ -6,18 +6,20 @@ Coreward Mode (`.vibe/coreward-mode.json` with `"enabled": true`, or `COREWARD_M
 
 ## Cursor
 
-1. Point MCP at this repo:
+1. Point MCP at Coreward (adopt — published package):
 
 ```json
 {
   "mcpServers": {
     "coreward-release-gates": {
       "command": "npx",
-      "args": ["tsx", "src/release-gate/mcp.ts"]
+      "args": ["-y", "@coreward/mcp"]
     }
   }
 }
 ```
+
+Monorepo dogfood may keep `npx tsx src/release-gate/mcp.ts`. Publish notes: [publish-mcp.md](./publish-mcp.md).
 
 2. Load skill `.cursor/skills/coreward/SKILL.md`.
 3. Optional: enable Coreward Mode and require `authorize_write` before agent edits.
@@ -33,7 +35,7 @@ Prefer `prefer_gate` / `resolve_gate` over LLM for templated chores.
 Never bypass house mandates or Ward when a Mandate is active.
 ```
 
-2. Register the same MCP fragment as Cursor (`coreward-release-gates` → `npx tsx src/release-gate/mcp.ts`).
+2. Register the same MCP fragment as Cursor (`coreward-release-gates` → `npx -y @coreward/mcp`).
 3. Export adapter: after activate, `.vibe/agent-adapter.json` lists `required_tools: ["authorize_write"]`.
 
 ## OpenCode
@@ -69,7 +71,7 @@ Hermes is MCP-native and may keep its own memory/lessons. Map preflight to Corew
   "mcp_servers": {
     "coreward-release-gates": {
       "command": "npx",
-      "args": ["tsx", "src/release-gate/mcp.ts"]
+      "args": ["-y", "@coreward/mcp"]
     }
   }
 }
