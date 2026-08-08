@@ -198,10 +198,13 @@ function printOnChip(rootDir: string, smokeTicketId: string | null): void {
   console.log(" Coreward ON");
   console.log(` ${ticketPart}`);
   console.log(
-    " MCP: enable coreward-release-gates in Cursor Settings if grey",
+    " Reload MCP in Cursor Customize if tools missing",
   );
   console.log(
     " Next: Agent will preflight once — or: npm run coreward:authorize -- --files …",
+  );
+  console.log(
+    " CLI presence: add statusLine → runs/coreward-statusline.sh",
   );
   console.log("════════════════════════════════");
 }
