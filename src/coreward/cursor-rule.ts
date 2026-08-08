@@ -1,0 +1,23 @@
+/**
+ * Canonical Cursor alwaysApply rule body — kept in sync by coreward:init.
+ */
+export const COREWARD_CURSOR_RULE = `---
+description: Coreward — call MCP preflight once before edits; stop.
+alwaysApply: true
+---
+
+# Coreward
+
+Before proposing file edits:
+
+1. Call MCP **\`preflight\`** (or \`authorize_write\`) once with proposed paths (and issue title/body when known). Never propose paths without a successful ticket when Coreward Mode is on.
+2. Prefer \`prefer_gate\` over LLM for templated chores. Surface \`/approve\` only when \`requiresApproval\`.
+3. Order: **authorize → prefer_gate → ContextPack → LLM**. Multi-agent runs share one \`ticket_id\`.
+4. Stop — other MCP tools are advanced.
+
+MCP: \`coreward-release-gates\`. CLI: \`npm run coreward:authorize -- --files a.ts,b.ts\`. Init: \`npm run coreward:init\`.
+
+**Honesty:** Coreward Mode is not a kernel IDE sandbox. Soft Cursor hooks remind (fail-open). Ward covers CI/promote when a Mandate is on. Visibility: \`Ward LEGACY|ON · Mode OFF|ON · ticket fresh|expired\`.
+
+Mirror [AGENTS.md](../../AGENTS.md) — do not duplicate the warm catalog.
+`;

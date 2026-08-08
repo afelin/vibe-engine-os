@@ -16,11 +16,11 @@ Details: [docs/operate.md](docs/operate.md) · [docs/design-partner.md](docs/des
 
 ## Also (agents / Cursor)
 
-```bash
-npm run coreward:init   # Node 22+ · Mode ON · MCP smoke · ward:doctor
-```
+1. `npm run coreward:init`
+2. Cursor Settings → MCP → enable **coreward-release-gates** (if not green)
+3. Chat — agent already has the rule; expect one `preflight`
 
-Enable MCP `coreward-release-gates`, call **`preflight` once** before edits — [docs/start-here.md](docs/start-here.md) · [AGENTS.md](AGENTS.md).
+Details: [docs/start-here.md](docs/start-here.md) · [AGENTS.md](AGENTS.md).
 
 ## Why not just Cursor rules?
 

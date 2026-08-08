@@ -40,9 +40,9 @@ Details: [operate.md](./operate.md).
 
 ## 2. Cursor + MCP + skill
 
-1. `npm run coreward:init` (legacy: `npm run activate -- --governed`).
-2. Enable MCP `coreward-release-gates` from [`mcp.json`](../mcp.json).
-3. Agents call MCP **`preflight` once** with proposed paths — then stop. Skill: [`.cursor/skills/coreward/SKILL.md`](../.cursor/skills/coreward/SKILL.md).
+1. `npm run coreward:init`
+2. Cursor Settings → MCP → enable **coreward-release-gates** (if not green)
+3. Chat — agent already has the rule; expect one `preflight`
 
 ---
 

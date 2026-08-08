@@ -14,6 +14,7 @@ import {
   isCorewardMode,
   writeCorewardModeConfig,
 } from "./mode.js";
+import { readCorewardPresence } from "./presence.js";
 import { listReleaseGateIds } from "../release-gate/registry.js";
 import {
   generateEd25519KeyPairRaw,
@@ -53,6 +54,8 @@ describe("authorize_write", () => {
       expect(result.prefer_gate).toBe("add-unit-test");
       expect(result.reason).toContain("prefer_gate");
       expect(process.env.COREWARD_AUTHORIZE_TICKET).toBe(result.ticket_id);
+      const presence = readCorewardPresence(root);
+      expect(presence?.ticket_id).toBe(result.ticket_id);
 
       const validated = validateAuthorizeTicket(
         root,

@@ -9,18 +9,25 @@ _allow() {
   exit 0
 }
 
+trap '_allow' ERR
+
 # Drain stdin (hook payload) — we only inspect local Mode/ticket state
 cat >/dev/null || true
 
 ROOT="$(pwd)"
 MODE_FILE="$ROOT/.vibe/coreward-mode.json"
 TICKETS_DIR="$ROOT/.vibe/authorize-tickets"
+PRESENCE_FILE="$ROOT/.vibe/coreward-presence.json"
 
 mode_on=0
 if [[ "${COREWARD_MODE:-}" == "1" || "${COREWARD_MODE:-}" == "true" || "${COREWARD_MODE:-}" == "yes" ]]; then
   mode_on=1
 elif [[ -f "$MODE_FILE" ]]; then
   if grep -q '"enabled"[[:space:]]*:[[:space:]]*true' "$MODE_FILE" 2>/dev/null; then
+    mode_on=1
+  fi
+elif [[ -f "$PRESENCE_FILE" ]]; then
+  if grep -q '"mode"[[:space:]]*:[[:space:]]*"ON"' "$PRESENCE_FILE" 2>/dev/null; then
     mode_on=1
   fi
 fi
@@ -64,11 +71,6 @@ if [[ "$has_fresh" -eq 1 ]]; then
   _allow
 fi
 
-# Soft remind: allow, but inject agent guidance (not a hard deny — Mode is not IDE sandbox)
-cat <<'EOF'
-{
-  "permission": "allow",
-  "agent_message": "Coreward Mode is ON and no fresh authorize ticket was found. Call MCP preflight (or npm run coreward:authorize -- --files …) once before proposing edits. This hook is fail-open — not an IDE sandbox."
-}
-EOF
+# Soft remind: allow, but inject one-line guidance (fail-open — not an IDE sandbox)
+printf '%s\n' '{"permission":"allow","agent_message":"Coreward: call preflight (Mode ON, no fresh ticket)"}'
 exit 0
